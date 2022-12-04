@@ -10,10 +10,20 @@ class ChatGPT3TelegramBot:
         self.config = config
         self.gpt3_bot = gpt3_bot
 
+    # Help menu
+    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        await update.message.reply_text("/start - Start the bot\n/reset - Reset conversation\n/help - Help menu")
+
     # Start the bot
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.info('Bot started')
         await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a Chat-GPT3 Bot, please talk to me!")
+
+    # Reset the conversation
+    async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        logging.info('Resetting the conversation...')
+        self.gpt3_bot.reset()
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
 
     # React to messages
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -26,10 +36,9 @@ class ChatGPT3TelegramBot:
     def run(self):
         application = ApplicationBuilder().token(self.config['telegram_bot_token']).build()
 
-        start_handler = CommandHandler('start', self.start)
-        prompt_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt)
-
-        application.add_handler(start_handler)
-        application.add_handler(prompt_handler)
+        application.add_handler(CommandHandler('start', self.start))
+        application.add_handler(CommandHandler('reset', self.reset))
+        application.add_handler(CommandHandler('help', self.help))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
 
         application.run_polling()

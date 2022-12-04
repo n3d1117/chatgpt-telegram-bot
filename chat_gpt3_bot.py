@@ -89,3 +89,7 @@ class ChatGPT3Bot:
             return {'message': message}
         except:
             raise ValueError("Error: " + response.text)
+
+    def reset(self):
+        self.conversation_id = None
+        self.parent_id = self.generate_uuid()
