@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 requests = "*"
 python-telegram-bot = "==20.0a6"
-playwright = "*"
 
 [dev-packages]
 

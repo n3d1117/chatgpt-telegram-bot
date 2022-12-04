@@ -20,7 +20,7 @@ class ChatGPT3Bot:
 
         def fetch_access_token():
             logging.info("Fetching access token...")
-            response = self.extract_openai_access_token(self.config['openai_email'], self.config['openai_password'])
+            response = self.extract_openai_access_token(self.config['openai_session_token'])
             if response:
                 self.access_token = response['access_token']
                 with open(filename, 'w') as f:
@@ -39,32 +39,17 @@ class ChatGPT3Bot:
                 else:
                     self.access_token = response['access_token']
 
-    def extract_openai_access_token(self, email, password) -> json:
-        # This is a hacky way of extracting the access token
-        # from the OpenAI chatbot. I'm using Playwright to
-        # automate the login process and extract the token.
-        with sync_playwright() as p:
-            browser = p.webkit.launch(headless=True)
-            context = browser.new_context()
-            page = context.new_page()
-            # ---------------------
-            page.goto("https://chat.openai.com/auth/login")
-            page.get_by_role("button", name="Log in").click()
-            page.get_by_label("Email address").fill(email)
-            page.locator("button[name=\"action\"]").click()
-            page.get_by_label("Password").click()
-            page.get_by_label("Password").fill(password)
-            page.get_by_role("button", name="Continue").click()
-            # ---------------------
-            with page.expect_response('**/auth/session', timeout=3000) as response:
-                response_json = response.value.json()
-                expiration_date = datetime.datetime.now() + datetime.timedelta(hours=1)
-                context.close()
-                browser.close()
-                return {
-                    'access_token': response_json['accessToken'],
-                    'expires': expiration_date.strftime('%Y-%m-%d %H:%M:%S')
-                }
+    # Credits: https://github.com/acheong08/ChatGPT
+    def extract_openai_access_token(self, session_token) -> json:
+        s = requests.Session()
+        s.cookies.set("__Secure-next-auth.session-token", session_token)
+        response = s.get("https://chat.openai.com/api/auth/session")
+        response_json = response.json()
+        expiration_date = datetime.datetime.now() + datetime.timedelta(hours=1)
+        return {
+            'access_token': response_json['accessToken'],
+            'expires': expiration_date.strftime('%Y-%m-%d %H:%M:%S')
+        }
 
     def generate_uuid(self) -> str:
         return str(uuid.uuid4())

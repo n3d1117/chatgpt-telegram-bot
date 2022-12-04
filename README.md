@@ -10,9 +10,8 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 
 ## Prerequisites
 - [Pipenv](https://pipenv.readthedocs.io/en/latest/)
-- [Playwright](https://playwright.dev)
 - A [Telegram bot](https://core.telegram.org/bots#6-botfather) and its token
-- [OpenAI](https://openai.com) credentials
+- Your [OpenAI](https://openai.com) session token (see [configuration](#configuration) section)
 
 ## Getting started
 
@@ -38,19 +37,31 @@ pipenv shell
 
 ### Configuration
 Customize the configuration by copying `config.json.example` and renaming it to `config.json`, then editing the settings as desired.
+```
+{
+    "openai_session_token": "<YOUR_OPENAI_SESSION_TOKEN>",
+    "telegram_bot_token": "<YOUR_TELEGRAM_BOT_TOKEN>"
+}
+```
 You'll need to provide:
-1. Your OpenAI auth credentials (required to fetch the necessary data, these are only sent to the OpenAI server to refresh the access token and never shared)
-2. The token for your Telegram bot, obtained using [BotFather](http://t.me/botfather)
+1. Your OpenAI session token (this is only sent to the OpenAI server to periodically refresh the access token and never shared), which expires after 1 month
+  - You can find this token in your browser's cookies (named `__Secure-next-auth.session-token`) after logging in to https://chat.openai.com/chat
+  - Alternatively, run the following code:
+    ```shell
+    pip install playwright
+    python openai_extract_session_token.py <YOUR_OPENAI_EMAIL> <YOUR_OPENAI_PASSWORD>
+    ```
+2. Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather)
 
 ### Run the project
 Use the following command to run the project:
-
 ```
 python main.py
 ```
 
 ## Credits
-- [https://github.com/acheong08/ChatGPT](https://github.com/acheong08/ChatGPT) for reverse engineering ChatGPT APIs
+- [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
+- [acheong08/ChatGPT](https://github.com/acheong08/ChatGPT) for reverse engineering ChatGPT APIs
 - [python-telegram-bot](https://python-telegram-bot.org)
 
 ## License

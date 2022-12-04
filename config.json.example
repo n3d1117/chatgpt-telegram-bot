@@ -1,5 +1,4 @@
 {
-    "openai_email": "<YOUR_OPENAI_EMAIL>",
-    "openai_password": "<YOUR_OPENAI_PASSWORD>",
+    "openai_session_token": "<YOUR_OPENAI_SESSION_TOKEN>",
     "telegram_bot_token": "<YOUR_TELEGRAM_BOT_TOKEN>"
 }
