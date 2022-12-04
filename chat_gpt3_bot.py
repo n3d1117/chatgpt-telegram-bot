@@ -1,8 +1,8 @@
+import datetime
 import json
 import logging
 import os
 import uuid
-from datetime import datetime
 
 import requests
 from playwright.sync_api import sync_playwright
@@ -33,7 +33,7 @@ class ChatGPT3Bot:
         else:
             with open(filename, 'r') as f:
                 response = json.loads(f.read())
-                if datetime.fromisoformat(response["expires"][:-1]) < datetime.now():
+                if datetime.datetime.strptime(response["expires"], '%Y-%m-%d %H:%M:%S') < datetime.datetime.now():
                     logging.info("Access token expired, re-fetching...")
                     fetch_access_token()
                 else:
@@ -58,9 +58,13 @@ class ChatGPT3Bot:
             # ---------------------
             with page.expect_response('**/auth/session', timeout=3000) as response:
                 response_json = response.value.json()
+                expiration_date = datetime.datetime.now() + datetime.timedelta(hours=1)
                 context.close()
                 browser.close()
-                return {'access_token': response_json['accessToken'], 'expires': response_json['expires']}
+                return {
+                    'access_token': response_json['accessToken'],
+                    'expires': expiration_date.strftime('%Y-%m-%d %H:%M:%S')
+                }
 
     def generate_uuid(self) -> str:
         return str(uuid.uuid4())
