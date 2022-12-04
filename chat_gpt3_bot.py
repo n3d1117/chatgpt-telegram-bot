@@ -69,6 +69,7 @@ class ChatGPT3Bot:
     def generate_uuid(self) -> str:
         return str(uuid.uuid4())
 
+    # Credits: https://github.com/acheong08/ChatGPT
     def get_chat_response(self, prompt) -> json:
         self.check_access_token()
 
