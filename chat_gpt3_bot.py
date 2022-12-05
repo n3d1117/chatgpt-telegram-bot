@@ -5,7 +5,6 @@ import os
 import uuid
 
 import requests
-from playwright.sync_api import sync_playwright
 
 
 class ChatGPT3Bot:
@@ -15,7 +14,7 @@ class ChatGPT3Bot:
         self.parent_id = self.generate_uuid()
         self.conversation_id = None
 
-    def check_access_token(self):
+    def check_access_token(self, force_refresh=False):
         filename = 'access_token.json'
 
         def fetch_access_token():
@@ -28,7 +27,7 @@ class ChatGPT3Bot:
             else:
                 raise ValueError("Error: Unable to extract access token")
 
-        if not os.path.exists(filename):
+        if force_refresh or not os.path.exists(filename):
             fetch_access_token()
         else:
             with open(filename, 'r') as f:
@@ -66,7 +65,7 @@ class ChatGPT3Bot:
         data = {
             "action": "next",
             "messages": [{
-                "id": str(self.generate_uuid()),
+                "id": self.generate_uuid(),
                 "role": "user",
                 "content": {"content_type": "text", "parts": [prompt]}
             }],
@@ -81,12 +80,16 @@ class ChatGPT3Bot:
         )
 
         try:
-            response = response.text.splitlines()[-4][6:]
-            response = json.loads(response)
-            self.parent_id = response["message"]["id"]
-            self.conversation_id = response["conversation_id"]
-            message = response["message"]["content"]["parts"][0]
-            return {'message': message}
+            if response.status_code == 500:
+                self.check_access_token(force_refresh=True)
+                return self.get_chat_response(prompt)
+            else:
+                response = response.text.splitlines()[-4][6:]
+                response = json.loads(response)
+                self.parent_id = response["message"]["id"]
+                self.conversation_id = response["conversation_id"]
+                message = response["message"]["content"]["parts"][0]
+                return {'message': message}
         except:
             raise ValueError("Error: " + response.text)
 
