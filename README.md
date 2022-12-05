@@ -64,5 +64,8 @@ python main.py
 - [acheong08/ChatGPT](https://github.com/acheong08/ChatGPT) for reverse engineering ChatGPT APIs
 - [python-telegram-bot](https://python-telegram-bot.org)
 
+## Disclaimer
+This is a personal project and is not affiliated with OpenAI in any way.
+
 ## License
 This project is released under the terms of the GPL 2.0 license. For more information, see the [LICENSE](LICENSE) file included in the repository.
