@@ -54,7 +54,7 @@ class ChatGPT3Bot:
         return str(uuid.uuid4())
 
     # Credits: https://github.com/acheong08/ChatGPT
-    def get_chat_response(self, prompt) -> json:
+    def get_chat_response(self, prompt, on_force_refresh=False) -> json:
         self.check_access_token()
 
         headers = {
@@ -80,9 +80,9 @@ class ChatGPT3Bot:
         )
 
         try:
-            if response.status_code == 500:
+            if not on_force_refresh and response.status_code == 500:
                 self.check_access_token(force_refresh=True)
-                return self.get_chat_response(prompt)
+                return self.get_chat_response(prompt, on_force_refresh=True)
             else:
                 response = response.text.splitlines()[-4][6:]
                 response = json.loads(response)
