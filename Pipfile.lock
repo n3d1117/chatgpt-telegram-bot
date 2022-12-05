@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "afe5ec33aa2bc81d2ef71666431c7bed193c76a95219aed5eaa6325730e06029"
+            "sha256": "c385e1532654febce55b8fa092ef31ad42f5f4bcd49fe9fe4a7a01bb5ec157f9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -23,6 +23,20 @@
             ],
             "markers": "python_full_version >= '3.6.2'",
             "version": "==3.6.2"
+        },
+        "beautifulsoup4": {
+            "hashes": [
+                "sha256:58d5c3d29f5a36ffeb94f02f0d786cd53014cf9b3b3951d42e0080d8a9498d30",
+                "sha256:ad9aa55b65ef2808eb405f46cf74df7fcb7044d5cbc26487f96eb2ef2e436693"
+            ],
+            "markers": "python_full_version >= '3.6.0'",
+            "version": "==4.11.1"
+        },
+        "bs4": {
+            "hashes": [
+                "sha256:36ecea1fd7cc5c0c6e4a1ff075df26d50da647b75376626cc186e2212886dd3a"
+            ],
+            "version": "==0.0.1"
         },
         "certifi": {
             "hashes": [
@@ -72,6 +86,14 @@
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
         },
+        "python-dotenv": {
+            "hashes": [
+                "sha256:1684eb44636dd462b66c3ee016599815514527ad99965de77f43e0944634a7e5",
+                "sha256:b77d08274639e3d34145dfa6c7008e66df0f04b7be7a75fd0d5292c191d79045"
+            ],
+            "index": "pypi",
+            "version": "==0.21.0"
+        },
         "python-telegram-bot": {
             "hashes": [
                 "sha256:0279d0d727ab36e4b42a8819656098485bcd0724961c2f5fced3218b15b26c02",
@@ -87,6 +109,14 @@
             ],
             "index": "pypi",
             "version": "==2.28.1"
+        },
+        "revchatgpt": {
+            "hashes": [
+                "sha256:1da440f7b82918baf323a958c1dcb698d2c27d1832ec11cf901ff935752dc3cc",
+                "sha256:bfe474174c83810898d1bc50e2fa06d6b974eead82c623f7a4dae410791bc0d9"
+            ],
+            "index": "pypi",
+            "version": "==0.0.23"
         },
         "rfc3986": {
             "extras": [
@@ -105,6 +135,20 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==1.3.0"
+        },
+        "soupsieve": {
+            "hashes": [
+                "sha256:3b2503d3c7084a42b1ebd08116e5f81aadfaea95863628c80a3b774a11b7c759",
+                "sha256:fc53893b3da2c33de295667a0e19f078c14bf86544af307354de5fcf12a3f30d"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==2.3.2.post1"
+        },
+        "tls-client": {
+            "hashes": [
+                "sha256:cd65d7b1405cd2075050fca4e59abc6e04207b29ea47eabc6f406ce16735421f"
+            ],
+            "version": "==0.1.5"
         },
         "urllib3": {
             "hashes": [
