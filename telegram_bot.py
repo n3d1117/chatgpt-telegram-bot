@@ -30,7 +30,11 @@ class ChatGPT3TelegramBot:
         logging.info('New message received')
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
         response = self.gpt3_bot.get_chat_response(update.message.text)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response["message"])
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=response["message"],
+            parse_mode=telegram.constants.ParseMode.MARKDOWN
+        )
         logging.info('Sent response')
 
     def run(self):
