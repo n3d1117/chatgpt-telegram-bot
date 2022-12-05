@@ -32,6 +32,7 @@ class ChatGPT3TelegramBot:
         response = self.gpt3_bot.get_chat_response(update.message.text)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
+            reply_to_message_id=update.message.message_id,
             text=response["message"],
             parse_mode=telegram.constants.ParseMode.MARKDOWN
         )
