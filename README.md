@@ -1,6 +1,6 @@
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.10-blue.svg)
-![playwright-version](https://img.shields.io/badge/revChatGPT-0.0.23-green.svg)
+![playwright-version](https://img.shields.io/badge/revChatGPT-0.0.27-green.svg)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's [ChatGPT](https://openai.com/blog/chatgpt/) to provide answers. Ready to use with minimal configuration required.
