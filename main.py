@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 from dotenv import load_dotenv
 from revChatGPT.revChatGPT import Chatbot as ChatGPT3Bot
@@ -20,7 +19,8 @@ def main():
         'password': os.environ['OPENAI_PASSWORD'],
     }
     telegram_config = {
-        'telegram_bot_token': os.environ['TELEGRAM_BOT_TOKEN']
+        'telegram_bot_token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'allowed_chats': os.environ['ALLOWED_TELEGRAM_CHAT_IDS'].split(',')
     }
 
     gpt3_bot = ChatGPT3Bot(config=chatgpt_config)
@@ -29,9 +29,4 @@ def main():
 
 
 if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except:
-            logging.error('An error occurred, restarting...')
-        time.sleep(5)
+    main()

@@ -1,4 +1,3 @@
-import json
 import logging
 
 import telegram.constants
@@ -17,18 +16,30 @@ class ChatGPT3TelegramBot:
 
     # Start the bot
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+            logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
+            return
+
         logging.info('Bot started')
         await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a Chat-GPT3 Bot, please talk to me!")
 
     # Reset the conversation
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+            logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
+            return
+
         logging.info('Resetting the conversation...')
         self.gpt3_bot.reset_chat()
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
 
     # React to messages
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logging.info('New message received')
+        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+            logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
+            return
+
+        logging.info(f'New message received from user {update.message.from_user.name}')
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
         response = self.get_chatgpt_response(update.message.text)
         await context.bot.send_message(
@@ -38,16 +49,12 @@ class ChatGPT3TelegramBot:
             parse_mode=telegram.constants.ParseMode.MARKDOWN
         )
 
-    def get_chatgpt_response(self, message, retry=False) -> dict:
+    def get_chatgpt_response(self, message) -> dict:
         try:
             response = self.gpt3_bot.get_chat_response(message)
             return response
         except:
-            if not retry:
-                self.gpt3_bot.refresh_session()
-                return self.get_chatgpt_response(message, retry=True)
-            else:
-                return {"message": "I'm having some trouble talking to you, please try again later."}
+            return {"message": "I'm having some trouble talking to you, please try again later."}
 
     def run(self):
         application = ApplicationBuilder().token(self.config['telegram_bot_token']).build()
