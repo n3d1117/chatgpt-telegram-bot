@@ -16,7 +16,7 @@ class ChatGPT3TelegramBot:
 
     # Start the bot
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+        if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
             return
 
@@ -25,7 +25,7 @@ class ChatGPT3TelegramBot:
 
     # Reset the conversation
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+        if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
             return
 
@@ -35,7 +35,7 @@ class ChatGPT3TelegramBot:
 
     # Refresh session
     async def refresh(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+        if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to refresh the session')
             return
 
@@ -45,7 +45,7 @@ class ChatGPT3TelegramBot:
 
     # React to messages
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+        if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
             return
 
@@ -68,6 +68,9 @@ class ChatGPT3TelegramBot:
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.debug(f'Exception while handling an update: {context.error}')
+
+    def is_allowed(self, update: Update) -> bool:
+        return str(update.message.from_user.id) not in self.config['allowed_chats']
 
     def run(self):
         application = ApplicationBuilder().token(self.config['telegram_bot_token']).build()
