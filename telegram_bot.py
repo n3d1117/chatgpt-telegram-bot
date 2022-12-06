@@ -63,7 +63,8 @@ class ChatGPT3TelegramBot:
         try:
             response = self.gpt3_bot.get_chat_response(message)
             return response
-        except:
+        except ValueError as e:
+            logging.info(f'Error: {e}')
             return {"message": "I'm having some trouble talking to you, please try again later."}
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
