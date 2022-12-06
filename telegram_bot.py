@@ -33,6 +33,16 @@ class ChatGPT3TelegramBot:
         self.gpt3_bot.reset_chat()
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
 
+    # Refresh session
+    async def refresh(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if str(update.message.from_user.id) not in self.config['allowed_chats']:
+            logging.info(f'User {update.message.from_user.name} is not allowed to refresh the session')
+            return
+
+        logging.info('Refreshing session...')
+        self.gpt3_bot.refresh_session()
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
+
     # React to messages
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if str(update.message.from_user.id) not in self.config['allowed_chats']:
@@ -65,6 +75,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
+        application.add_handler(CommandHandler('refresh', self.refresh))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
 
         application.add_error_handler(self.error_handler)
