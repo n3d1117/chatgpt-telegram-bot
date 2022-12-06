@@ -56,6 +56,9 @@ class ChatGPT3TelegramBot:
         except:
             return {"message": "I'm having some trouble talking to you, please try again later."}
 
+    async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        logging.debug(f'Exception while handling an update: {context.error}')
+
     def run(self):
         application = ApplicationBuilder().token(self.config['telegram_bot_token']).build()
 
@@ -63,5 +66,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+
+        application.add_error_handler(self.error_handler)
 
         application.run_polling()
