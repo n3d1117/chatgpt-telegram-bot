@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from dotenv import load_dotenv
 from revChatGPT.revChatGPT import Chatbot as ChatGPT3Bot
@@ -27,4 +28,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        try:
+            main()
+        except:
+            logging.error('An error occurred, restarting...')
+        time.sleep(5)
