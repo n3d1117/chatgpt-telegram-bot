@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from revChatGPT.revChatGPT import Chatbot as ChatGPT3Bot
 from telegram_bot import ChatGPT3TelegramBot
 
+
 def main():
     load_dotenv()
 

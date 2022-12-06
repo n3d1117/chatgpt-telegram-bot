@@ -39,10 +39,10 @@ class ChatGPT3TelegramBot:
         )
 
     def get_chatgpt_response(self, message, retry=False) -> dict:
-        response = self.gpt3_bot.get_chat_response(message)
-        if isinstance(response, dict):
+        try:
+            response = self.gpt3_bot.get_chat_response(message)
             return response
-        else:
+        except:
             if not retry:
                 self.gpt3_bot.refresh_session()
                 return self.get_chatgpt_response(message, retry=True)
