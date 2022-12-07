@@ -44,7 +44,7 @@ ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..."
 You'll need to provide:
 1. Your OpenAI credentials (these are only sent to the OpenAI server to periodically refresh the access token and never shared). You can read more about it [here](https://github.com/acheong08/ChatGPT)
 2. Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
-3. A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID)
+3. A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). If you'd like to allow *everyone* instead, see [#6](https://github.com/n3d1117/chatgpt-telegram-bot/issues/6).
 
 ### Run
 Use the following command to start the bot:
