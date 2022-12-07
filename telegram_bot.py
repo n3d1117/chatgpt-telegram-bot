@@ -24,7 +24,7 @@ class ChatGPT3TelegramBot:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
+            await self.send_disallowed_message(update, context)
             return
 
         logging.info('Bot started')
@@ -34,7 +34,7 @@ class ChatGPT3TelegramBot:
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
+            await self.send_disallowed_message(update, context)
             return
 
         logging.info('Resetting the conversation...')
@@ -45,7 +45,7 @@ class ChatGPT3TelegramBot:
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
+            await self.send_disallowed_message(update, context)
             return
 
         logging.info(f'New message received from user {update.message.from_user.name}')
@@ -65,6 +65,13 @@ class ChatGPT3TelegramBot:
         except Exception as e:
             logging.info(f'Error while getting the response: {e}')
             return {"message": "I'm having some trouble talking to you, please try again later."}
+
+    async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=self.disallowed_message,
+            disable_web_page_preview=True
+        )
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.debug(f'Exception while handling an update: {context.error}')
