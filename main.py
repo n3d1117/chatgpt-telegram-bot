@@ -19,8 +19,8 @@ def main():
         'password': os.environ['OPENAI_PASSWORD'],
     }
     telegram_config = {
-        'telegram_bot_token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'allowed_chats': os.environ['ALLOWED_TELEGRAM_USER_IDS'].split(',')
+        'token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'allowed_user_ids': os.environ['ALLOWED_TELEGRAM_USER_IDS'].split(',')
     }
 
     gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=True)

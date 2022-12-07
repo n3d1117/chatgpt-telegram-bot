@@ -81,10 +81,10 @@ class ChatGPT3TelegramBot:
         logging.debug(f'Exception while handling an update: {context.error}')
 
     def is_allowed(self, update: Update) -> bool:
-        return str(update.message.from_user.id) in self.config['allowed_chats']
+        return str(update.message.from_user.id) in self.config['allowed_user_ids']
 
     def run(self):
-        application = ApplicationBuilder().token(self.config['telegram_bot_token']).build()
+        application = ApplicationBuilder().token(self.config['token']).build()
 
         application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('reset', self.reset))
