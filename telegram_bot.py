@@ -15,13 +15,14 @@ class ChatGPT3TelegramBot:
     # Help menu
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("/start - Start the bot\n/reset - Reset conversation\n/help - Help menu\n\n"
-                                        "Open source at https://github.com/n3d1117/chatgpt-telegram-bot")
+                                        "Open source at https://github.com/n3d1117/chatgpt-telegram-bot",
+                                        disable_web_page_preview=True)
 
     # Start the bot
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
             return
 
         logging.info('Bot started')
@@ -31,7 +32,7 @@ class ChatGPT3TelegramBot:
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
             return
 
         logging.info('Resetting the conversation...')
@@ -42,7 +43,7 @@ class ChatGPT3TelegramBot:
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=self.disallowed_message, disable_web_page_preview=True)
             return
 
         logging.info(f'New message received from user {update.message.from_user.name}')
