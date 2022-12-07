@@ -33,6 +33,17 @@ pipenv install
 pipenv shell
 ```
 
+### Using Docker Image
+
+```bash
+# let's say we place a .env file in /root/docker-chatgpt/
+docker run -it --rm -v "/root/docker-chatgpt/.env:/home/appuser/app/.env" chatgpt-telegram-bot:latest
+# or we can do this if pwd is /root/docker-chatgpt/
+docker run -it --rm -v "${PWD}/.env:/home/appuser/app/.env" chatgpt-telegram-bot:latest
+
+```
+
+
 ### Configuration
 Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the settings as desired.
 ```
