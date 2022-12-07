@@ -14,7 +14,10 @@ class ChatGPT3TelegramBot:
 
     # Help menu
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        await update.message.reply_text("/start - Start the bot\n/reset - Reset conversation\n/help - Help menu\n\n"
+        await update.message.reply_text("/start - Start the bot\n"
+                                        "/reset - Reset conversation\n"
+                                        "/refresh - Refresh session\n"
+                                        "/help - Help menu\n\n"
                                         "Open source at https://github.com/n3d1117/chatgpt-telegram-bot",
                                         disable_web_page_preview=True)
 
