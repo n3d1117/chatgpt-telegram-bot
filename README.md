@@ -39,7 +39,7 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 OPENAI_EMAIL="<YOUR_OPENAI_EMAIL>"
 OPENAI_PASSWORD="<YOUR_OPENAI_PASSWORD>"
 TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
-ALLOWED_TELEGRAM_USER_IDS="<CHAT_ID_1>,<CHAT_ID_2>,..."
+ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..."
 ```
 You'll need to provide:
 1. Your OpenAI credentials (these are only sent to the OpenAI server to periodically refresh the access token and never shared). You can read more about it [here](https://github.com/acheong08/ChatGPT)
