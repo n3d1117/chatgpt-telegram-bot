@@ -1,27 +1,40 @@
 import logging
 
 import telegram.constants
+from revChatGPT.revChatGPT import Chatbot
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
 
 class ChatGPT3TelegramBot:
-    def __init__(self, config, gpt3_bot):
+    """
+    Class representing a Chat-GPT3 Telegram Bot.
+    """
+    def __init__(self, config: dict, gpt3_bot: Chatbot):
+        """
+        Initializes the bot with the given configuration and GPT-3 bot object.
+        :param config: A dictionary containing the bot configuration
+        :param gpt3_bot: The GPT-3 bot object
+        """
         self.config = config
         self.gpt3_bot = gpt3_bot
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
 
-    # Help menu
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Shows the help menu.
+        """
         await update.message.reply_text("/start - Start the bot\n"
                                         "/reset - Reset conversation\n"
                                         "/help - Help menu\n\n"
                                         "Open source at https://github.com/n3d1117/chatgpt-telegram-bot",
                                         disable_web_page_preview=True)
 
-    # Start the bot
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Handles the /start command.
+        """
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
             await self.send_disallowed_message(update, context)
@@ -30,8 +43,10 @@ class ChatGPT3TelegramBot:
         logging.info('Bot started')
         await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a Chat-GPT3 Bot, please talk to me!")
 
-    # Reset the conversation
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Resets the conversation.
+        """
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
             await self.send_disallowed_message(update, context)
@@ -41,8 +56,10 @@ class ChatGPT3TelegramBot:
         self.gpt3_bot.reset_chat()
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
 
-    # React to messages
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        React to incoming messages and respond accordingly.
+        """
         if not self.is_allowed(update):
             logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
@@ -59,6 +76,9 @@ class ChatGPT3TelegramBot:
         )
 
     def get_chatgpt_response(self, message) -> dict:
+        """
+        Gets the response from the ChatGPT APIs.
+        """
         try:
             response = self.gpt3_bot.get_chat_response(message)
             return response
@@ -67,6 +87,9 @@ class ChatGPT3TelegramBot:
             return {"message": "I'm having some trouble talking to you, please try again later."}
 
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Sends the disallowed message to the user.
+        """
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=self.disallowed_message,
@@ -75,11 +98,20 @@ class ChatGPT3TelegramBot:
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.debug(f'Exception while handling an update: {context.error}')
+        """
+        Handles errors in the telegram-python-bot library.
+        """
 
     def is_allowed(self, update: Update) -> bool:
+        """
+        Checks if the user is allowed to use the bot.
+        """
         return str(update.message.from_user.id) in self.config['allowed_user_ids']
 
     def run(self):
+        """
+        Runs the bot indefinitely until the user presses Ctrl+C
+        """
         application = ApplicationBuilder().token(self.config['token']).build()
 
         application.add_handler(CommandHandler('start', self.start))
