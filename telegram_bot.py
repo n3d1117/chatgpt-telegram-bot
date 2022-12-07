@@ -97,10 +97,10 @@ class ChatGPT3TelegramBot:
         )
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        logging.debug(f'Exception while handling an update: {context.error}')
         """
         Handles errors in the telegram-python-bot library.
         """
+        logging.debug(f'Exception while handling an update: {context.error}')
 
     def is_allowed(self, update: Update) -> bool:
         """
