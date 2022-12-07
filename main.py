@@ -23,7 +23,7 @@ def main():
         'allowed_chats': os.environ['ALLOWED_TELEGRAM_CHAT_IDS'].split(',')
     }
 
-    gpt3_bot = ChatGPT3Bot(config=chatgpt_config)
+    gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=True)
     telegram_bot = ChatGPT3TelegramBot(config=telegram_config, gpt3_bot=gpt3_bot)
     telegram_bot.run()
 
