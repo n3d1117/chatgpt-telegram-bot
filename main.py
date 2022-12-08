@@ -21,6 +21,7 @@ def main():
     chatgpt_config = {
         'email': os.environ['OPENAI_EMAIL'],
         'password': os.environ['OPENAI_PASSWORD'],
+        'proxy': os.environ.get('PROXY', ''),
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],

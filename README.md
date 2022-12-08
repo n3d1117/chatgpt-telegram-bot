@@ -46,9 +46,11 @@ TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
 Additional optional (but recommended) configuration values:
 ```bash
 ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*"
-DEBUG=false # Defaults to TRUE, set to FALSE to disable debug mode
+PROXY="<HTTP/HTTPS_PROXY>" # E.g. "http://localhost:8080", defaults to none
+DEBUG=false # Defaults to true
 ```
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
+* `PROXY`: Proxy to be used when authenticating with OpenAI
 * `DEBUG`: Enable debug logging for the [revChatGpt](https://github.com/acheong08/ChatGPT) package
 
 ### Run
