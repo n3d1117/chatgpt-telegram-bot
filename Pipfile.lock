@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d2a63e359a3cf92ea16df827f4afbaa9eb29734f79acdabce91e9e93646d78b8"
+            "sha256": "cc62e45ff66895b1131b42057b42909db4cd9e5dd52c3dab17792ddc954c52be"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -97,10 +97,10 @@
         },
         "openaiauth": {
             "hashes": [
-                "sha256:49eaff0e4a7884a9735e6d280f3e743522516ef66a86e015c2b0769c9921722f",
-                "sha256:4e89c8d6657f14589e8bcf97f399ef69c1ed9a951b20f72e90aba3ff3bd64cb0"
+                "sha256:55f6123c2e0893bc00ea4d99410443c45cdeab63841d75b7d64f73d86516a95e",
+                "sha256:cdb2569217b95bbb5ad1b31f6e0d1d99e0d3d51c62afe9a997c3d4dcfede2958"
             ],
-            "version": "==0.0.3.1"
+            "version": "==0.0.4"
         },
         "python-dotenv": {
             "hashes": [
@@ -128,11 +128,11 @@
         },
         "revchatgpt": {
             "hashes": [
-                "sha256:18d8910a0448a9427485cea0d0788ccb13b10ecabcd6945ffc4329bc40f9859b",
-                "sha256:748f8c1bf6e1c4d9517edc7422c1eaf460240a8060d9ddfec4eb754d5c195946"
+                "sha256:d5556c5f751dbff560aa5fb14f0a08d4c51ebb79370cb9cd432c10b8fcd80590",
+                "sha256:e4bfd85e86b4953282719c25fe02fd552816c69a2759337a42c32540644c6835"
             ],
             "index": "pypi",
-            "version": "==0.0.33"
+            "version": "==0.0.33.3"
         },
         "rfc3986": {
             "extras": [
