@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import telegram.constants as constants
@@ -56,6 +57,14 @@ class ChatGPT3TelegramBot:
         self.gpt3_bot.reset_chat()
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Done!")
 
+    async def send_typing_periodically(self, update: Update, context: ContextTypes.DEFAULT_TYPE, every_seconds):
+        """
+        Sends the typing action periodically to the chat
+        """
+        while True:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
+            await asyncio.sleep(every_seconds)
+
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         React to incoming messages and respond accordingly.
@@ -66,12 +75,18 @@ class ChatGPT3TelegramBot:
             return
 
         logging.info(f'New message received from user {update.message.from_user.name}')
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
+
+        # Send "Typing..." action periodically every 4 seconds until the response is received
+        typing_task = asyncio.get_event_loop().create_task(
+            self.send_typing_periodically(update, context, every_seconds=4)
+        )
         response = await self.get_chatgpt_response(update.message.text)
+        typing_task.cancel()
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             reply_to_message_id=update.message.message_id,
-            text=response["message"],
+            text=response['message'],
             parse_mode=constants.ParseMode.MARKDOWN
         )
 
