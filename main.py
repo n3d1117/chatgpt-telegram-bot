@@ -14,13 +14,17 @@ def main():
         level=logging.INFO
     )
 
+    if 'TELEGRAM_BOT_TOKEN' not in os.environ:
+        logging.error('Telegram bot token not found in environment variables')
+        exit(1)
+
     chatgpt_config = {
         'email': os.environ['OPENAI_EMAIL'],
         'password': os.environ['OPENAI_PASSWORD'],
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'allowed_user_ids': os.environ['ALLOWED_TELEGRAM_USER_IDS'].split(',')
+        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
     }
 
     gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=True)

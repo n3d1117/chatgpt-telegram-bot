@@ -83,7 +83,7 @@ class ChatGPT3TelegramBot:
             response = await self.gpt3_bot.get_chat_response(message)
             return response
         except Exception as e:
-            logging.info(f'Error while getting the response: {e}')
+            logging.info(f'Error while getting the response: {str(e)}')
             return {"message": "I'm having some trouble talking to you, please try again later."}
 
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -106,7 +106,9 @@ class ChatGPT3TelegramBot:
         """
         Checks if the user is allowed to use the bot.
         """
-        return str(update.message.from_user.id) in self.config['allowed_user_ids']
+        if self.config['allowed_user_ids'] == '*':
+            return True
+        return str(update.message.from_user.id) in self.config['allowed_user_ids'].split(',')
 
     def run(self):
         """
