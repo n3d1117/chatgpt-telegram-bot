@@ -1,6 +1,6 @@
 import logging
 
-import telegram.constants
+import telegram.constants as constants
 from asyncChatGPT.asyncChatGPT import Chatbot as ChatGPT3Bot
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
@@ -66,13 +66,13 @@ class ChatGPT3TelegramBot:
             return
 
         logging.info(f'New message received from user {update.message.from_user.name}')
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=telegram.constants.ChatAction.TYPING)
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
         response = await self.get_chatgpt_response(update.message.text)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             reply_to_message_id=update.message.message_id,
             text=response["message"],
-            parse_mode=telegram.constants.ParseMode.MARKDOWN
+            parse_mode=constants.ParseMode.MARKDOWN
         )
 
     async def get_chatgpt_response(self, message) -> dict:
