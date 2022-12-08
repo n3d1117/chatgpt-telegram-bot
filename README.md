@@ -35,7 +35,7 @@ pipenv shell
 
 ### Configuration
 Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the settings as desired:
-```
+```bash
 OPENAI_EMAIL="<YOUR_OPENAI_EMAIL>"
 OPENAI_PASSWORD="<YOUR_OPENAI_PASSWORD>"
 TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
@@ -44,7 +44,7 @@ TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 
 Additional optional (but recommended) configuration values:
-```
+```bash
 ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*"
 DEBUG=false # Defaults to TRUE, set to FALSE to disable debug mode
 ```
