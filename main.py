@@ -26,8 +26,9 @@ def main():
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
     }
+    debug = os.environ.get('DEBUG', 'true').lower() == 'true'
 
-    gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=True)
+    gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=debug)
     telegram_bot = ChatGPT3TelegramBot(config=telegram_config, gpt3_bot=gpt3_bot)
     telegram_bot.run()
 
