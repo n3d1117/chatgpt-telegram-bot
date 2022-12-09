@@ -123,22 +123,28 @@ class ChatGPT3TelegramBot:
         """
         Checks if the user is allowed to use the bot.
         """
+        chat_type = update.message.chat.type
         if (
             self.config["allowed_user_ids"] == "*"
-            and update.message.chat.type == constants.ChatType.PRIVATE
+            and chat_type == constants.ChatType.PRIVATE
         ):
             return True
         if (
             self.config["allowed_chat_ids"] == "*"
-            and update.message.chat.type == constants.ChatType.GROUP
+            and chat_type == constants.ChatType.GROUP
         ):
             return True
 
-        return (
+        is_allow_user = (
             str(update.message.from_user.id)
-            in self.config["allowed_user_ids"].split(",") | str(update.message.chat.id)
-            in self.config["allowed_chat_ids"].split(",")
-        )
+            in self.config["allowed_user_ids"].split(",")
+        ) and chat_type == constants.ChatType.PRIVATE
+
+        is_allow_group = (
+            str(update.message.chat.id) in self.config["allowed_chat_ids"].split(",")
+        ) and chat_type == constants.ChatType.GROUP
+
+        return is_allow_group | is_allow_user
 
     def run(self):
         """
