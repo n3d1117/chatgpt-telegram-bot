@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "22905302a723713ab9e429efd88e6a6cc3fc1d6a0bff4e7452b8d1da1a32e3d3"
+            "sha256": "a2a280a765a60149cfb7ba492c5d33d52b59621506030532505a330f21d9c89b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -128,11 +128,11 @@
         },
         "revchatgpt": {
             "hashes": [
-                "sha256:811a3b4532a72d7575c2fb10e73ba12c0c9160d91ae761f0d059840dcaf5b820",
-                "sha256:8565477c4b78cbd666c48ea817567bb7f5ddf56c667719156e17e5a9fe58b889"
+                "sha256:9634751f622fce2550d2b16a4ce45d97fe827f7593a2989d79b5e125804985fc",
+                "sha256:f6be496e04b413902d43f00b77e57a79983356aba6acaca83d608f519944c8dc"
             ],
             "index": "pypi",
-            "version": "==0.0.33.4"
+            "version": "==0.0.33.5"
         },
         "rfc3986": {
             "extras": [
