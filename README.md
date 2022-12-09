@@ -14,7 +14,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Can reset conversation thread with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] Docker support
+- [x] Docker support (by [@slippersheepig](https://github.com/slippersheepig))
 
 ## Additional Features - help needed!
 - [ ] Multi-chat support
@@ -54,7 +54,7 @@ pipenv install
 pipenv shell
 ```
 
-#### Docker Compose
+#### Using Docker Compose
 
 ```bash
 wget https://raw.githubusercontent.com/n3d1117/chatgpt-telegram-bot/main/docker-compose.yml
