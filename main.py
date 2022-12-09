@@ -30,8 +30,9 @@ def main():
         'proxy': os.environ.get('PROXY', ''),
     }
     telegram_config = {
-        'token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
+        "token": os.environ["TELEGRAM_BOT_TOKEN"],
+        "allowed_user_ids": os.environ.get("ALLOWED_TELEGRAM_USER_IDS", "*"),
+        "allowed_chat_ids": os.environ.get("ALLOWED_TELEGRAM_CHAT_IDS", "*"),
     }
     debug = os.environ.get('DEBUG', 'true').lower() == 'true'
 

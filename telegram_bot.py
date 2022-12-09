@@ -70,7 +70,9 @@ class ChatGPT3TelegramBot:
         React to incoming messages and respond accordingly.
         """
         if not self.is_allowed(update):
-            logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
+            logging.info(
+                f"User {update.message.from_user.name} {update.message.from_user.id} from chat {update.message.chat.id}, {update.message.chat.title} is not allowed to use the bot"
+            )
             await self.send_disallowed_message(update, context)
             return
 
@@ -121,20 +123,35 @@ class ChatGPT3TelegramBot:
         """
         Checks if the user is allowed to use the bot.
         """
-        if self.config['allowed_user_ids'] == '*':
+        if (
+            self.config["allowed_user_ids"] == "*"
+            and update.message.chat.type == constants.ChatType.PRIVATE
+        ):
             return True
-        return str(update.message.from_user.id) in self.config['allowed_user_ids'].split(',')
+        if (
+            self.config["allowed_chat_ids"] == "*"
+            and update.message.chat.type == constants.ChatType.GROUP
+        ):
+            return True
+
+        return (
+            str(update.message.from_user.id)
+            in self.config["allowed_user_ids"].split(",") | str(update.message.chat.id)
+            in self.config["allowed_chat_ids"].split(",")
+        )
 
     def run(self):
         """
         Runs the bot indefinitely until the user presses Ctrl+C
         """
-        application = ApplicationBuilder().token(self.config['token']).build()
+        application = ApplicationBuilder().token(self.config["token"]).build()
 
-        application.add_handler(CommandHandler('start', self.start))
-        application.add_handler(CommandHandler('reset', self.reset))
-        application.add_handler(CommandHandler('help', self.help))
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(CommandHandler("start", self.start))
+        application.add_handler(CommandHandler("reset", self.reset))
+        application.add_handler(CommandHandler("help", self.help))
+        application.add_handler(
+            MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt)
+        )
         application.add_handler(
             MessageHandler(
                 (filters.TEXT | filters.REPLY) & (~filters.COMMAND), self.prompt
