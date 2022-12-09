@@ -1,0 +1,7 @@
+version: '3'
+services:
+  chatgpt:
+    image: sheepgreen/chatgpt
+    volumes:
+      - ./.env:/home/appuser/app/.env
+    restart: always

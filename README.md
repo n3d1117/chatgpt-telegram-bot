@@ -14,14 +14,13 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Can reset conversation thread with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
+- [x] Docker support
 
 ## Additional Features - help needed!
 - [ ] Multi-chat support
   - Idea: cache different instances of `ChatGPT3Bot`, one for every chat id (maybe even persist them), so that every user has their own private conversation
 - [ ] Support group chats
   - Allow the bot to be used in group chats with specific commands
-- [ ] Docker support
-  - With `Dockerfile` and `docker-compose.yml`. See [pull/2](https://github.com/n3d1117/chatgpt-telegram-bot/pull/2) for a start
 - [ ] Advanced commands
   - With premade ad-hoc prompts
 - [ ] Token based authentication 
@@ -37,6 +36,7 @@ PRs are always welcome!
 ## Getting started
 
 ### Installing
+#### From Source
 1. Clone the repository and navigate to the project directory:
 
 ```bash
@@ -52,6 +52,13 @@ pipenv install
 3. Activate the virtual environment:
 ```
 pipenv shell
+```
+
+#### Docker Compose
+
+```bash
+wget https://raw.githubusercontent.com/n3d1117/chatgpt-telegram-bot/main/docker-compose.yml
+docker-compose up -d
 ```
 
 ### Configuration
