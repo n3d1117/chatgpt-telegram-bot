@@ -137,7 +137,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(
             MessageHandler(
-                (filters.TEXT | filters.REPLAY) & (~filters.COMMAND), self.prompt
+                (filters.TEXT | filters.REPLY) & (~filters.COMMAND), self.prompt
             )
         )
 
