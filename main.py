@@ -26,13 +26,16 @@ def main():
     # Setup configuration
     chatgpt_config = {
         'email': os.environ['OPENAI_EMAIL'],
-        'password': os.environ['OPENAI_PASSWORD'],
-        'proxy': os.environ.get('PROXY', ''),
+        'password': os.environ['OPENAI_PASSWORD']
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
     }
+
+    if os.environ.get('PROXY', None) is not None:
+        chatgpt_config.update({'proxy': os.environ.get('PROXY')})
+
     debug = os.environ.get('DEBUG', 'true').lower() == 'true'
 
     # Setup and run ChatGPT and Telegram bot
