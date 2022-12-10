@@ -14,7 +14,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Can reset conversation thread with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] Docker support (by [@slippersheepig](https://github.com/slippersheepig))
+- [x] Docker support
 
 ## Additional Features - help needed!
 - [ ] Multi-chat support
@@ -34,32 +34,6 @@ PRs are always welcome!
 - An [OpenAI](https://openai.com) account (see [configuration](#configuration) section)
 
 ## Getting started
-
-### Installing
-#### From Source
-1. Clone the repository and navigate to the project directory:
-
-```bash
-git clone https://github.com/n3d1117/chatgpt-telegram-bot.git
-cd chatgpt-telegram-bot
-```
-
-2. Create a new virtual environment with Pipenv and install the required dependencies:
-```
-pipenv install
-```
-
-3. Activate the virtual environment:
-```
-pipenv shell
-```
-
-#### Using Docker Compose
-
-```bash
-wget https://raw.githubusercontent.com/n3d1117/chatgpt-telegram-bot/main/docker-compose.yml
-docker-compose up -d
-```
 
 ### Configuration
 Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the settings as desired:
@@ -81,10 +55,35 @@ DEBUG=false # Defaults to true
 * `PROXY`: Proxy to be used when authenticating with OpenAI
 * `DEBUG`: Enable debug logging for the [revChatGpt](https://github.com/acheong08/ChatGPT) package
 
-### Run
-Use the following command to start the bot:
+### Installing
+1. Clone the repository and navigate to the project directory:
+
+```bash
+git clone https://github.com/n3d1117/chatgpt-telegram-bot.git
+cd chatgpt-telegram-bot
+```
+
+#### From Source
+2. Create a new virtual environment with Pipenv and install the required dependencies:
+```
+pipenv install
+```
+
+3. Activate the virtual environment:
+```
+pipenv shell
+```
+
+4. Use the following command to start the bot:
 ```
 python main.py
+```
+
+#### Using Docker Compose
+
+2. Run the following command to build and run the Docker image:
+```bash
+docker-compose up
 ```
 
 ## Credits
