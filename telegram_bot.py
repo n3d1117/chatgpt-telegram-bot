@@ -2,9 +2,34 @@ import asyncio
 import logging
 
 import telegram.constants as constants
+import uuid
 from asyncChatGPT.asyncChatGPT import Chatbot as ChatGPT3Bot
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+from expiringdict import ExpiringDict
+
+MAX_SESSION_NUM = 1000
+MAX_AGE_SECONDS = 1800
+# Cache all conv id
+# user => (conversation_id, previous_convo_id)
+prev_conv_id_cache = ExpiringDict(
+    max_len=MAX_SESSION_NUM, max_age_seconds=MAX_AGE_SECONDS
+)
+
+
+def generate_uuid():
+    return str(uuid.uuid4())
+
+
+def get_prev_conv_id(user):
+    if user not in prev_conv_id_cache:
+        prev_conv_id_cache[user] = (None, generate_uuid())
+    conversation_id, prev_conv_id = prev_conv_id_cache[user]
+    return conversation_id, prev_conv_id
+
+
+def set_prev_conv_id(user, conversation_id, prev_conv_id):
+    prev_conv_id_cache[user] = (conversation_id, prev_conv_id)
 
 
 class ChatGPT3TelegramBot:
@@ -69,35 +94,47 @@ class ChatGPT3TelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
+        from_user = update.message.from_user
+        from_chat = update.message.chat
         if not self.is_allowed(update):
             logging.info(
-                f"User {update.message.from_user.name} {update.message.from_user.id} from chat {update.message.chat.id}, {update.message.chat.title} is not allowed to use the bot"
+                f"User {from_user.name} {from_user.id} from chat {from_chat.id}, {from_chat.title} is not allowed to use the bot"
             )
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'New message received from user {update.message.from_user.name}')
+        logging.info(f"New message received from user {from_user.name}")
 
         # Send "Typing..." action periodically every 4 seconds until the response is received
         typing_task = asyncio.get_event_loop().create_task(
             self.send_typing_periodically(update, context, every_seconds=4)
         )
-        response = await self.get_chatgpt_response(update.message.text)
+        response = await self.get_chatgpt_response(update.message.text, from_user)
         typing_task.cancel()
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             reply_to_message_id=update.message.message_id,
-            text=response['message'],
-            parse_mode=constants.ParseMode.MARKDOWN
+            text=response["message"],
+            parse_mode=constants.ParseMode.MARKDOWN,
         )
 
-    async def get_chatgpt_response(self, message) -> dict:
+    async def get_chatgpt_response(self, message, from_user) -> dict:
         """
         Gets the response from the ChatGPT APIs.
         """
         try:
+            conversation_id, prev_conv_id = get_prev_conv_id(from_user.id)
+
+            self.gpt3_bot.parent_id = prev_conv_id
+            self.gpt3_bot.conversation_id = conversation_id
+
             response = await self.gpt3_bot.get_chat_response(message)
+
+            set_prev_conv_id(
+                from_user.id, response["conversation_id"], response["parent_id"]
+            )
+
             return response
         except Exception as e:
             logging.info(f'Error while getting the response: {str(e)}')
@@ -142,7 +179,7 @@ class ChatGPT3TelegramBot:
 
         is_allow_group = (
             str(update.message.chat.id) in self.config["allowed_chat_ids"].split(",")
-        ) and chat_type == constants.ChatType.GROUP
+        ) and chat_type in [constants.ChatType.GROUP, constants.ChatType.SUPERGROUP]
 
         return is_allow_group | is_allow_user
 
