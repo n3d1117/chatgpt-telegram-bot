@@ -1,7 +1,10 @@
 version: '3'
 services:
-  chatgpt:
-    image: sheepgreen/chatgpt
+  chatgpt-telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
-      - ./.env:/home/appuser/app/.env
+      - .:/home/appuser/app
+      - .env:/home/appuser/app/.env
     restart: always
