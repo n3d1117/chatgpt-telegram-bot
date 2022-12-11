@@ -95,12 +95,6 @@ class ChatGPT3TelegramBot:
                     try:
                         if initial_message is not None and chunk_text != initial_message.text:
                             await initial_message.edit_text(chunk_text)
-                    except RetryAfter as e:
-                        logging.info(f'Rate limit exceeded, retrying in {e.retry_after} seconds')
-                        await asyncio.sleep(e.retry_after)
-                    except BadRequest:
-                        # Failed to edit message (new=current), ignoring...
-                        pass
                     except Exception as e:
                         logging.info(f'Error while editing the message: {str(e)}')
 
