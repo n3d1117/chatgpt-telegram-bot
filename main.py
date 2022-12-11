@@ -2,7 +2,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from asyncChatGPT.asyncChatGPT import Chatbot as ChatGPT3Bot
+from revChatGPT.revChatGPT import AsyncChatbot as ChatGPT3Bot
+
 from telegram_bot import ChatGPT3TelegramBot
 
 

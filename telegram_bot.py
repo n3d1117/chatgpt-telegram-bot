@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import telegram.constants as constants
-from revChatGPT.revChatGPT import asyncChatBot as ChatGPT3Bot
+from revChatGPT.revChatGPT import AsyncChatbot as ChatGPT3Bot
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
@@ -38,8 +38,7 @@ class ChatGPT3TelegramBot:
         Handles the /start command.
         """
         if not self.is_allowed(update):
-            logging.info(
-                f'User {update.message.from_user.name} is not allowed to start the bot')
+            logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
             await self.send_disallowed_message(update, context)
             return
 
@@ -51,8 +50,7 @@ class ChatGPT3TelegramBot:
         Resets the conversation.
         """
         if not self.is_allowed(update):
-            logging.info(
-                f'User {update.message.from_user.name} is not allowed to reset the bot')
+            logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
             await self.send_disallowed_message(update, context)
             return
 
@@ -73,13 +71,11 @@ class ChatGPT3TelegramBot:
         React to incoming messages and respond accordingly.
         """
         if not self.is_allowed(update):
-            logging.info(
-                f'User {update.message.from_user.name} is not allowed to use the bot')
+            logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(
-            f'New message received from user {update.message.from_user.name}')
+        logging.info(f'New message received from user {update.message.from_user.name}')
 
         # Send "Typing..." action periodically every 4 seconds until the response is received
         typing_task = asyncio.get_event_loop().create_task(
