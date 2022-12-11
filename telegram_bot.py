@@ -121,6 +121,7 @@ class ChatGPT3TelegramBot:
                 chunk_index, chunk_text = (chunk_index + 1, chunk['message'])
 
             message_update_task.cancel()
+            await asyncio.sleep(0)
 
             # Final edit, including Markdown formatting
             await initial_message.edit_text(chunk_text, parse_mode=constants.ParseMode.MARKDOWN)
