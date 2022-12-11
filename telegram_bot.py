@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import telegram.constants as constants
-from asyncChatGPT.asyncChatGPT import Chatbot as ChatGPT3Bot
+from revChatGPT.revChatGPT import asyncChatBot as ChatGPT3Bot
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
@@ -11,6 +11,7 @@ class ChatGPT3TelegramBot:
     """
     Class representing a Chat-GPT3 Telegram Bot.
     """
+
     def __init__(self, config: dict, gpt3_bot: ChatGPT3Bot):
         """
         Initializes the bot with the given configuration and GPT-3 bot object.
@@ -37,7 +38,8 @@ class ChatGPT3TelegramBot:
         Handles the /start command.
         """
         if not self.is_allowed(update):
-            logging.info(f'User {update.message.from_user.name} is not allowed to start the bot')
+            logging.info(
+                f'User {update.message.from_user.name} is not allowed to start the bot')
             await self.send_disallowed_message(update, context)
             return
 
@@ -49,7 +51,8 @@ class ChatGPT3TelegramBot:
         Resets the conversation.
         """
         if not self.is_allowed(update):
-            logging.info(f'User {update.message.from_user.name} is not allowed to reset the bot')
+            logging.info(
+                f'User {update.message.from_user.name} is not allowed to reset the bot')
             await self.send_disallowed_message(update, context)
             return
 
@@ -70,11 +73,13 @@ class ChatGPT3TelegramBot:
         React to incoming messages and respond accordingly.
         """
         if not self.is_allowed(update):
-            logging.info(f'User {update.message.from_user.name} is not allowed to use the bot')
+            logging.info(
+                f'User {update.message.from_user.name} is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'New message received from user {update.message.from_user.name}')
+        logging.info(
+            f'New message received from user {update.message.from_user.name}')
 
         # Send "Typing..." action periodically every 4 seconds until the response is received
         typing_task = asyncio.get_event_loop().create_task(
@@ -134,7 +139,8 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(MessageHandler(
+            filters.TEXT & (~filters.COMMAND), self.prompt))
 
         application.add_error_handler(self.error_handler)
 
