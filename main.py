@@ -31,7 +31,8 @@ def main():
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
+        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
+        'use_stream': os.environ.get('USE_STREAM', 'true').lower() == 'true'
     }
 
     if os.environ.get('PROXY', None) is not None:

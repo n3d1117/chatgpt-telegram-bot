@@ -14,12 +14,14 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Can reset conversation thread with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] Docker support
+- [x] (NEW!) Docker support
+- [x] (NEW!) Live answer updating as the bot types
+
 
 ## Additional Features - help needed!
-- [ ] Multi-chat support
+- [ ] Multi-chat support (ongoing, see [pull/22](https://github.com/n3d1117/chatgpt-telegram-bot/pull/22))
   - Idea: cache different instances of `ChatGPT3Bot`, one for every chat id (maybe even persist them), so that every user has their own private conversation
-- [ ] Support group chats
+- [ ] Support group chats (ongoing, see [pull/17](https://github.com/n3d1117/chatgpt-telegram-bot/pull/17))
   - Allow the bot to be used in group chats with specific commands
 - [ ] Advanced commands
   - With premade ad-hoc prompts
@@ -49,10 +51,12 @@ Additional optional (but recommended) configuration values:
 ```bash
 ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*"
 PROXY="<HTTP/HTTPS_PROXY>" # E.g. "http://localhost:8080", defaults to none
+USE_STREAM=false # Defaults to true
 DEBUG=false # Defaults to true
 ```
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
 * `PROXY`: Proxy to be used when authenticating with OpenAI
+* `USE_STREAM`: Streams the response as the bot types. Set to `false` to only answer once the response is fully generated
 * `DEBUG`: Enable debug logging for the [revChatGpt](https://github.com/acheong08/ChatGPT) package
 
 ### Installing
