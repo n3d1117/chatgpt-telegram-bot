@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import telegram.constants as constants
+from httpx import HTTPError
 from revChatGPT.revChatGPT import AsyncChatbot as ChatGPT3Bot
 from telegram import Update, Message
 from telegram.error import RetryAfter, BadRequest
@@ -95,6 +96,9 @@ class ChatGPT3TelegramBot:
                     try:
                         if initial_message is not None and chunk_text != initial_message.text:
                             await initial_message.edit_text(chunk_text)
+                    except (BadRequest, HTTPError, RetryAfter):
+                        # Ignore common errors while editing the message
+                        pass
                     except Exception as e:
                         logging.info(f'Error while editing the message: {str(e)}')
 
