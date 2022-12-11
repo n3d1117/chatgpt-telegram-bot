@@ -8,6 +8,7 @@ requests = "*"
 python-telegram-bot = "==20.0a6"
 revchatgpt = "==0.0.35"
 python-dotenv = "*"
+expiringdict = "*"
 
 [dev-packages]
 
