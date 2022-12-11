@@ -29,8 +29,9 @@ def main():
         'password': os.environ['OPENAI_PASSWORD']
     }
     telegram_config = {
-        'token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*')
+        "token": os.environ["TELEGRAM_BOT_TOKEN"],
+        "allowed_user_ids": os.environ.get("ALLOWED_TELEGRAM_USER_IDS", "*"),
+        "allowed_chat_ids": os.environ.get("ALLOWED_TELEGRAM_CHAT_IDS", "*"),
     }
 
     if os.environ.get('PROXY', None) is not None:
