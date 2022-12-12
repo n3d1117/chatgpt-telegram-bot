@@ -121,7 +121,6 @@ class ChatGPT3TelegramBot:
                 chunk_index, chunk_text = (chunk_index + 1, chunk['message'])
 
             message_update_task.cancel()
-            await asyncio.sleep(0)
 
             # Final edit, including Markdown formatting
             await initial_message.edit_text(chunk_text, parse_mode=constants.ParseMode.MARKDOWN)
@@ -178,11 +177,10 @@ class ChatGPT3TelegramBot:
         """
         application = ApplicationBuilder().token(self.config['token']).build()
 
-        application.add_handler(CommandHandler('start', self.start))
-        application.add_handler(CommandHandler('reset', self.reset))
-        application.add_handler(CommandHandler('help', self.help))
-        application.add_handler(MessageHandler(
-            filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(CommandHandler('start', self.start, block=False))
+        application.add_handler(CommandHandler('reset', self.reset, block=False))
+        application.add_handler(CommandHandler('help', self.help, block=False))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt, block=False))
 
         application.add_error_handler(self.error_handler)
 

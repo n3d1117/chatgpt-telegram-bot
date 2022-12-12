@@ -1,6 +1,9 @@
+> **Warning**
+> No longer works as of December 12th due to Cloudflare protections (see [#261](https://github.com/acheong08/ChatGPT/issues/261))
+
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.10-blue.svg)
-[![revChatGPT-version](https://img.shields.io/badge/revChatGPT-0.0.38.1-green.svg)](https://github.com/acheong08/ChatGPT)
+[![revChatGPT-version](https://img.shields.io/badge/revChatGPT-0.0.38.8-green.svg)](https://github.com/acheong08/ChatGPT)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's [ChatGPT](https://openai.com/blog/chatgpt/) to provide answers. Ready to use with minimal configuration required. Based on [acheong08/ChatGPT](https://github.com/acheong08/ChatGPT)
@@ -25,8 +28,6 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - Allow the bot to be used in group chats with specific commands
 - [ ] Advanced commands
   - With premade ad-hoc prompts
-- [ ] Token based authentication 
-  - As an alternative to email/password authentication for those who signed up with other services (Google/Microsoft) or for those who get a `Captcha detected` error, see [#13](https://github.com/n3d1117/chatgpt-telegram-bot/issues/13)
 
 PRs are always welcome!
 
