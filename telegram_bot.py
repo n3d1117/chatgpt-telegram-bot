@@ -50,7 +50,7 @@ class ChatGPT3TelegramBot:
             self.send_typing_periodically(update, context, every_seconds=4)
         )
 
-        response = await self.get_chatgpt_response(update.message.text, chat_id=update.effective_chat.id)
+        response = await self.get_chatgpt_response(update.message.text, chat_id=str(update.effective_chat.id))
         typing_task.cancel()
 
         await context.bot.send_message(
