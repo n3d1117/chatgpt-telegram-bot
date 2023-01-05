@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 requests = "*"
-python-telegram-bot = "==20.0a6"
-revchatgpt = "==0.0.38.8"
+python-telegram-bot = "==20.0"
+chatgpt-lite = "==0.0.4"
 python-dotenv = "*"
 
 [dev-packages]

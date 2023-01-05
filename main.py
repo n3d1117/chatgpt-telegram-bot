@@ -2,7 +2,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from revChatGPT.revChatGPT import AsyncChatbot as ChatGPT3Bot
+from ChatGPT_lite.ChatGPT import Chatbot as ChatGPT3Bot
 
 from telegram_bot import ChatGPT3TelegramBot
 
@@ -18,7 +18,7 @@ def main():
     )
 
     # Check if the required environment variables are set
-    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_EMAIL', 'OPENAI_PASSWORD']
+    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_SESSION_TOKEN']
     missing_values = [value for value in required_values if os.environ.get(value) is None]
     if len(missing_values) > 0:
         logging.error(f'The following environment values are missing in your .env: {", ".join(missing_values)}')
@@ -26,8 +26,7 @@ def main():
 
     # Setup configuration
     chatgpt_config = {
-        'email': os.environ['OPENAI_EMAIL'],
-        'password': os.environ['OPENAI_PASSWORD']
+        'session_token': os.environ['OPENAI_SESSION_TOKEN']
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
@@ -35,13 +34,8 @@ def main():
         'use_stream': os.environ.get('USE_STREAM', 'true').lower() == 'true'
     }
 
-    if os.environ.get('PROXY', None) is not None:
-        chatgpt_config.update({'proxy': os.environ.get('PROXY')})
-
-    debug = os.environ.get('DEBUG', 'true').lower() == 'true'
-
     # Setup and run ChatGPT and Telegram bot
-    gpt3_bot = ChatGPT3Bot(config=chatgpt_config, debug=debug)
+    gpt3_bot = ChatGPT3Bot(session_token=chatgpt_config['session_token'], bypass_node="https://gpt.pawan.krd")
     telegram_bot = ChatGPT3TelegramBot(config=telegram_config, gpt3_bot=gpt3_bot)
     telegram_bot.run()
 
