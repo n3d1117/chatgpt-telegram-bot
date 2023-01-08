@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a709477387c358cc9c8dc6f7ed66d96762e72f9b59c35f53bef1bf5708e29fa4"
+            "sha256": "b8c5d5ffaafdbb3e98ae9c906ceec34df73ef4a6d47659f95fbaa3f72ec55eb3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -59,11 +59,11 @@
         },
         "chatgpt-lite": {
             "hashes": [
-                "sha256:a85adae32b1bbb07ccbc12d1f6f89eee8a9842c8ba666e005af8d234dfd785f1",
-                "sha256:c61e4a505aadbfa26667da8090f4deb64e00f80b43dcdb0a50ad5a1b09ce574e"
+                "sha256:9ca1701107cc1ef196a280e20d3e1852c02c79055ebae48143690b8084759e84",
+                "sha256:f1941929bfd8b7bf051f48d6247c89513a0e88749d8af344231b0191c77e432a"
             ],
             "index": "pypi",
-            "version": "==0.0.4"
+            "version": "==0.0.5"
         },
         "h11": {
             "hashes": [

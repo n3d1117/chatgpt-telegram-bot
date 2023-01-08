@@ -42,7 +42,6 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
-        await asyncio.gather(self.gpt3_bot.wait_for_ready())
         logging.info(f'New message received from user {update.message.from_user.name} with chat id {update.effective_chat.id}')
 
         # Send "Typing..." action periodically every 4 seconds until the response is received
@@ -50,6 +49,7 @@ class ChatGPT3TelegramBot:
             self.send_typing_periodically(update, context, every_seconds=4)
         )
 
+        await asyncio.gather(self.gpt3_bot.wait_for_ready())
         response = await self.get_chatgpt_response(update.message.text, chat_id=str(update.effective_chat.id))
         typing_task.cancel()
 
@@ -66,6 +66,8 @@ class ChatGPT3TelegramBot:
         """
         try:
             response = await self.gpt3_bot.ask(message, id=chat_id)
+            if 'Error occurred' in response['answer']:
+                return {"answer": "I'm having some trouble talking to you, please try again later."}
             return response
         except Exception as e:
             logging.info(f'Error while getting the response: {str(e)}')
