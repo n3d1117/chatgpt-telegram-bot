@@ -1,11 +1,11 @@
 import asyncio
+import collections
 import logging
 
 import telegram.constants as constants
-from httpx import HTTPError
-from revChatGPT.revChatGPT import AsyncChatbot as ChatGPT3Bot
+from revChatGPT.V1 import AsyncChatbot as ChatGPT3Bot
 from telegram import Update, Message
-from telegram.error import RetryAfter, BadRequest
+from telegram.error import RetryAfter
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
 
@@ -85,45 +85,83 @@ class ChatGPT3TelegramBot:
         )
 
         if self.config['use_stream']:
-            initial_message: Message or None = None
-            chunk_index, chunk_text = (0, '')
+            queue = asyncio.Queue()
+            _END = object()
 
-            async def message_update(every_seconds: float):
-                """
-                Edits the `initial_message` periodically with the updated text from the latest chunk
-                """
+            async def fast_forward():
+                size = queue.qsize()
+                dq2 = collections.deque([None] * 2, 2)
+                if size > 0:
+                    c = 0
+                    while c < size:
+                        dq2.appendleft(await queue.get())
+                        c += 1
+                else:
+                    dq2.appendleft(await queue.get())
+                return dq2
+
+            async def stream_message(every_messages, sleep_seconds):
+                sent_message: Message or None = None
+                chunk_text = ''
+                ended = False
+                sent = True  # make sure message would not be discarded after encountering `RetryAfter` error
+                count = 0
                 while True:
+                    if count >= every_messages:
+                        count = 0
+                        await asyncio.sleep(sleep_seconds)
                     try:
-                        if initial_message is not None and chunk_text != initial_message.text:
-                            await initial_message.edit_text(chunk_text)
-                    except (BadRequest, HTTPError, RetryAfter):
-                        # Ignore common errors while editing the message
-                        pass
+                        if not ended:
+                            (second, first) = await fast_forward()
+                            ended = first is _END or second is _END
+                            # avoid overriding the message waiting to retry or parsing as Markdown
+                            if (not isinstance(first, str)) and (not isinstance(second, str)):
+                                pass
+                            else:
+                                chunk_text = second if isinstance(second, str) else first
+                                sent = False
+
+                        if ended and sent:
+                            if sent_message is not None:
+                                # Final edit, including Markdown formatting
+                                sent_message = await sent_message.edit_text(
+                                    chunk_text, parse_mode=constants.ParseMode.MARKDOWN)
+                            break
+
+                        if sent_message is None:
+                            if len(chunk_text.strip()) == 0:
+                                continue
+                            sent_message = await context.bot.send_message(
+                                chat_id=update.effective_chat.id,
+                                reply_to_message_id=update.message.message_id,
+                                text=chunk_text
+                            )
+                        else:
+                            # Edits the `sent_message` with the updated text from the latest chunk
+                            sent_message = await sent_message.edit_text(chunk_text)
+
+                        sent = True
+                        count += 1
+                    except RetryAfter as e:
+                        logging.info(f'{str(e)}, retry after {e.retry_after} second(s)')
+                        sent = False
+                        await asyncio.sleep(e.retry_after)
                     except Exception as e:
+                        sent = True
                         logging.info(f'Error while editing the message: {str(e)}')
+                        if ended:
+                            break
 
-                    await asyncio.sleep(every_seconds)
-
-            # Start task to update the initial message periodically every 0.5 seconds
-            # If you're frequently hitting rate limits, increase this interval
-            message_update_task = context.application.create_task(message_update(every_seconds=0.5))
+            # Start task to retrieve messages from queue and send to Telegram
+            message_update_task = context.application.create_task(stream_message(every_messages=30, sleep_seconds=0.5))
 
             # Stream the response
-            async for chunk in await self.gpt3_bot.get_chat_response(update.message.text, output='stream'):
-                if chunk_index == 0 and initial_message is None:
-                    # Sends the initial message, to be edited later with updated text
-                    initial_message = await context.bot.send_message(
-                        chat_id=update.effective_chat.id,
-                        reply_to_message_id=update.message.message_id,
-                        text=chunk['message']
-                    )
-                    typing_task.cancel()
-                chunk_index, chunk_text = (chunk_index + 1, chunk['message'])
+            async for chunk in self.gpt3_bot.ask(update.message.text):
+                await queue.put(chunk['message'])
+            await queue.put(_END)
 
-            message_update_task.cancel()
-
-            # Final edit, including Markdown formatting
-            await initial_message.edit_text(chunk_text, parse_mode=constants.ParseMode.MARKDOWN)
+            await asyncio.gather(message_update_task)
+            typing_task.cancel()
 
         else:
             response = await self.get_chatgpt_response(update.message.text)
@@ -141,7 +179,9 @@ class ChatGPT3TelegramBot:
         Gets the response from the ChatGPT APIs.
         """
         try:
-            response = await self.gpt3_bot.get_chat_response(message)
+            response = {'message': ''}
+            async for data in self.gpt3_bot.ask(message):
+                response = data
             return response
         except Exception as e:
             logging.info(f'Error while getting the response: {str(e)}')
