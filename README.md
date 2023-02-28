@@ -1,5 +1,5 @@
 > **Warning**
-> No longer works as of December 12th due to Cloudflare protections (see [#261](https://github.com/acheong08/ChatGPT/issues/261))
+> Successful authentication is done by `revChatGPT` through a third party proxy server (see [here](https://github.com/acheong08/ChatGPT/blob/2.3.10/src/revChatGPT/V1.py#L61)).
 
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.10-blue.svg)
