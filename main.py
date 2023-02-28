@@ -18,7 +18,7 @@ def main():
     )
 
     # Check if the required environment variables are set
-    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_EMAIL', 'OPENAI_PASSWORD']
+    required_values = ['TELEGRAM_BOT_TOKEN']
     missing_values = [value for value in required_values if os.environ.get(value) is None]
     if len(missing_values) > 0:
         logging.error(f'The following environment values are missing in your .env: {", ".join(missing_values)}')
@@ -26,13 +26,17 @@ def main():
 
     # Setup configuration
     chatgpt_config: dict[str, str | bool] = {
-        'email': os.environ['OPENAI_EMAIL'],
-        'password': os.environ['OPENAI_PASSWORD']
-    } if os.environ.get('OPENAI_EMAIL', None) is not None else {
-        'session_token': os.environ['OPENAI_SESSION_TOKEN']
-    } if os.environ.get('OPENAI_SESSION_TOKEN', None) is not None else {
-        'access_token': os.environ['OPENAI_ACCESS_TOKEN']
-    }
+        'email': os.environ.get('OPENAI_EMAIL'),
+        'password': os.environ.get('OPENAI_PASSWORD')
+    } if os.environ.get('OPENAI_EMAIL') is not None else {
+        'session_token': os.environ.get('OPENAI_SESSION_TOKEN')
+    } if os.environ.get('OPENAI_SESSION_TOKEN') is not None else {
+        'access_token': os.environ.get('OPENAI_ACCESS_TOKEN')
+    } if os.environ.get('OPENAI_ACCESS_TOKEN') is not None else None
+
+    if chatgpt_config is None:
+        logging.error('PLease provide one of the authentication methods: OPENAI_EMAIL,OPENAI_PASSWORD | OPENAI_SESSION_TOKEN | OPENAI_ACCESS_TOKEN')
+        exit(1)
 
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
