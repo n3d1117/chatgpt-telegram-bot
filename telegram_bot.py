@@ -100,14 +100,14 @@ class ChatGPT3TelegramBot:
                     dq2.appendleft(await queue.get())
                 return dq2
 
-            async def stream_message(every_messages, sleep_seconds):
+            async def stream_message(per_messages, sleep_seconds):
                 sent_message: Message or None = None
                 chunk_text = ''
                 ended = False
                 sent = True  # make sure message would not be discarded after encountering `RetryAfter` error
                 count = 0
                 while True:
-                    if count >= every_messages:
+                    if count >= per_messages:
                         count = 0
                         await asyncio.sleep(sleep_seconds)
                     try:
@@ -136,7 +136,7 @@ class ChatGPT3TelegramBot:
                                 reply_to_message_id=update.message.message_id,
                                 text=chunk_text
                             )
-                        else:
+                        elif sent_message.text.strip() != chunk_text.strip():
                             # Edits the `sent_message` with the updated text from the latest chunk
                             sent_message = await sent_message.edit_text(chunk_text)
 
@@ -153,11 +153,14 @@ class ChatGPT3TelegramBot:
                             break
 
             # Start task to retrieve messages from queue and send to Telegram
-            message_update_task = context.application.create_task(stream_message(every_messages=30, sleep_seconds=0.5))
+            message_update_task = context.application.create_task(stream_message(per_messages=30, sleep_seconds=0.5))
 
             # Stream the response
-            async for chunk in self.gpt3_bot.ask(update.message.text):
-                await queue.put(chunk['message'])
+            try:
+                async for chunk in self.gpt3_bot.ask(update.message.text):
+                    await queue.put(chunk['message'])
+            except Exception as e:
+                logging.info(f'Streaming error: {str(e)}')
             await queue.put(_END)
 
             await asyncio.gather(message_update_task)
