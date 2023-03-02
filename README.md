@@ -5,7 +5,7 @@
 
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/) APIs to provide answers. Ready to use with minimal configuration required.
 
-## Screenshot
+## Screenshots
 ![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10876708/demo.pdf)
 
 ## Features
@@ -19,7 +19,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
-- [x] (NEW!) Image generation using DALL·E APIs via the `/image` command
+- [x] (NEW!) Image generation using DALL·E via the `/image` command
 
 ## Additional Features - help needed!
 - [ ] Group chat support
@@ -36,9 +36,9 @@ PRs are always welcome!
 ### Configuration
 Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the settings as desired:
 ```bash
-OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>"
-TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
-ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*" (everyone)
+OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
+ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
 SHOW_USAGE=false
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, get if from [here](https://platform.openai.com/account/api-keys)
