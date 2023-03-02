@@ -13,6 +13,7 @@ class GPTHelper:
         :param config: A dictionary containing the GPT configuration
         """
         openai.api_key = config['api_key']
+        self.config = config
         self.initial_history = [{"role": "system", "content": config['assistant_prompt']}]
         self.history = self.initial_history
 
@@ -26,16 +27,37 @@ class GPTHelper:
             self.history.append({"role": "user", "content": query})
 
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=self.history
+                model=self.config['model'],
+                messages=self.history,
+                temperature=self.config['temperature'],
+                n=self.config['n_choices'],
+                max_tokens=self.config['max_tokens'],
+                presence_penalty=self.config['presence_penalty'],
+                frequency_penalty=self.config['frequency_penalty'],
             )
 
-            answer = response.choices[0]['message']['content']
-            self.history.append({"role": "assistant", "content": answer})
-            return answer
+            if len(response.choices) > 0:
+                if len(response.choices) > 1 and self.config['n_choices'] > 1:
+                    answer = ''
+                    for index, choice in enumerate(response.choices):
+                        if index == 0:
+                            self.history.append({"role": "assistant", "content": choice['message']['content']})
+                        answer += f'{index+1}\u20e3\n'
+                        answer += choice['message']['content']
+                        answer += '\n\n'
+                    return answer
+                else:
+                    answer = response.choices[0]['message']['content']
+                    self.history.append({"role": "assistant", "content": answer})
+                    return answer
+            else:
+                logging.error('No response from GPT-3')
+                return "No response from GPT-3"
+
         except openai.error.RateLimitError as e:
             logging.exception(e)
             return "OpenAI RateLimit exceed"
+
         except Exception as e:
             logging.exception(e)
             return "Error"
@@ -45,10 +67,3 @@ class GPTHelper:
         Resets the conversation history.
         """
         self.history = self.initial_history
-
-if __name__ == '__main__':
-    gpt = GPTHelper({'api_key': 'YOUR_API_KEY'})
-
-    while True:
-        query = input("You: ")
-        print("AI: {}".format(gpt.get_response(query)))

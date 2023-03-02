@@ -15,10 +15,10 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker support
-- [x] (NEW!) Customizable initial assistant prompt
+- [x] (NEW!) Support multiple answers!
+- [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section
 
 ## Coming soon
-- [ ] Customizable temperature
 - [ ] Better handling of rate limiting errors
 - [ ] See remaining tokens and current usage
 - [ ] Multi-chat support
@@ -41,17 +41,41 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 ```bash
 OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>"
 TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
+ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*" (everyone)
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, get if from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
-
-Additional optional (but recommended) configuration values:
-```bash
-ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*"
-ASSISTANT_PROMPT="..." # Defaults to "You are a helpful assistant."
-```
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
-* `ASSISTANT_PROMPT`: A system message that controls the behavior of the assistant. See [the docs](https://platform.openai.com/docs/guides/chat/introduction) for more details
+
+Additional GPT model can be configured from the `main.py` file:
+```python
+{
+    # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
+    'model': 'gpt-3.5-turbo',
+    
+    # An initial system message that sets the tone and controls the behavior of the assistant.
+    'assistant_prompt': 'You are a helpful assistant.',
+    
+    # Number between 0 and 2. Higher values like 0.8 will make the output more random,
+    # while lower values like 0.2 will make it more focused and deterministic. Defaults to 1
+    'temperature': 1,
+    
+    # How many answers to generate for each input message. Defaults to 1
+    'n_choices': 1,
+    
+    # The maximum number of tokens allowed for the generated answer. Defaults to 4096 minus prompt tokens
+    'max_tokens': 1200,
+    
+    # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
+    # they appear in the text so far, increasing the model's likelihood to talk about new topics. Defaults to 0
+    'presence_penalty': 0,
+    
+    # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
+    # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Defaults to 0
+    'frequency_penalty': 0
+}
+```
+See the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
 ### Installing
 1. Clone the repository and navigate to the project directory:
