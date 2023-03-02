@@ -39,7 +39,7 @@ def main():
         'temperature': 1,
 
         # How many chat completion choices to generate for each input message.
-        'n_choices': 3,
+        'n_choices': 1,
 
         # The maximum number of tokens allowed for the generated answer
         'max_tokens': 1200,
