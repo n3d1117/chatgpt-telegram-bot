@@ -19,10 +19,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
-- [x] (NEW!) Image generation using DALL·E APIs
-
-## Coming soon
-- [ ] Web search
+- [x] (NEW!) Image generation using DALL·E APIs via the `/image` command
 
 ## Additional Features - help needed!
 - [ ] Group chat support
@@ -65,7 +62,7 @@ Additional optional model parameters can be configured from the `main.py` file:
     # How many answers to generate for each input message. Defaults to 1
     'n_choices': 1,
     
-    # The maximum number of tokens allowed for the generated answer. Defaults to 4096 minus prompt tokens
+    # The maximum number of tokens allowed for the generated answer. Defaults to 1200
     'max_tokens': 1200,
     
     # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether

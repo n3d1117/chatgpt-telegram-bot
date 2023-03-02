@@ -80,7 +80,7 @@ class OpenAIHelper:
 
     def generate_image(self, prompt: str) -> str:
         """
-        Generates an image from the given prompt.
+        Generates an image from the given prompt using DALL·E model.
         :param prompt: The prompt to send to the model
         :return: The image URL
         """
