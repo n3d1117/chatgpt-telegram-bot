@@ -19,7 +19,6 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 
 ## Coming soon
-- [ ] Better handling of rate limiting errors
 - [ ] See remaining tokens and current usage
 - [ ] Multi-chat support
 - [ ] Image generation using DALL·E APIs

@@ -56,7 +56,7 @@ class GPTHelper:
 
         except openai.error.RateLimitError as e:
             logging.exception(e)
-            return "OpenAI RateLimit exceed"
+            return "⚠️ _OpenAI RateLimit exceeded_ ⚠️\nPlease try again in a while."
 
         except Exception as e:
             logging.exception(e)
