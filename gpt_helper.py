@@ -58,9 +58,13 @@ class GPTHelper:
             logging.exception(e)
             return "⚠️ _OpenAI RateLimit exceeded_ ⚠️\nPlease try again in a while."
 
+        except openai.error.InvalidRequestError as e:
+            logging.exception(e)
+            return f"⚠️ _OpenAI Invalid request_ ⚠️\n{str(e)}"
+
         except Exception as e:
             logging.exception(e)
-            return "Error"
+            return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
     def reset_history(self):
         """
