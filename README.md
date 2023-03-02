@@ -9,13 +9,12 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 ![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10876708/demo.pdf)
 
 ## Features
-- [x] Reply to specific messages
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker support
-- [x] (NEW!) Support multiple answers!
+- [x] (NEW!) Support multiple answers via the `n_choices` configuration parameter
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
