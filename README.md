@@ -16,7 +16,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker support
 - [x] (NEW!) Support multiple answers!
-- [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section
+- [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 
 ## Coming soon
 - [ ] Better handling of rate limiting errors
@@ -47,7 +47,7 @@ ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*" (every
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
 
-Additional GPT model can be configured from the `main.py` file:
+Additional optional model parameters can be configured from the `main.py` file:
 ```python
 {
     # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
