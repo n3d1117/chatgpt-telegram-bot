@@ -26,7 +26,10 @@ def main():
 
     # Setup configurations
     gpt_config = {
-        'api_key': os.environ['OPENAI_API_KEY']
+        'api_key': os.environ['OPENAI_API_KEY'],
+        'assistant_prompt': os.environ.get(
+            'ASSISTANT_PROMPT', 'You are a helpful assistant. You always answer with concise, straight-forward answers.'
+        )
     }
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],

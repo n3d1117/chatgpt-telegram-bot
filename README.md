@@ -11,13 +11,13 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 ## Features
 - [x] Reply to specific messages
 - [x] Support markdown in answers
-- [x] Can reset conversation thread with the `/reset` command
+- [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] (NEW!) Docker support
+- [x] Docker support
+- [x] (NEW!) Customizable initial assistant prompt
 
 ## Coming soon
-- [ ] Customizable initial prompt
 - [ ] Customizable temperature
 - [ ] Better handling of rate limiting errors
 - [ ] See remaining tokens and current usage
@@ -48,8 +48,10 @@ TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
 Additional optional (but recommended) configuration values:
 ```bash
 ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*"
+ASSISTANT_PROMPT="..." # Defaults to "You are a helpful assistant."
 ```
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
+* `ASSISTANT_PROMPT`: A system message that controls the behavior of the assistant. See [the docs](https://platform.openai.com/docs/guides/chat/introduction) for more details
 
 ### Installing
 1. Clone the repository and navigate to the project directory:

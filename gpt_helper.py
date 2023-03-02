@@ -13,9 +13,8 @@ class GPTHelper:
         :param config: A dictionary containing the GPT configuration
         """
         openai.api_key = config['api_key']
-        self.prompt = "You are a helpful assistant. You answer with concise, straight-forward answers. You sometimes " \
-                      "make jokes, if appropriate. You are never rude. You are always helpful."
-        self.history = [{"role": "system", "content": self.prompt}]
+        self.initial_history = [{"role": "system", "content": config['assistant_prompt']}]
+        self.history = self.initial_history
 
     def get_response(self, query) -> str:
         """
@@ -41,8 +40,15 @@ class GPTHelper:
             logging.exception(e)
             return "Error"
 
-    def reset(self):
+    def reset_history(self):
         """
         Resets the conversation history.
         """
-        self.history = [{"role": "system", "content": self.prompt}]
+        self.history = self.initial_history
+
+if __name__ == '__main__':
+    gpt = GPTHelper({'api_key': 'YOUR_API_KEY'})
+
+    while True:
+        query = input("You: ")
+        print("AI: {}".format(gpt.get_response(query)))

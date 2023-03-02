@@ -42,9 +42,8 @@ class ChatGPT3TelegramBot:
             return
 
         logging.info(f'Resetting the conversation for user {update.message.from_user.name}...')
-        self.gpt.reset()
-        response = self.gpt.get_response('hi')
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+        self.gpt.reset_history()
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='Done!')
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
