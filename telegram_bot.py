@@ -37,12 +37,12 @@ class ChatGPT3TelegramBot:
         Resets the conversation.
         """
         if not self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to reset the bot')
+            logging.warning(f'User {update.message.from_user.name} is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
 
         logging.info(f'Resetting the conversation for user {update.message.from_user.name}...')
-        self.gpt.reset_history()
+        self.gpt.reset_history(chat_id=update.effective_chat.id)
         await context.bot.send_message(chat_id=update.effective_chat.id, text='Done!')
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,7 +57,7 @@ class ChatGPT3TelegramBot:
         logging.info(f'New message received from user {update.message.from_user.name}')
 
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=constants.ChatAction.TYPING)
-        response = self.gpt.get_response(update.message.text)
+        response = self.gpt.get_response(chat_id=update.effective_chat.id, query=update.message.text)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             reply_to_message_id=update.message.message_id,

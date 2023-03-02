@@ -18,9 +18,9 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Support multiple answers!
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
+- [x] (NEW!) Multi-chat support
 
 ## Coming soon
-- [ ] Multi-chat support
 - [ ] Image generation using DALL·E APIs
 
 ## Additional Features - help needed!

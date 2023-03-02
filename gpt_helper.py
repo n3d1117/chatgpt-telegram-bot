@@ -14,21 +14,25 @@ class GPTHelper:
         """
         openai.api_key = config['api_key']
         self.config = config
-        self.initial_history = [{"role": "system", "content": config['assistant_prompt']}]
-        self.history = self.initial_history
+        self.sessions: dict[int: list] = dict() # {chat_id: history}
 
-    def get_response(self, query) -> str:
+
+    def get_response(self, chat_id: int, query: str) -> str:
         """
         Gets a response from the GPT-3 model.
+        :param chat_id: The chat ID
         :param query: The query to send to the model
         :return: The answer from the model
         """
         try:
-            self.history.append({"role": "user", "content": query})
+            if chat_id not in self.sessions:
+                self.reset_history(chat_id)
+
+            self.__add_to_history(chat_id, role="user", content=query)
 
             response = openai.ChatCompletion.create(
                 model=self.config['model'],
-                messages=self.history,
+                messages=self.sessions[chat_id],
                 temperature=self.config['temperature'],
                 n=self.config['n_choices'],
                 max_tokens=self.config['max_tokens'],
@@ -42,13 +46,13 @@ class GPTHelper:
                 if len(response.choices) > 1 and self.config['n_choices'] > 1:
                     for index, choice in enumerate(response.choices):
                         if index == 0:
-                            self.history.append({"role": "assistant", "content": choice['message']['content']})
+                            self.__add_to_history(chat_id, role="assistant", content=choice['message']['content'])
                         answer += f'{index+1}\u20e3\n'
                         answer += choice['message']['content']
                         answer += '\n\n'
                 else:
                     answer = response.choices[0]['message']['content']
-                    self.history.append({"role": "assistant", "content": answer})
+                    self.__add_to_history(chat_id, role="assistant", content=answer)
 
                 if self.config['show_usage']:
                     answer += "\n\n---\n" \
@@ -63,7 +67,7 @@ class GPTHelper:
 
         except openai.error.RateLimitError as e:
             logging.exception(e)
-            return "⚠️ _OpenAI RateLimit exceeded_ ⚠️\nPlease try again in a while."
+            return f"⚠️ _OpenAI Rate Limit exceeded_ ⚠️\n{str(e)}"
 
         except openai.error.InvalidRequestError as e:
             logging.exception(e)
@@ -73,8 +77,19 @@ class GPTHelper:
             logging.exception(e)
             return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
-    def reset_history(self):
+
+    def reset_history(self, chat_id):
         """
         Resets the conversation history.
         """
-        self.history = self.initial_history
+        self.sessions[chat_id] = [{"role": "system", "content": self.config['assistant_prompt']}]
+
+
+    def __add_to_history(self, chat_id, role, content):
+        """
+        Adds a message to the conversation history.
+        :param chat_id: The chat ID
+        :param role: The role of the message sender
+        :param content: The message content
+        """
+        self.sessions[chat_id].append({"role": role, "content": content})
