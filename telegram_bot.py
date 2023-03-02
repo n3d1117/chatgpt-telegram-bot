@@ -65,9 +65,17 @@ class ChatGPT3TelegramBot:
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
         try:
             image_url = self.openai.generate_image(prompt=image_query)
-            await context.bot.send_photo(chat_id=chat_id, photo=image_url, caption=image_query)
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                photo=image_url
+            )
         except:
-            await context.bot.send_message(chat_id=chat_id, text='Failed to generate image')
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                text='Failed to generate image'
+            )
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
