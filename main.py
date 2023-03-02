@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from gpt_helper import GPTHelper
+from openai_helper import OpenAIHelper
 from telegram_bot import ChatGPT3TelegramBot
 
 
@@ -25,7 +25,7 @@ def main():
         exit(1)
 
     # Setup configurations
-    gpt_config = {
+    openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'true').lower() == 'true',
 
@@ -51,7 +51,10 @@ def main():
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
         # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-        'frequency_penalty': 0
+        'frequency_penalty': 0,
+
+        # The DALL·E generated image size
+        'image_size': '512x512'
     }
 
     telegram_config = {
@@ -60,8 +63,8 @@ def main():
     }
 
     # Setup and run ChatGPT and Telegram bot
-    gpt = GPTHelper(config=gpt_config)
-    telegram_bot = ChatGPT3TelegramBot(config=telegram_config, gpt=gpt)
+    openai_helper = OpenAIHelper(config=openai_config)
+    telegram_bot = ChatGPT3TelegramBot(config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 
 

@@ -19,9 +19,10 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
+- [x] (NEW!) Image generation using DALL·E APIs
 
 ## Coming soon
-- [ ] Image generation using DALL·E APIs
+- [ ] Web search
 
 ## Additional Features - help needed!
 - [ ] Group chat support
@@ -73,7 +74,10 @@ Additional optional model parameters can be configured from the `main.py` file:
     
     # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
     # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Defaults to 0
-    'frequency_penalty': 0
+    'frequency_penalty': 0,
+    
+    # The DALL·E generated image size
+    'image_size': '512x512'
 }
 ```
 See the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
