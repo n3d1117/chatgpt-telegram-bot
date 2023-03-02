@@ -2,14 +2,14 @@ import logging
 import openai
 
 
-class GPTHelper:
+class OpenAIHelper:
     """
     ChatGPT helper class.
     """
 
     def __init__(self, config: dict):
         """
-        Initializes the GPT helper class with the given configuration.
+        Initializes the OpenAI helper class with the given configuration.
         :param config: A dictionary containing the GPT configuration
         """
         openai.api_key = config['api_key']
@@ -17,7 +17,7 @@ class GPTHelper:
         self.sessions: dict[int: list] = dict() # {chat_id: history}
 
 
-    def get_response(self, chat_id: int, query: str) -> str:
+    def get_chat_response(self, chat_id: int, query: str) -> str:
         """
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID
@@ -26,7 +26,7 @@ class GPTHelper:
         """
         try:
             if chat_id not in self.sessions:
-                self.reset_history(chat_id)
+                self.reset_chat_history(chat_id)
 
             self.__add_to_history(chat_id, role="user", content=query)
 
@@ -78,7 +78,25 @@ class GPTHelper:
             return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
 
-    def reset_history(self, chat_id):
+    def generate_image(self, prompt: str) -> str:
+        """
+        Generates an image from the given prompt using DALL·E model.
+        :param prompt: The prompt to send to the model
+        :return: The image URL
+        """
+        try:
+            response = openai.Image.create(
+                prompt=prompt,
+                n=1,
+                size=self.config['image_size']
+            )
+            return response['data'][0]['url']
+
+        except Exception as e:
+            logging.exception(e)
+            raise e
+
+    def reset_chat_history(self, chat_id):
         """
         Resets the conversation history.
         """
