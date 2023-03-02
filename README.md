@@ -17,9 +17,9 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Docker support
 - [x] (NEW!) Support multiple answers!
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
+- [x] (NEW!) See token usage after each answer
 
 ## Coming soon
-- [ ] See remaining tokens and current usage
 - [ ] Multi-chat support
 - [ ] Image generation using DALL·E APIs
 
@@ -41,10 +41,12 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 OPENAI_API_KEY="<YOUR_OPENAI_API_KEY>"
 TELEGRAM_BOT_TOKEN="<YOUR_TELEGRAM_BOT_TOKEN>"
 ALLOWED_TELEGRAM_USER_IDS="<USER_ID_1>,<USER_ID_2>,..." # Defaults to "*" (everyone)
+SHOW_USAGE=false
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, get if from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
+* `SHOW_USAGE`: Whether to show OpenAI token usage information after each response. Optional, defaults to `false`
 
 Additional optional model parameters can be configured from the `main.py` file:
 ```python

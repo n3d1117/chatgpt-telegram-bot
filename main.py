@@ -27,6 +27,7 @@ def main():
     # Setup configurations
     gpt_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
+        'show_usage': os.environ.get('SHOW_USAGE', 'true').lower() == 'true',
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
         'model': 'gpt-3.5-turbo',

@@ -37,22 +37,29 @@ class GPTHelper:
             )
 
             if len(response.choices) > 0:
+                answer = ''
+
                 if len(response.choices) > 1 and self.config['n_choices'] > 1:
-                    answer = ''
                     for index, choice in enumerate(response.choices):
                         if index == 0:
                             self.history.append({"role": "assistant", "content": choice['message']['content']})
                         answer += f'{index+1}\u20e3\n'
                         answer += choice['message']['content']
                         answer += '\n\n'
-                    return answer
                 else:
                     answer = response.choices[0]['message']['content']
                     self.history.append({"role": "assistant", "content": answer})
-                    return answer
+
+                if self.config['show_usage']:
+                    answer += "\n\n---\n" \
+                              f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
+                              f" ({str(response.usage['prompt_tokens'])} prompt," \
+                              f" {str(response.usage['completion_tokens'])} completion)"
+
+                return answer
             else:
                 logging.error('No response from GPT-3')
-                return "No response from GPT-3"
+                return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."
 
         except openai.error.RateLimitError as e:
             logging.exception(e)
