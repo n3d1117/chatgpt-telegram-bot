@@ -34,21 +34,23 @@ PRs are always welcome!
 ## Getting started
 
 ### Configuration
-Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the settings as desired:
+Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the parameters as desired:
 ```bash
 OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
 TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
-ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to `*` (everyone)
-PROXY="YOUR_PROXY" # E.g. "http://localhost:8080", defaults to `None`
-SHOW_USAGE=false
-```
-* `OPENAI_API_KEY`: Your OpenAI API key, get if from [here](https://platform.openai.com/account/api-keys)
-* `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
-* `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
-* `PROXY`: Proxy to be used for OpenAI and Telegram bot
-* `SHOW_USAGE`: Whether to show OpenAI token usage information after each response. Optional, defaults to `false`
 
-Additional optional model parameters can be configured from the `main.py` file:
+# Optional parameters
+ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
+PROXY="YOUR_PROXY" # e.g. "http://localhost:8080", defaults to none
+SHOW_USAGE=true # Defaults to false
+```
+* `OPENAI_API_KEY`: Your OpenAI API key, you can get it from [here](https://platform.openai.com/account/api-keys)
+* `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
+* `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)
+* `PROXY`: Proxy to be used for OpenAI and Telegram bot
+* `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
+
+Additional model parameters can be configured from the `main.py` file:
 ```python
 {
     # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
@@ -75,7 +77,7 @@ Additional optional model parameters can be configured from the `main.py` file:
     # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Defaults to 0
     'frequency_penalty': 0,
     
-    # The DALL·E generated image size
+    # The DALL·E generated image size. 256x256, 512x512, or 1024x1024. Defaults to 512x512
     'image_size': '512x512'
 }
 ```
