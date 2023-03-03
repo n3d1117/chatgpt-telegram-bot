@@ -13,8 +13,7 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         """
         openai.api_key = config['api_key']
-        if config.get('proxy'):
-            openai.proxy = config['proxy']
+        openai.proxy = config['proxy']
         self.config = config
         self.sessions: dict[int: list] = dict() # {chat_id: history}
 
@@ -97,6 +96,7 @@ class OpenAIHelper:
         except Exception as e:
             logging.exception(e)
             raise e
+
 
     def reset_chat_history(self, chat_id):
         """

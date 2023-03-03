@@ -14,6 +14,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker support
+- [x] Proxy support
 - [x] (NEW!) Support multiple answers via the `n_choices` configuration parameter
 - [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
 - [x] (NEW!) See token usage after each answer
@@ -37,14 +38,14 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 ```bash
 OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
 TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
-ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
-PROXY="<HTTP/HTTPS_PROXY>" # E.g. "http://localhost:8080", defaults to none
+ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to `*` (everyone)
+PROXY="YOUR_PROXY" # E.g. "http://localhost:8080", defaults to `None`
 SHOW_USAGE=false
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, get if from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Important**: by default, *everyone* is allowed (`*`)
-* `PROXY`: Proxy to be used for OpenAI and telegram bot
+* `PROXY`: Proxy to be used for OpenAI and Telegram bot
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response. Optional, defaults to `false`
 
 Additional optional model parameters can be configured from the `main.py` file:
