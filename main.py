@@ -29,6 +29,7 @@ def main():
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
         'proxy': os.environ.get('PROXY', None),
+        'omit_msg_history': os.environ.get('OMIT_MSG_HISTORY', 'false').lower() == 'true',
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
         'model': 'gpt-3.5-turbo',

@@ -26,7 +26,7 @@ class OpenAIHelper:
         :return: The answer from the model
         """
         try:
-            if chat_id not in self.sessions:
+            if chat_id not in self.sessions or self.config['omit_msg_history']:
                 self.reset_chat_history(chat_id)
 
             self.__add_to_history(chat_id, role="user", content=query)
