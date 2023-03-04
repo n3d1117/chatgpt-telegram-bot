@@ -1,10 +1,12 @@
 import logging
+import os
 
 import telegram.constants as constants
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
 from openai_helper import OpenAIHelper
+from pydub import AudioSegment
 
 
 class ChatGPT3TelegramBot:
@@ -77,6 +79,64 @@ class ChatGPT3TelegramBot:
                 text='Failed to generate image'
             )
 
+    async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Transcribe audio messages.
+        """
+        if not self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
+            await self.send_disallowed_message(update, context)
+            return
+
+        if not update.message.voice and not update.message.audio:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                reply_to_message_id=update.message.message_id,
+                text='Unsupported file type'
+            )
+            return
+
+        chat_id = update.effective_chat.id
+        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
+        filename = update.message.voice.file_unique_id if update.message.voice else update.message.audio.file_unique_id
+        filename_ogg = f'{filename}.ogg'
+        filename_mp3 = f'{filename}.mp3'
+
+        try:
+            if update.message.voice:
+                audio_file = await context.bot.get_file(update.message.voice.file_id)
+                await audio_file.download_to_drive(filename_ogg)
+                ogg_audio = AudioSegment.from_ogg(filename_ogg)
+                ogg_audio.export(filename_mp3, format="mp3")
+
+            elif update.message.audio:
+                audio_file = await context.bot.get_file(update.message.audio.file_id)
+                await audio_file.download_to_drive(filename_mp3)
+
+            # Transcribe the audio file
+            transcript = self.openai.transcribe(filename_mp3)
+
+            # Send the transcript
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                text=transcript,
+                parse_mode=constants.ParseMode.MARKDOWN
+            )
+        except:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                text='Failed to transcribe text'
+            )
+
+        finally:
+            # Cleanup files
+            if os.path.exists(filename_mp3):
+                os.remove(filename_mp3)
+            if os.path.exists(filename_ogg):
+                os.remove(filename_ogg)
+
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         React to incoming messages and respond accordingly.
@@ -136,6 +196,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
+        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
 
         application.add_error_handler(self.error_handler)
