@@ -6,7 +6,7 @@
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
-![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10876708/demo.pdf)
+![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10889253/demo.pdf)
 
 ## Features
 - [x] Support markdown in answers
@@ -20,6 +20,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
+- [x] (NEW!) Transcribe audio messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 
 ## Additional Features - help needed!
 - [ ] Group chat support
@@ -117,6 +118,7 @@ docker-compose up
 ## Credits
 - [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
 - [python-telegram-bot](https://python-telegram-bot.org)
+- [jiaaro/pydub](https://github.com/jiaaro/pydub)
 
 ## Disclaimer
 This is a personal project and is not affiliated with OpenAI in any way.
