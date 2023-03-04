@@ -97,6 +97,17 @@ class OpenAIHelper:
             logging.exception(e)
             raise e
 
+    def transcribe(self, filename):
+        """
+        Transcribes the audio file using the Whisper model.
+        """
+        try:
+            with open(filename, "rb") as audio:
+                result = openai.Audio.transcribe("whisper-1", audio)
+                return result.text
+        except Exception as e:
+            logging.exception(e)
+            raise e
 
     def reset_chat_history(self, chat_id):
         """
