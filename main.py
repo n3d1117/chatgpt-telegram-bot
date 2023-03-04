@@ -30,6 +30,7 @@ def main():
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
         'proxy': os.environ.get('PROXY', None),
         'omit_msg_history': os.environ.get('OMIT_MSG_HISTORY', 'false').lower() == 'true',
+        'max_msg_history': int(os.environ.get('MAX_MSG_HISTORY', 10)),
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
         'model': 'gpt-3.5-turbo',

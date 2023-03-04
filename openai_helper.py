@@ -113,3 +113,9 @@ class OpenAIHelper:
         :param content: The message content
         """
         self.sessions[chat_id].append({"role": role, "content": content})
+
+        # check the history size and truncate from the top if necessary
+        max_msg_history = self.config['max_msg_history']
+        if len(self.sessions[chat_id]) > max_msg_history:
+                self.sessions[chat_id] = self.sessions[chat_id][-max_msg_history:]
+
