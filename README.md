@@ -20,6 +20,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) See token usage after each answer
 - [x] (NEW!) Multi-chat support
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
+- [x] (NEW!) Transcribe audio messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 
 ## Additional Features - help needed!
 - [ ] Group chat support
