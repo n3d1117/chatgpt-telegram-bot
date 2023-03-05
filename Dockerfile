@@ -10,6 +10,11 @@ RUN pip install --user pipenv
 WORKDIR /home/appuser/app
 COPY . .
 COPY .env .
+
+USER root
+RUN apt-get update && apt-get install ffmpeg -y
+USER appuser
+
 RUN pipenv install --system --deploy --ignore-pipfile
 
 CMD ["python", "main.py"]
