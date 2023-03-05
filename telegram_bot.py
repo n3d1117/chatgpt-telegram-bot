@@ -39,7 +39,7 @@ class ChatGPT3TelegramBot:
         """
         Resets the conversation.
         """
-        if not self.is_allowed(update):
+        if not await self.is_allowed(update):
             logging.warning(f'User {update.message.from_user.name} is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
@@ -54,7 +54,7 @@ class ChatGPT3TelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not self.is_allowed(update):
+        if not await self.is_allowed(update):
             logging.warning(f'User {update.message.from_user.name} is not allowed to generate images')
             await self.send_disallowed_message(update, context)
             return
@@ -87,7 +87,7 @@ class ChatGPT3TelegramBot:
         """
         Transcribe audio messages.
         """
-        if not self.is_allowed(update):
+        if not await self.is_allowed(update):
             logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
             return
@@ -148,7 +148,7 @@ class ChatGPT3TelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if not self.is_allowed(update):
+        if not await self.is_allowed(update):
             logging.warning(f'User {update.message.from_user.name} is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
@@ -181,13 +181,45 @@ class ChatGPT3TelegramBot:
         """
         logging.debug(f'Exception while handling an update: {context.error}')
 
-    def is_allowed(self, update: Update) -> bool:
+    def is_group_chat(self, update: Update) -> bool:
+        """
+        Checks if the message was sent from a group chat
+        """
+        return update.effective_chat.type in ('group', 'supergroup')
+
+    async def is_user_in_group(self, update: Update, user_id: int) -> bool:
+        """
+        Checks if user_id is a member of the group
+        """
+        member = await update.effective_chat.get_member(user_id)
+        return (member.status in ['administrator', 'member', 'creator'])
+
+    async def is_allowed(self, update: Update) -> bool:
         """
         Checks if the user is allowed to use the bot.
         """
+
+        # is bot wide open
         if self.config['allowed_user_ids'] == '*':
             return True
-        return str(update.message.from_user.id) in self.config['allowed_user_ids'].split(',')
+
+        user_name = update.message.from_user.name
+        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+
+        # is it a permitted user
+        if str(update.message.from_user.id) in allowed_user_ids:
+            return True
+
+        # is this a group a chat with at least one auhorized member
+        if self.is_group_chat(update):
+            for user in allowed_user_ids:
+                if await self.is_user_in_group(update, user):
+                    logging.info(f'{user} is a member. Allowing group chat message...')
+                    return True
+            logging.info(f'Group chat messages from user {user_name} are not allowed')
+
+        return False
+
 
     def run(self):
         """
