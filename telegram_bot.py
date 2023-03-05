@@ -75,11 +75,11 @@ class ChatGPT3TelegramBot:
                 reply_to_message_id=update.message.message_id,
                 photo=image_url
             )
-        except:
+        except Exception as e:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text='Failed to generate image'
+                text=f'Failed to generate image: {str(e)}'
             )
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,11 +128,11 @@ class ChatGPT3TelegramBot:
                 text=transcript,
                 parse_mode=constants.ParseMode.MARKDOWN
             )
-        except:
+        except Exception as e:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text='Failed to transcribe text'
+                text=f'Failed to transcribe text: {str(e)}'
             )
 
         finally:
