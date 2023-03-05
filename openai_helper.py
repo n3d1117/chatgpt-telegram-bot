@@ -85,29 +85,20 @@ class OpenAIHelper:
         :param prompt: The prompt to send to the model
         :return: The image URL
         """
-        try:
-            response = openai.Image.create(
-                prompt=prompt,
-                n=1,
-                size=self.config['image_size']
-            )
-            return response['data'][0]['url']
-
-        except Exception as e:
-            logging.exception(e)
-            raise e
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size=self.config['image_size']
+        )
+        return response['data'][0]['url']
 
     def transcribe(self, filename):
         """
         Transcribes the audio file using the Whisper model.
         """
-        try:
-            with open(filename, "rb") as audio:
-                result = openai.Audio.transcribe("whisper-1", audio)
-                return result.text
-        except Exception as e:
-            logging.exception(e)
-            raise e
+        with open(filename, "rb") as audio:
+            result = openai.Audio.transcribe("whisper-1", audio)
+            return result.text
 
     def reset_chat_history(self, chat_id):
         """

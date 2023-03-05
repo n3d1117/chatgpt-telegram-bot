@@ -76,6 +76,7 @@ class ChatGPT3TelegramBot:
                 photo=image_url
             )
         except Exception as e:
+            logging.exception(e)
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
@@ -129,6 +130,7 @@ class ChatGPT3TelegramBot:
                 parse_mode=constants.ParseMode.MARKDOWN
             )
         except Exception as e:
+            logging.exception(e)
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
