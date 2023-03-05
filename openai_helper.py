@@ -15,8 +15,7 @@ class OpenAIHelper:
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
-        self.sessions: dict[int: list] = dict() # {chat_id: history}
-
+        self.conversations: dict[int: list] = {} # {chat_id: history}
 
     def get_chat_response(self, chat_id: int, query: str) -> str:
         """
@@ -26,14 +25,26 @@ class OpenAIHelper:
         :return: The answer from the model
         """
         try:
-            if chat_id not in self.sessions:
+            if chat_id not in self.conversations:
                 self.reset_chat_history(chat_id)
+
+            # Summarize the chat history if it's too long to avoid excessive token usage
+            if len(self.conversations[chat_id]) > self.config['max_history_size']:
+                logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
+                try:
+                    summary = self.__summarise(self.conversations[chat_id])
+                    logging.debug(f'Summary: {summary}')
+                    self.reset_chat_history(chat_id)
+                    self.__add_to_history(chat_id, role="assistant", content=summary)
+                except Exception as e:
+                    logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
+                    self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
             self.__add_to_history(chat_id, role="user", content=query)
 
             response = openai.ChatCompletion.create(
                 model=self.config['model'],
-                messages=self.sessions[chat_id],
+                messages=self.conversations[chat_id],
                 temperature=self.config['temperature'],
                 n=self.config['n_choices'],
                 max_tokens=self.config['max_tokens'],
@@ -78,7 +89,6 @@ class OpenAIHelper:
             logging.exception(e)
             return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
-
     def generate_image(self, prompt: str) -> str:
         """
         Generates an image from the given prompt using DALL·E model.
@@ -104,8 +114,7 @@ class OpenAIHelper:
         """
         Resets the conversation history.
         """
-        self.sessions[chat_id] = [{"role": "system", "content": self.config['assistant_prompt']}]
-
+        self.conversations[chat_id] = [{"role": "system", "content": self.config['assistant_prompt']}]
 
     def __add_to_history(self, chat_id, role, content):
         """
@@ -114,4 +123,21 @@ class OpenAIHelper:
         :param role: The role of the message sender
         :param content: The message content
         """
-        self.sessions[chat_id].append({"role": role, "content": content})
+        self.conversations[chat_id].append({"role": role, "content": content})
+
+    def __summarise(self, conversation) -> str:
+        """
+        Summarises the conversation history.
+        :param conversation: The conversation history
+        :return: The summary
+        """
+        messages = [
+            { "role": "assistant", "content": "Summarize this conversation in 700 characters or less" },
+            { "role": "user", "content": str(conversation) }
+        ]
+        response = openai.ChatCompletion.create(
+            model=self.config['model'],
+            messages=messages,
+            temperature=0.4
+        )
+        return response.choices[0]['message']['content']
