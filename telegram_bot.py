@@ -136,7 +136,7 @@ class ChatGPT3TelegramBot:
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
-                    text=f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n"{response}"',
+                    text=f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}',
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
         except Exception as e:
