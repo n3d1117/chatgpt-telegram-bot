@@ -22,10 +22,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
 - [x] (NEW!) Transcribe audio messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
-
-## Additional Features - help needed!
-- [x] (NEW!) Group chat support. At least one of the permitted users must be a member of the group chat. 
-
+- [x] (NEW!) Group chat support with inline queries
 
 PRs are always welcome!
 

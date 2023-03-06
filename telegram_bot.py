@@ -2,8 +2,8 @@ import logging
 import os
 
 import telegram.constants as constants
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, InlineQueryHandler
 
 from openai_helper import OpenAIHelper
 from pydub import AudioSegment
@@ -136,7 +136,6 @@ class ChatGPT3TelegramBot:
                 reply_to_message_id=update.message.message_id,
                 text=f'Failed to transcribe text: {str(e)}'
             )
-
         finally:
             # Cleanup files
             if os.path.exists(filename_mp3):
@@ -165,6 +164,27 @@ class ChatGPT3TelegramBot:
             parse_mode=constants.ParseMode.MARKDOWN
         )
 
+    async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Handle the inline query. This is run when you type: @botusername <query>
+        """
+        query = update.inline_query.query
+
+        if query == "":
+            return
+
+        results = [
+            InlineQueryResultArticle(
+                id=query,
+                title="Ask ChatGPT",
+                input_message_content=InputTextMessageContent(query),
+                description=query,
+                thumb_url='https://user-images.githubusercontent.com/11541888/223106202-7576ff11-2c8e-408d-94ea-b02a7a32149a.png'
+            )
+        ]
+
+        await update.inline_query.answer(results)
+
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Sends the disallowed message to the user.
@@ -185,41 +205,44 @@ class ChatGPT3TelegramBot:
         """
         Checks if the message was sent from a group chat
         """
-        return update.effective_chat.type in ('group', 'supergroup')
+        return update.effective_chat.type in [
+            constants.ChatType.GROUP,
+            constants.ChatType.SUPERGROUP
+        ]
 
     async def is_user_in_group(self, update: Update, user_id: int) -> bool:
         """
         Checks if user_id is a member of the group
         """
         member = await update.effective_chat.get_member(user_id)
-        return (member.status in ['administrator', 'member', 'creator'])
+        return member.status in [
+            constants.ChatMemberStatus.OWNER,
+            constants.ChatMemberStatus.ADMINISTRATOR,
+            constants.ChatMemberStatus.MEMBER
+        ]
 
     async def is_allowed(self, update: Update) -> bool:
         """
         Checks if the user is allowed to use the bot.
         """
-
-        # is bot wide open
         if self.config['allowed_user_ids'] == '*':
             return True
 
-        user_name = update.message.from_user.name
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
 
-        # is it a permitted user
+        # Check if user is allowed
         if str(update.message.from_user.id) in allowed_user_ids:
             return True
 
-        # is this a group a chat with at least one auhorized member
+        # Check if it's a group a chat with at least one authorized member
         if self.is_group_chat(update):
             for user in allowed_user_ids:
                 if await self.is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
-            logging.info(f'Group chat messages from user {user_name} are not allowed')
+            logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
 
         return False
-
 
     def run(self):
         """
@@ -237,6 +260,9 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
+            constants.ChatType.GROUP, constants.ChatType.SUPERGROUP
+        ]))
 
         application.add_error_handler(self.error_handler)
 
