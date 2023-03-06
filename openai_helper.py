@@ -1,3 +1,4 @@
+import datetime
 import logging
 import openai
 
@@ -15,7 +16,8 @@ class OpenAIHelper:
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
-        self.conversations: dict[int: list] = {} # {chat_id: history}
+        self.conversations: dict[int: list] = {}  # {chat_id: history}
+        self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
     def get_chat_response(self, chat_id: int, query: str) -> str:
         """
@@ -25,8 +27,10 @@ class OpenAIHelper:
         :return: The answer from the model
         """
         try:
-            if chat_id not in self.conversations:
+            if chat_id not in self.conversations or self.__max_age_reached(chat_id):
                 self.reset_chat_history(chat_id)
+
+            self.last_updated[chat_id] = datetime.datetime.now()
 
             # Summarize the chat history if it's too long to avoid excessive token usage
             if len(self.conversations[chat_id]) > self.config['max_history_size']:
@@ -115,6 +119,19 @@ class OpenAIHelper:
         Resets the conversation history.
         """
         self.conversations[chat_id] = [{"role": "system", "content": self.config['assistant_prompt']}]
+
+    def __max_age_reached(self, chat_id) -> bool:
+        """
+        Checks if the maximum conversation age has been reached.
+        :param chat_id: The chat ID
+        :return: A boolean indicating whether the maximum conversation age has been reached
+        """
+        if chat_id not in self.last_updated:
+            return False
+        last_updated = self.last_updated[chat_id]
+        now = datetime.datetime.now()
+        max_age_minutes = self.config['max_conversation_age_minutes']
+        return last_updated < now - datetime.timedelta(minutes=max_age_minutes)
 
     def __add_to_history(self, chat_id, role, content):
         """
