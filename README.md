@@ -45,6 +45,7 @@ ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
 PROXY="YOUR_PROXY" # e.g. "http://localhost:8080", defaults to none
 SHOW_USAGE=true # Defaults to false
 MAX_HISTORY_SIZE=15 # Defaults to 10
+MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, you can get it from [here](https://platform.openai.com/account/api-keys)
@@ -53,6 +54,7 @@ VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
 * `MAX_HISTORY_SIZE`: Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage ([#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
+* `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
 
 Additional model parameters can be configured from the `main.py` file:
