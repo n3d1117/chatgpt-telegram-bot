@@ -62,7 +62,8 @@ def main():
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
-        'proxy': os.environ.get('PROXY', None)
+        'proxy': os.environ.get('PROXY', None),
+        'voice_reply_transcript': os.environ.get('VOICE_REPLY_WITH_TRANSCRIPT_ONLY', 'true').lower() == 'true',
     }
 
     # Setup and run ChatGPT and Telegram bot
