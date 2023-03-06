@@ -122,13 +122,23 @@ class ChatGPT3TelegramBot:
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
 
-            # Send the transcript
-            await context.bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
-                text=transcript,
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
+            if self.config['voice_reply_transcript']:
+                # Send the transcript
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    text=f'_Transcript:_\n"{transcript}"',
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+            else:
+                # Send the response of the transcript
+                response = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    text=response,
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
         except Exception as e:
             logging.exception(e)
             await context.bot.send_message(
