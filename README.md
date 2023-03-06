@@ -57,7 +57,8 @@ VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 * `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
 
-Additional model parameters can be configured from the `main.py` file:
+<details><summary>Additional model parameters can be configured from the `main.py` file.</summary>
+
 ```python
 {
     # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
@@ -88,7 +89,9 @@ Additional model parameters can be configured from the `main.py` file:
     'image_size': '512x512'
 }
 ```
-See the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
+</details>
+
+Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
 ### Installing
 1. Clone the repository and navigate to the project directory:
