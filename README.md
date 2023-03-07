@@ -43,7 +43,9 @@ TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
 # Optional parameters
 ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
 PROXY="YOUR_PROXY" # e.g. "http://localhost:8080", defaults to none
+ASSISTANT_PROMPT="Custom prompt" # Defaults to "You are a helpful assistant."
 SHOW_USAGE=true # Defaults to false
+MAX_TOKENS=2000 # Defaults to 1200
 MAX_HISTORY_SIZE=15 # Defaults to 10
 MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
@@ -52,7 +54,9 @@ VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
+* `ASSISTANT_PROMPT`: A system message that sets the tone and controls the behavior of the assistant
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
+* `MAX_TOKENS`: Upper bound on how many tokens the ChatGPT API will return
 * `MAX_HISTORY_SIZE`: Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage ([#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 * `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
@@ -63,20 +67,14 @@ VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 {
     # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
     'model': 'gpt-3.5-turbo',
-    
-    # An initial system message that sets the tone and controls the behavior of the assistant.
-    'assistant_prompt': 'You are a helpful assistant.',
-    
+
     # Number between 0 and 2. Higher values like 0.8 will make the output more random,
     # while lower values like 0.2 will make it more focused and deterministic. Defaults to 1
     'temperature': 1,
     
     # How many answers to generate for each input message. Defaults to 1
     'n_choices': 1,
-    
-    # The maximum number of tokens allowed for the generated answer. Defaults to 1200
-    'max_tokens': 1200,
-    
+
     # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
     # they appear in the text so far, increasing the model's likelihood to talk about new topics. Defaults to 0
     'presence_penalty': 0,

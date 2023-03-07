@@ -31,12 +31,11 @@ def main():
         'proxy': os.environ.get('PROXY', None),
         'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 10)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
+        'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
+        'max_tokens': int(os.environ.get('MAX_TOKENS', 1200)),
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
         'model': 'gpt-3.5-turbo',
-
-        # A system message that sets the tone and controls the behavior of the assistant.
-        'assistant_prompt': 'You are a helpful assistant.',
 
         # Number between 0 and 2. Higher values like 0.8 will make the output more random,
         # while lower values like 0.2 will make it more focused and deterministic.
@@ -44,9 +43,6 @@ def main():
 
         # How many chat completion choices to generate for each input message.
         'n_choices': 1,
-
-        # The maximum number of tokens allowed for the generated answer
-        'max_tokens': 1200,
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
         # they appear in the text so far, increasing the model's likelihood to talk about new topics.
