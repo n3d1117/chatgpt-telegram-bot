@@ -2,8 +2,9 @@ import logging
 import os
 
 import telegram.constants as constants
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, InlineQueryHandler
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, InlineQueryHandler, \
+    Application
 
 from openai_helper import OpenAIHelper
 from pydub import AudioSegment
@@ -22,6 +23,11 @@ class ChatGPT3TelegramBot:
         """
         self.config = config
         self.openai = openai
+        self.commands = [
+            BotCommand(command='help', description='Show this help message'),
+            BotCommand(command='reset', description='Reset the conversation'),
+            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)')
+        ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
 
@@ -29,11 +35,15 @@ class ChatGPT3TelegramBot:
         """
         Shows the help menu.
         """
-        await update.message.reply_text("/reset - Reset conversation\n"
-                                        "/image <prompt> - Generate image\n"
-                                        "/help - Help menu\n\n"
-                                        "Open source at https://github.com/n3d1117/chatgpt-telegram-bot",
-                                        disable_web_page_preview=True)
+        commands = [f'/{command.command} - {command.description}' for command in self.commands]
+        help_text = 'I\'m a ChatGPT bot, talk to me!' + \
+                    '\n\n' + \
+                    '\n'.join(commands) + \
+                    '\n\n' + \
+                    'Send me a voice message or audio file and I\'ll transcribe it for you!' + \
+                    '\n\n' + \
+                    "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
+        await update.message.reply_text(help_text, disable_web_page_preview=True)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -59,13 +69,13 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'New image generation request received from user {update.message.from_user.name}')
-
         chat_id = update.effective_chat.id
         image_query = update.message.text.replace('/image', '').strip()
         if image_query == '':
-            await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt!')
+            await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt! (e.g. /image cat)')
             return
+
+        logging.info(f'New image generation request received from user {update.message.from_user.name}')
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
         try:
@@ -254,6 +264,12 @@ class ChatGPT3TelegramBot:
 
         return False
 
+    async def post_init(self, application: Application) -> None:
+        """
+        Post initialization hook for the bot.
+        """
+        await application.bot.set_my_commands(self.commands)
+
     def run(self):
         """
         Runs the bot indefinitely until the user presses Ctrl+C
@@ -262,6 +278,7 @@ class ChatGPT3TelegramBot:
             .token(self.config['token']) \
             .proxy_url(self.config['proxy']) \
             .get_updates_proxy_url(self.config['proxy']) \
+            .post_init(self.post_init) \
             .build()
 
         application.add_handler(CommandHandler('reset', self.reset))
