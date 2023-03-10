@@ -2,3 +2,4 @@
 /.idea
 .env
 .DS_Store
+/token_usage

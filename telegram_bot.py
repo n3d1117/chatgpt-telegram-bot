@@ -8,6 +8,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
+import token_usage
 
 
 class ChatGPT3TelegramBot:
@@ -151,7 +152,8 @@ class ChatGPT3TelegramBot:
                 )
             else:
                 # Send the response of the transcript
-                response = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                token_usage.add_token_usage(update.message.from_user.id, total_tokens)
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
@@ -185,7 +187,8 @@ class ChatGPT3TelegramBot:
         chat_id = update.effective_chat.id
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        response = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
+        response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
+        token_usage.add_token_usage(update.message.from_user.id, total_tokens)
         await context.bot.send_message(
             chat_id=chat_id,
             reply_to_message_id=update.message.message_id,
