@@ -23,7 +23,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Transcribe audio messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 - [x] (NEW!) Group chat support with inline queries 
-  - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` command
+  - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 
 ## Additional features - help needed!
 - [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
