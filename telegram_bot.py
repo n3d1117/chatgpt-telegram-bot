@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
-import token_usage
+from usage_tracker import UsageTracker
 
 
 class ChatGPT3TelegramBot:
@@ -32,6 +32,7 @@ class ChatGPT3TelegramBot:
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
+        self.usage = {}
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -59,10 +60,13 @@ class ChatGPT3TelegramBot:
 
         logging.info(f'User {update.message.from_user.name} requested their token usage statistics')
         
-        tokens_today, tokens_month = token_usage.get_token_usage(update.message.from_user.id)
-        cost_today = token_usage.cost_tokens(tokens_today, self.config['token_price'])
-        cost_month = token_usage.cost_tokens(tokens_month, self.config['token_price'])
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id)
 
+        tokens_today, tokens_month, cost_today, cost_month = self.usage[
+            user_id].get_token_count_and_cost(token_price=self.config['token_price'])
+        
         usage_text = f"Today you used {tokens_today} tokens (worth ${cost_today:.3f})."+\
                      f"\nThis month you used {tokens_month} tokens (worth ${cost_month:.3f})."
         await update.message.reply_text(usage_text)
@@ -143,6 +147,16 @@ class ChatGPT3TelegramBot:
             )
             return
 
+        logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id)
+
+        chat_id = update.effective_chat.id
+        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
+        filename = update.message.voice.file_unique_id if update.message.voice else update.message.audio.file_unique_id
+        filename_ogg = f'{filename}.ogg'
         filename_mp3 = f'{filename}.mp3'
 
         try:
@@ -174,7 +188,7 @@ class ChatGPT3TelegramBot:
             else:
                 # Send the response of the transcript
                 response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-                token_usage.add_token_usage(update.message.from_user.id, total_tokens)
+                self.usage[user_id].add_chat_tokens(total_tokens)
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
@@ -209,7 +223,12 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
         response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
-        token_usage.add_token_usage(update.message.from_user.id, total_tokens)
+
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id)
+        self.usage[user_id].add_chat_tokens(total_tokens)
+
         await context.bot.send_message(
             chat_id=chat_id,
             reply_to_message_id=update.message.message_id,
