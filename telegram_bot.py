@@ -102,7 +102,18 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
-        if not update.message.voice and not update.message.audio:
+        logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+
+        chat_id = update.effective_chat.id
+        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
+
+        if update.message.voice:
+            filename = update.message.voice.file_unique_id
+        elif update.message.audio: 
+            filename = update.message.audio.file_unique_id
+        elif update.message.video:
+            filename = update.message.video.file_unique_id
+        else:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 reply_to_message_id=update.message.message_id,
@@ -110,24 +121,23 @@ class ChatGPT3TelegramBot:
             )
             return
 
-        logging.info(f'New transcribe request received from user {update.message.from_user.name}')
-
-        chat_id = update.effective_chat.id
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        filename = update.message.voice.file_unique_id if update.message.voice else update.message.audio.file_unique_id
-        filename_ogg = f'{filename}.ogg'
         filename_mp3 = f'{filename}.mp3'
 
         try:
             if update.message.voice:
-                audio_file = await context.bot.get_file(update.message.voice.file_id)
-                await audio_file.download_to_drive(filename_ogg)
-                ogg_audio = AudioSegment.from_ogg(filename_ogg)
-                ogg_audio.export(filename_mp3, format="mp3")
+                media_file = await context.bot.get_file(update.message.voice.file_id)
 
             elif update.message.audio:
-                audio_file = await context.bot.get_file(update.message.audio.file_id)
-                await audio_file.download_to_drive(filename_mp3)
+                media_file = await context.bot.get_file(update.message.audio.file_id)
+
+            elif update.message.video:
+                media_file = await context.bot.get_file(update.message.video.file_id)
+
+            await media_file.download_to_drive(filename)
+            
+            audio_track = AudioSegment.from_file(filename)
+            audio_track.export(filename_mp3, format="mp3")
+
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
@@ -160,8 +170,8 @@ class ChatGPT3TelegramBot:
             # Cleanup files
             if os.path.exists(filename_mp3):
                 os.remove(filename_mp3)
-            if os.path.exists(filename_ogg):
-                os.remove(filename_ogg)
+            if os.path.exists(filename):
+                os.remove(filename)
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -285,7 +295,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
-        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.transcribe))
+        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO | filters.VIDEO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP
