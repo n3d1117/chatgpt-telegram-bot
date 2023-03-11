@@ -27,7 +27,8 @@ class ChatGPT3TelegramBot:
         self.commands = [
             BotCommand(command='help', description='Show this help message'),
             BotCommand(command='reset', description='Reset the conversation'),
-            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)')
+            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
+            BotCommand(command='stats', description='Get your current usage statistics')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
@@ -45,6 +46,26 @@ class ChatGPT3TelegramBot:
                     '\n\n' + \
                     "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
         await update.message.reply_text(help_text, disable_web_page_preview=True)
+
+
+    async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Returns token usage statistics for current day and month.
+        """
+        if not await self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name} is not allowed to request their usage statistics')
+            await self.send_disallowed_message(update, context)
+            return
+
+        logging.info(f'User {update.message.from_user.name} requested their token usage statistics')
+        
+        tokens_today, tokens_month = token_usage.get_token_usage(update.message.from_user.id)
+        cost_today = token_usage.cost_tokens(tokens_today, self.config['token_price'])
+        cost_month = token_usage.cost_tokens(tokens_month, self.config['token_price'])
+
+        usage_text = f"Today you used {tokens_today} tokens (worth ${cost_today:.3f})."+\
+                     f"\nThis month you used {tokens_month} tokens (worth ${cost_month:.3f})."
+        await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -297,7 +318,8 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
-        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO | filters.VIDEO, self.transcribe))
+        application.add_handler(CommandHandler('stats', self.stats))
+        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP

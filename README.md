@@ -24,6 +24,8 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 - [x] (NEW!) Group chat support with inline queries 
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
+- [x] (NEW!) Track token usage per user (stored in /token_usage/`user_id`.json)
+- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command
 
 ## Additional features - help needed!
 - [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
@@ -54,6 +56,7 @@ MAX_TOKENS=2000 # Defaults to 1200
 MAX_HISTORY_SIZE=15 # Defaults to 10
 MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
+TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, you can get it from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
@@ -65,6 +68,8 @@ VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 * `MAX_HISTORY_SIZE`: Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage ([#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 * `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
+* `TOKEN_PRICE`: USD-price per 1000 tokens for cost information in usage statistics
+
 
 <details><summary>Additional model parameters can be configured from the `main.py` file.</summary>
 

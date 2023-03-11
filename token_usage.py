@@ -51,7 +51,7 @@ def add_token_usage(user_id, tokens):
 def get_token_usage(user_id, date=date.today()):
     """
     Sums tokens used per day and per month of given date.
-    Returns tuple of both values.
+    Returns both values.
     :param user_id: Telegram user ID
     :param date: datetime.date object, default today
     """
@@ -68,9 +68,9 @@ def get_token_usage(user_id, date=date.today()):
             usage = json.load(infile)
         usage_day = sum(usage[month][day])
         usage_month = sum(chain.from_iterable(list(usage[month].values())))
-        return(usage_day, usage_month)
+        return usage_day, usage_month
     else:
-        return(0, 0)
+        return 0, 0
     
 def cost_tokens(tokens, price_1k_tokens=0.002):
     """
