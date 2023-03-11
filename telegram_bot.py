@@ -1,13 +1,13 @@
 import logging
 import os
 
-import telegram.constants as constants
+from telegram import constants
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, InlineQueryHandler, \
-    Application
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
+    filters, InlineQueryHandler, Application
 
-from openai_helper import OpenAIHelper
 from pydub import AudioSegment
+from openai_helper import OpenAIHelper
 
 
 class ChatGPT3TelegramBot:
@@ -40,7 +40,7 @@ class ChatGPT3TelegramBot:
                     '\n\n' + \
                     '\n'.join(commands) + \
                     '\n\n' + \
-                    'Send me a voice message or audio file and I\'ll transcribe it for you!' + \
+                    'Send me a voice message or file and I\'ll transcribe it for you!' + \
                     '\n\n' + \
                     "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
         await update.message.reply_text(help_text, disable_web_page_preview=True)
@@ -109,7 +109,7 @@ class ChatGPT3TelegramBot:
 
         if update.message.voice:
             filename = update.message.voice.file_unique_id
-        elif update.message.audio: 
+        elif update.message.audio:
             filename = update.message.audio.file_unique_id
         elif update.message.video:
             filename = update.message.video.file_unique_id
@@ -137,7 +137,6 @@ class ChatGPT3TelegramBot:
             
             audio_track = AudioSegment.from_file(filename)
             audio_track.export(filename_mp3, format="mp3")
-
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)

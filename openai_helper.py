@@ -61,13 +61,14 @@ class OpenAIHelper:
 
                 if len(response.choices) > 1 and self.config['n_choices'] > 1:
                     for index, choice in enumerate(response.choices):
+                        content = choice['message']['content'].strip()
                         if index == 0:
-                            self.__add_to_history(chat_id, role="assistant", content=choice['message']['content'])
+                            self.__add_to_history(chat_id, role="assistant", content=content)
                         answer += f'{index+1}\u20e3\n'
-                        answer += choice['message']['content']
+                        answer += content
                         answer += '\n\n'
                 else:
-                    answer = response.choices[0]['message']['content']
+                    answer = response.choices[0]['message']['content'].strip()
                     self.__add_to_history(chat_id, role="assistant", content=answer)
 
                 if self.config['show_usage']:
