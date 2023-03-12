@@ -147,17 +147,11 @@ class ChatGPT3TelegramBot:
             )
             return
 
-        logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+        filename_mp3 = f'{filename}.mp3'
 
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id)
-
-        chat_id = update.effective_chat.id
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        filename = update.message.voice.file_unique_id if update.message.voice else update.message.audio.file_unique_id
-        filename_ogg = f'{filename}.ogg'
-        filename_mp3 = f'{filename}.mp3'
 
         try:
             if update.message.voice:
@@ -338,7 +332,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
-        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.transcribe))
+        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO | filters.VIDEO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP

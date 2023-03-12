@@ -104,7 +104,7 @@ class UsageTracker:
 
     # transcription usage functions:
 
-    def add_audio_seconds(self, seconds):
+    def add_transcription_seconds(self, seconds):
         # TODO: implement
         pass
 
@@ -113,13 +113,13 @@ class UsageTracker:
         pass
 
     @staticmethod
-    def cost_tokens(seconds, minute_price=0.006):
+    def cost_transcription(seconds, minute_price=0.006):
         # cost of audio seconds transcribed, amount in USD
         # current price Whisper: $0.002/1000 tokens
         second_price = minute_price/60
         return seconds * second_price
     
-    def get_audio_seconds_and_cost(self, date=date.today(), minute_price=0.006):
+    def get_transcription_seconds_and_cost(self, date=date.today(), minute_price=0.006):
         # TODO: implement
         pass
     
