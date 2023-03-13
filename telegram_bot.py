@@ -184,6 +184,10 @@ class ChatGPT3TelegramBot:
         logging.info(f'New message received from user {update.message.from_user.name}')
         chat_id = update.effective_chat.id
 
+        if self.is_group_chat(update):
+            if update.message.text.find(self.config['group_trigger_keyword'], 0, len(self.config['group_trigger_keyword'])) == -1:
+                return
+
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
         response = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
         await context.bot.send_message(
