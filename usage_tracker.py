@@ -12,95 +12,103 @@ class UsageTracker:
     UsageTracker class
     Enables tracking of daily/monthly token usage per user.
     User files are stored as JSON in /token_usage directory.
-    JSON schema:
-        {"chat_tokens":{year-month:{day: total_tokens_used}, ...},
-        {"audio_seconds":{year-month:{day: total_seconds_transcribed}, ...},
-        {"image_count":{year-month:{day: [nr_images_small, nr_images_medium, nr_images_large]}, ...}}
+    JSON example:
+    {
+        "user_name": "user_name",
+        "current_cost": {
+            "day": 0.45, 
+            "month": 3.23, 
+            "last_update": "2023-03-14"},
+        "usage_history": {
+            "chat_tokens": {
+                "2023-03-13": 520,
+                "2023-03-14": 1532
+            },
+            "transcription_seconds": {
+                "2023-03-13": 125,
+                "2023-03-14": 64
+            },
+            "number_images": {
+                "2023-03-12": [0, 2, 3],
+                "2023-03-13": [1, 2, 3],
+                "2023-03-14": [0, 1, 2]
+            }
+        }
+    }
     """
 
-    def __init__(self, user_id, logs_dir="usage_logs"):
+    def __init__(self, user_id, user_name, logs_dir="usage_logs"):
         """
         Initializes UsageTracker for a user with current date. 
         Loads usage data from usage log file.
         :param user_id: Telegram ID of the user
+        :param user_name: Telegram user name
         :param logs_dir: path to directory of usage logs, default "usage_logs"
         """
         self.user_id = user_id
         self.logs_dir = logs_dir
         # path to usage file of given user
         self.user_file = f"{logs_dir}/{user_id}.json"
-        # current year-month as string
-        self.current_month = year_month(date.today())
-        # current day as string, no leading zero
-        self.current_day = str(date.today().day)
-
+        
         if os.path.isfile(self.user_file):
             with open(self.user_file, "r") as file:
                 self.usage = json.load(file)
         else:
             # ensure directory exists 
             pathlib.Path(logs_dir).mkdir(exist_ok=True)
-            # create empty dictionary for this user
-            self.usage = {}
+            # create new dictionary for this user
+            self.usage = {
+                "user_name": user_name,
+                "current_cost": {"day": 0.0, "month": 0.0, "last_update": str(date.today())},
+                "usage_history": {"chat_tokens": {}, "transcription_seconds": {}, "number_images": {}}
+            }
 
     # token usage functions:
     
-    def add_chat_tokens(self, tokens):
+    def add_chat_tokens(self, tokens, tokens_price=0.002):
         """
-        Adds used tokens from a request to a users usage .
+        Adds used tokens from a request to a users usage history.
+        Updates current cost
         :param tokens: total tokens used in last request
+        :param tokens_price: price per 1000 tokens
         """
-        if "chat_tokens" in self.usage:
-            if self.current_month in self.usage["chat_tokens"]:
-                if self.current_day in self.usage["chat_tokens"][self.current_month]:
-                    # add token usage to existing month and day
-                    self.usage["chat_tokens"][self.current_month][self.current_day] += tokens
-                else:
-                    # create new entry for current day
-                    self.usage["chat_tokens"][self.current_month][self.current_day] = tokens
+        today = date.today()
+        last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        # add current cost, update new day
+        if today == last_update:
+            self.usage["current_cost"]["day"] += tokens * (tokens_price * 0.001)
+            self.usage["current_cost"]["month"] += tokens * (tokens_price * 0.001)
+        else:
+            if today.month == last_update.month:
+                self.usage["current_cost"]["month"] += tokens * (tokens_price * 0.001)
             else:
-                # create new entry for current month and day
-                self.usage["chat_tokens"][self.current_month] = {self.current_day: tokens}
-        else: # add chat_tokens key and token usage for current month and day
-            self.usage["chat_tokens"] = {self.current_month: {self.current_day: tokens}}
+                self.usage["current_cost"]["month"] = tokens * (tokens_price * 0.001)
+            self.usage["current_cost"]["day"] = tokens * (tokens_price * 0.001)
+            self.usage["current_cost"]["last_update"] = str(today)
+
+        # update usage_history
+        if str(today) in self.usage["usage_history"]["chat_tokens"]:
+            # add token usage to existing date
+            self.usage["usage_history"]["chat_tokens"][str(today)] += tokens
+        else:
+            # create new entry for current month and day
+            self.usage["usage_history"]["chat_tokens"][str(today)] = tokens
         
         # write updated token usage to user file
         with open(self.user_file, "w") as outfile:
             json.dump(self.usage, outfile)
 
     def get_token_usage(self, date=date.today()):
-        """
-        Gets tokens used per day and sums tokens per month of given date.
-        Returns both values.
-        :param date: datetime.date object, default today
-        """
-        # year-month as string
-        month = year_month(date)
-        # day as string, no leading zero
-        day = str(date.day)
-        usage_day = self.usage["chat_tokens"][month][day]
-        usage_month = sum(list(self.usage["chat_tokens"][month].values()))
+        if str(date) in self.usage["usage_history"]["chat_tokens"]:
+            usage_day = self.usage["usage_history"]["chat_tokens"][str(date)]
+        else:
+            usage_day = 0
+        month = str(date)[:7] # year-month as string
+        usage_month = 0
+        for date, tokens in self.usage["usage_history"]["chat_tokens"].items():
+            if date.startswith(month):
+                usage_month += tokens
         return usage_day, usage_month
-
-    @staticmethod
-    def cost_tokens(tokens, token_price=0.002):
-        # cost of token amount in USD
-        # current price gpt-3.5-turbo: $0.002/1000 tokens
-        price_per_token = token_price*0.001
-        return tokens * price_per_token
-    
-    def get_token_count_and_cost(self, date=date.today(), token_price=0.002):
-        """
-        Gets total cost of tokens used per day and per month of given date.
-        :param date: datetime.date object, default today
-        :param token_price: price of 1000 tokens
-        :returns: 4 values (token count day, token count month, token cost day, 
-                  token cost month)
-        """
-        tokens_day, tokens_month = self.get_token_usage(date)
-        cost_day = self.cost_tokens(tokens_day, token_price)
-        cost_month = self.cost_tokens(tokens_month, token_price)
-        return tokens_day, tokens_month, cost_day, cost_month 
 
     # transcription usage functions:
 
@@ -143,11 +151,18 @@ class UsageTracker:
         pass
 
     # general functions
+    def get_current_cost(self):
+        pass
+    
     def get_all_stats(self, date=date.today(), token_price=0.002, minute_price=0.006, 
                       image_prices=[0.016, 0.018, 0.02]):
         # TODO: implement
         pass
 
-    def summarize_past_daily_usage(self):
-        # TODO: implement
-        pass
+"""
+testing 
+user = UsageTracker("hi", "my_name")
+user.add_chat_tokens(12)
+print(user.get_token_usage(date.fromisoformat('2023-05-03')))
+
+"""

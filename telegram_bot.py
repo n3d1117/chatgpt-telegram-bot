@@ -62,13 +62,12 @@ class ChatGPT3TelegramBot:
         
         user_id = update.message.from_user.id
         if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id)
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-        tokens_today, tokens_month, cost_today, cost_month = self.usage[
-            user_id].get_token_count_and_cost(token_price=self.config['token_price'])
+        tokens_today, tokens_month = self.usage[user_id].get_token_usage()
         
-        usage_text = f"Today you used {tokens_today} tokens (worth ${cost_today:.3f})."+\
-                     f"\nThis month you used {tokens_month} tokens (worth ${cost_month:.3f})."
+        usage_text = f"Today you used {tokens_today} tokens."+\
+                     f"\nThis month you used {tokens_month} tokens."
         await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -151,7 +150,7 @@ class ChatGPT3TelegramBot:
 
         user_id = update.message.from_user.id
         if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id)
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
         try:
             if update.message.voice:
@@ -182,7 +181,7 @@ class ChatGPT3TelegramBot:
             else:
                 # Send the response of the transcript
                 response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-                self.usage[user_id].add_chat_tokens(total_tokens)
+                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
@@ -220,8 +219,8 @@ class ChatGPT3TelegramBot:
 
         user_id = update.message.from_user.id
         if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id)
-        self.usage[user_id].add_chat_tokens(total_tokens)
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
 
         await context.bot.send_message(
             chat_id=chat_id,
