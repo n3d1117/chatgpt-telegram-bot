@@ -66,9 +66,20 @@ class ChatGPT3TelegramBot:
 
         tokens_today, tokens_month = self.usage[user_id].get_token_usage()
         images_today, images_month = self.usage[user_id].get_image_count()
+        transcribe_durations = self.usage[user_id].get_transcription_duration()
+        cost_today, cost_month = self.usage[user_id].get_current_cost()
         
-        usage_text = f"Today you used {tokens_today} chat tokens and generated {images_today} images."+\
-                     f"\nThis month you used {tokens_month} tokens and generated {images_month} images."
+        usage_text = f"Today:\n"+\
+                     f"{tokens_today} chat tokens used.\n"+\
+                     f"{images_today} images generated.\n"+\
+                     f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
+                     f"💰 For a total amount of ${cost_today}.\n"+\
+                     f"\n----------------------------\n\n"+\
+                     f"This month:\n"+\
+                     f"{tokens_month} chat tokens used.\n"+\
+                     f"{images_month} images generated.\n"+\
+                     f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
+                     f"💰 For a total amount of ${cost_month}."
         await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -176,7 +187,8 @@ class ChatGPT3TelegramBot:
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
-
+            # add transcription seconds to usage tracker
+            self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
             if self.config['voice_reply_transcript']:
                 # Send the transcript
                 await context.bot.send_message(

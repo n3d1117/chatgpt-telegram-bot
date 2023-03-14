@@ -57,7 +57,8 @@ MAX_HISTORY_SIZE=15 # Defaults to 10
 MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
-IMAGE_PRICES="0.016,0.018,0.02" # Defaults to openai pricing for sizes 256x256,512x512,1024x1024
+IMAGE_PRICES="0.016,0.018,0.02" # Defaults to OpenAI Dall-E pricing for sizes 256x256,512x512,1024x1024
+TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, you can get it from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))

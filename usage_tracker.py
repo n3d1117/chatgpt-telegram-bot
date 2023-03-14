@@ -66,7 +66,7 @@ class UsageTracker:
     # token usage functions:
     
     def add_chat_tokens(self, tokens, tokens_price=0.002):
-        """Adds used tokens from a request to a users usage history and updates current cost
+        """Adds used tokens from a request to a users usage history and updates current cost-
         :param tokens: total tokens used in last request
         :param tokens_price: price per 1000 tokens, defaults to 0.002
         """
@@ -89,7 +89,7 @@ class UsageTracker:
             # add token usage to existing date
             self.usage["usage_history"]["chat_tokens"][str(today)] += tokens
         else:
-            # create new entry for current month and day
+            # create new entry for current date
             self.usage["usage_history"]["chat_tokens"][str(today)] = tokens
         
         # write updated token usage to user file
@@ -97,7 +97,7 @@ class UsageTracker:
             json.dump(self.usage, outfile)
 
     def get_token_usage(self, date=date.today()):
-        """Get token amount used on day and month of date
+        """Get token amount used on day and month of date-
 
         :param date: date of interest, defaults to date.today()
         :return: total number of tokens used per day and per month
@@ -154,7 +154,7 @@ class UsageTracker:
             json.dump(self.usage, outfile)
 
     def get_image_count(self, date=date.today()):
-        """Get number of images requested on day and month of date
+        """Get number of images requested on day and month of date.
 
         :param date: date of interest, defaults to date.today()
         :return: total number of images requested per day and per month
@@ -172,26 +172,71 @@ class UsageTracker:
 
     # transcription usage functions:
 
-    def add_transcription_seconds(self, seconds):
-        # TODO: implement
-        pass
+    def add_transcription_seconds(self, seconds, minute_price=0.006):
+        """Adds requested transcription seconds to a users usage history and updates current cost.
+        :param tokens: total tokens used in last request
+        :param tokens_price: price per 1000 tokens, defaults to 0.002
+        """
+        today = date.today()
+        last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        # add current cost, update new day
+        if today == last_update:
+            self.usage["current_cost"]["day"] += round(seconds * minute_price / 60, 2)
+            self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+        else:
+            if today.month == last_update.month:
+                self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+            else:
+                self.usage["current_cost"]["month"] = round(seconds * minute_price / 60, 2)
+            self.usage["current_cost"]["day"] = round(seconds * minute_price / 60, 2)
+            self.usage["current_cost"]["last_update"] = str(today)
 
-    def get_transcription_usage(self, date=date.today()):
-        # TODO: implement
-        pass
+        # update usage_history
+        if str(today) in self.usage["usage_history"]["transcription_seconds"]:
+            # add requested seconds to existing date
+            self.usage["usage_history"]["transcription_seconds"][str(today)] += seconds
+        else:
+            # create new entry for current date
+            self.usage["usage_history"]["transcription_seconds"][str(today)] = seconds
+        
+        # write updated token usage to user file
+        with open(self.user_file, "w") as outfile:
+            json.dump(self.usage, outfile)
 
-    @staticmethod
-    def cost_transcription(seconds, minute_price=0.006):
-        # cost of audio seconds transcribed, amount in USD
-        # current price Whisper: $0.002/1000 tokens
-        second_price = minute_price/60
-        return seconds * second_price
+    def get_transcription_duration(self, date=date.today()):
+        """Get minutes and seconds of audio transcribed on day and month of date.
+
+        :param date: date of interest, defaults to date.today()
+        :return: total amount of time transcribed per day and per month (4 values)
+        """      
+        if str(date) in self.usage["usage_history"]["transcription_seconds"]:
+            seconds_day = self.usage["usage_history"]["transcription_seconds"][str(date)]
+        else:
+            seconds_day = 0
+        month = str(date)[:7] # year-month as string
+        seconds_month = 0
+        for date, seconds in self.usage["usage_history"]["transcription_seconds"].items():
+            if date.startswith(month):
+                seconds_month += seconds
+        minutes_day, seconds_day = divmod(seconds_day, 60)
+        minutes_month, seconds_month = divmod(seconds_month, 60)
+        return int(minutes_day), round(seconds_day, 2), int(minutes_month), round(seconds_month, 2)
     
     # general functions
     def get_current_cost(self):
-        pass
-    
-    def get_all_stats(self, date=date.today(), token_price=0.002, minute_price=0.006, 
-                      image_prices=[0.016, 0.018, 0.02]):
-        # TODO: implement
-        pass
+        """Get total USD amount of all requests of the current day and month
+
+        :return: cost of current day and month
+        """  
+        today = date.today()
+        last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        if today == last_update:
+            cost_day = self.usage["current_cost"]["day"]
+            cost_month = self.usage["current_cost"]["month"]
+        else:
+            cost_day = 0.0
+            if today.month == last_update.month:
+                cost_month = self.usage["current_cost"]["month"]
+            else:
+                cost_month = 0.0
+        return round(cost_day, 3), round(cost_month, 3)
