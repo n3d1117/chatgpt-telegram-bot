@@ -6,7 +6,7 @@
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
-![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10900400/demo.pdf)
+![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
 ## Features
 - [x] Support markdown in answers
