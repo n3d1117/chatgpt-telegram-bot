@@ -26,6 +26,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 - [x] (NEW!) Track token usage per user (stored in /token_usage/`user_id`.json) - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Group chat trigger keyword - by [@tracking](https://github.com/tracking)
 
 ## Additional features - help needed!
 - [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
@@ -56,6 +57,7 @@ MAX_TOKENS=2000 # Defaults to 1200
 MAX_HISTORY_SIZE=15 # Defaults to 10
 MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
+GROUP_TRIGGER_KEYWORD="@bot" # Defaults to "" (no keyword required)
 TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
 IMAGE_PRICES="0.016,0.018,0.02" # Defaults to OpenAI Dall-E pricing for sizes 256x256,512x512,1024x1024
 TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
@@ -70,6 +72,7 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `MAX_HISTORY_SIZE`: Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage ([#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 * `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
+* `GROUP_TRIGGER_KEYWORD`: If set, the bot will only respond to messages that start with this keyword. This is useful for bots added to groups with privacy mode disabled. **Note**: by default, *no keyword* is required (`""`)
 * `TOKEN_PRICE`: USD-price per 1000 tokens for cost information in usage statistics
 
 
