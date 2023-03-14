@@ -75,9 +75,8 @@ class OpenAIHelper:
                     answer += "\n\n---\n" \
                               f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
                               f" ({str(response.usage['prompt_tokens'])} prompt," \
-                              f" {str(response.usage['completion_tokens'])} completion)"
-
-                return answer
+                              f" {str(response.usage['completion_tokens'])} completion)"            
+                return answer, response.usage['total_tokens']
             else:
                 logging.error('No response from GPT-3')
                 return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."
@@ -105,7 +104,7 @@ class OpenAIHelper:
             n=1,
             size=self.config['image_size']
         )
-        return response['data'][0]['url']
+        return response['data'][0]['url'], self.config['image_size']
 
     def transcribe(self, filename):
         """
