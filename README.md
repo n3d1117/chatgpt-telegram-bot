@@ -13,12 +13,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] Docker support
-- [x] Proxy support
-- [x] (NEW!) Support multiple answers via the `n_choices` configuration parameter
-- [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
-- [x] (NEW!) See token usage after each answer
-- [x] (NEW!) Multi-chat support
+- [x] Docker and Proxy support
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
 - [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
