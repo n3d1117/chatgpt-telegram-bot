@@ -104,7 +104,7 @@ class OpenAIHelper:
             n=1,
             size=self.config['image_size']
         )
-        return response['data'][0]['url']
+        return response['data'][0]['url'], self.config['image_size']
 
     def transcribe(self, filename):
         """

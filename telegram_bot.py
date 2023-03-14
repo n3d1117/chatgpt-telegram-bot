@@ -65,9 +65,10 @@ class ChatGPT3TelegramBot:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
         tokens_today, tokens_month = self.usage[user_id].get_token_usage()
+        images_today, images_month = self.usage[user_id].get_image_count()
         
-        usage_text = f"Today you used {tokens_today} tokens."+\
-                     f"\nThis month you used {tokens_month} tokens."
+        usage_text = f"Today you used {tokens_today} chat tokens and generated {images_today} images."+\
+                     f"\nThis month you used {tokens_month} tokens and generated {images_month} images."
         await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,12 +105,18 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
         try:
-            image_url = self.openai.generate_image(prompt=image_query)
+            image_url, image_size = self.openai.generate_image(prompt=image_query)
             await context.bot.send_photo(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
                 photo=image_url
             )
+            # add image request to usage tracker
+            user_id = update.message.from_user.id
+            if user_id not in self.usage:
+                self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+            self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
+
         except Exception as e:
             logging.exception(e)
             await context.bot.send_message(
@@ -181,6 +188,7 @@ class ChatGPT3TelegramBot:
             else:
                 # Send the response of the transcript
                 response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                # add chat request to usage tracker
                 self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
                 await context.bot.send_message(
                     chat_id=chat_id,
@@ -217,6 +225,7 @@ class ChatGPT3TelegramBot:
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
         response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
 
+        # add chat request to usage tracker
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
