@@ -8,6 +8,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
+from usage_tracker import UsageTracker
 
 
 class ChatGPT3TelegramBot:
@@ -26,10 +27,12 @@ class ChatGPT3TelegramBot:
         self.commands = [
             BotCommand(command='help', description='Show this help message'),
             BotCommand(command='reset', description='Reset the conversation'),
-            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)')
+            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
+            BotCommand(command='stats', description='Get your current usage statistics')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
+        self.usage = {}
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -44,6 +47,40 @@ class ChatGPT3TelegramBot:
                     '\n\n' + \
                     "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
         await update.message.reply_text(help_text, disable_web_page_preview=True)
+
+
+    async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Returns token usage statistics for current day and month.
+        """
+        if not await self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name} is not allowed to request their usage statistics')
+            await self.send_disallowed_message(update, context)
+            return
+
+        logging.info(f'User {update.message.from_user.name} requested their token usage statistics')
+        
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        tokens_today, tokens_month = self.usage[user_id].get_token_usage()
+        images_today, images_month = self.usage[user_id].get_image_count()
+        transcribe_durations = self.usage[user_id].get_transcription_duration()
+        cost_today, cost_month = self.usage[user_id].get_current_cost()
+        
+        usage_text = f"Today:\n"+\
+                     f"{tokens_today} chat tokens used.\n"+\
+                     f"{images_today} images generated.\n"+\
+                     f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
+                     f"💰 For a total amount of ${cost_today}.\n"+\
+                     f"\n----------------------------\n\n"+\
+                     f"This month:\n"+\
+                     f"{tokens_month} chat tokens used.\n"+\
+                     f"{images_month} images generated.\n"+\
+                     f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
+                     f"💰 For a total amount of ${cost_month}."
+        await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -79,12 +116,18 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
         try:
-            image_url = self.openai.generate_image(prompt=image_query)
+            image_url, image_size = self.openai.generate_image(prompt=image_query)
             await context.bot.send_photo(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
                 photo=image_url
             )
+            # add image request to usage tracker
+            user_id = update.message.from_user.id
+            if user_id not in self.usage:
+                self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+            self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
+
         except Exception as e:
             logging.exception(e)
             await context.bot.send_message(
@@ -123,6 +166,10 @@ class ChatGPT3TelegramBot:
 
         filename_mp3 = f'{filename}.mp3'
 
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
         try:
             if update.message.voice:
                 media_file = await context.bot.get_file(update.message.voice.file_id)
@@ -140,7 +187,8 @@ class ChatGPT3TelegramBot:
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
-
+            # add transcription seconds to usage tracker
+            self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
             if self.config['voice_reply_transcript']:
                 # Send the transcript
                 await context.bot.send_message(
@@ -151,7 +199,9 @@ class ChatGPT3TelegramBot:
                 )
             else:
                 # Send the response of the transcript
-                response = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                # add chat request to usage tracker
+                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
@@ -185,7 +235,14 @@ class ChatGPT3TelegramBot:
         chat_id = update.effective_chat.id
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        response = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
+        response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
+
+        # add chat request to usage tracker
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+
         await context.bot.send_message(
             chat_id=chat_id,
             reply_to_message_id=update.message.message_id,
@@ -294,6 +351,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
+        application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO | filters.VIDEO, self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[

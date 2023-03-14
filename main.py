@@ -61,8 +61,10 @@ def main():
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
         'proxy': os.environ.get('PROXY', None),
         'voice_reply_transcript': os.environ.get('VOICE_REPLY_WITH_TRANSCRIPT_ONLY', 'true').lower() == 'true',
+        'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
+        'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES',"0.016,0.018,0.02").split(",")],
+        'transcription_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
     }
-
     # Setup and run ChatGPT and Telegram bot
     openai_helper = OpenAIHelper(config=openai_config)
     telegram_bot = ChatGPT3TelegramBot(config=telegram_config, openai=openai_helper)
