@@ -73,13 +73,13 @@ class ChatGPT3TelegramBot:
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
                      f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_today}.\n"+\
+                     f"💰 For a total amount of ${cost_today:.2f}\n"+\
                      f"\n----------------------------\n\n"+\
                      f"This month:\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
                      f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_month}."
+                     f"💰 For a total amount of ${cost_month:.2f}"
         await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
