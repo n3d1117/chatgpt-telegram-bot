@@ -33,16 +33,12 @@ def main():
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
         'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
         'max_tokens': int(os.environ.get('MAX_TOKENS', 1200)),
+        'n_choices': int(os.environ.get('N_CHOICES', 1200)),
+        'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
+        'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
         'model': 'gpt-3.5-turbo',
-
-        # Number between 0 and 2. Higher values like 0.8 will make the output more random,
-        # while lower values like 0.2 will make it more focused and deterministic.
-        'temperature': 1,
-
-        # How many chat completion choices to generate for each input message.
-        'n_choices': 1,
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
         # they appear in the text so far, increasing the model's likelihood to talk about new topics.
@@ -50,10 +46,7 @@ def main():
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
         # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-        'frequency_penalty': 0,
-
-        # The DALL·E generated image size
-        'image_size': '512x512'
+        'frequency_penalty': 0
     }
 
     telegram_config = {
@@ -63,6 +56,7 @@ def main():
         'monthly_guest_budget': float(os.environ.get('MONTHLY_GUEST_BUDGET', '100.0')),
         'proxy': os.environ.get('PROXY', None),
         'voice_reply_transcript': os.environ.get('VOICE_REPLY_WITH_TRANSCRIPT_ONLY', 'true').lower() == 'true',
+        'group_trigger_keyword': os.environ.get('GROUP_TRIGGER_KEYWORD', ''),
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES',"0.016,0.018,0.02").split(",")],
         'transcription_price': float(os.environ.get('TOKEN_PRICE', 0.002)),

@@ -1,7 +1,8 @@
 FROM python:3.10-slim
 
-RUN apt-get update
-RUN apt-get install ffmpeg -y
+RUN apt-get update && \
+    apt-get install ffmpeg -y && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m appuser
 USER appuser
@@ -9,7 +10,7 @@ WORKDIR /home/appuser/
 
 ENV PATH="/home/appuser/.local/bin:$PATH"
 
-RUN pip install --user pipenv
+RUN pip install --user pipenv --no-cache-dir
 
 WORKDIR /home/appuser/app
 COPY . .

@@ -258,9 +258,18 @@ class ChatGPT3TelegramBot:
         
         logging.info(f'New message received from user {update.message.from_user.name}')
         chat_id = update.effective_chat.id
+        prompt = update.message.text
+
+        if self.is_group_chat(update):
+            trigger_keyword = self.config['group_trigger_keyword']
+            if prompt.startswith(trigger_keyword):
+                prompt = prompt[len(trigger_keyword):].strip()
+            else:
+                logging.warning(f'Message does not start with trigger keyword, ignoring...')
+                return
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=update.message.text)
+        response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
 
         # add chat request to users usage tracker
         self.usage[update.message.from_user.id].add_chat_tokens(total_tokens, self.config['token_price'])

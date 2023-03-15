@@ -6,26 +6,22 @@
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
-![demo.pdf](https://github.com/n3d1117/chatgpt-telegram-bot/files/10900400/demo.pdf)
+![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
 ## Features
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
-- [x] Docker support
-- [x] Proxy support
-- [x] (NEW!) Support multiple answers via the `n_choices` configuration parameter
-- [x] (NEW!) Customizable model parameters (see [configuration](#configuration) section)
-- [x] (NEW!) See token usage after each answer
-- [x] (NEW!) Multi-chat support
+- [x] Docker and Proxy support
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
 - [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 - [x] (NEW!) Group chat support with inline queries 
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
-- [x] (NEW!) Track token usage per user (stored in /token_usage/`user_id`.json)
-- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command
+- [x] (NEW!) Track token usage per user (stored in /token_usage/`user_id`.json) - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Group chat trigger keyword - by [@tracking](https://github.com/tracking)
 
 ## Additional features - help needed!
 - [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
@@ -56,6 +52,10 @@ MAX_TOKENS=2000 # Defaults to 1200
 MAX_HISTORY_SIZE=15 # Defaults to 10
 MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
+N_CHOICES=1 # Defaults to 1
+TEMPERATURE=1.0 # Defaults to 1.0
+IMAGE_SIZE="256x256" # Defaults to 512x512
+GROUP_TRIGGER_KEYWORD="@bot" # Defaults to "" (no keyword required)
 TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
 IMAGE_PRICES="0.016,0.018,0.02" # Defaults to OpenAI Dall-E pricing for sizes 256x256,512x512,1024x1024
 TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
@@ -70,6 +70,10 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `MAX_HISTORY_SIZE`: Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage ([#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
 * `MAX_CONVERSATION_AGE_MINUTES`: Maximum number of minutes a conversation should live, after which the conversation will be reset to avoid excessive token usage
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
+* `N_CHOICES`: Number of answers to generate for each input message
+* `TEMPERATURE`: Number between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic
+* `IMAGE_SIZE`: The DALL·E generated image size. Allowed values: "256x256", "512x512", or "1024x1024"
+* `GROUP_TRIGGER_KEYWORD`: If set, the bot will only respond to messages that start with this keyword. This is useful for bots added to groups with privacy mode disabled. **Note**: by default, *no keyword* is required (`""`)
 * `TOKEN_PRICE`: USD-price per 1000 tokens for cost information in usage statistics
 
 
@@ -80,23 +84,13 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
     # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
     'model': 'gpt-3.5-turbo',
 
-    # Number between 0 and 2. Higher values like 0.8 will make the output more random,
-    # while lower values like 0.2 will make it more focused and deterministic. Defaults to 1
-    'temperature': 1,
-    
-    # How many answers to generate for each input message. Defaults to 1
-    'n_choices': 1,
-
     # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
     # they appear in the text so far, increasing the model's likelihood to talk about new topics. Defaults to 0
     'presence_penalty': 0,
     
     # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
     # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Defaults to 0
-    'frequency_penalty': 0,
-    
-    # The DALL·E generated image size. 256x256, 512x512, or 1024x1024. Defaults to 512x512
-    'image_size': '512x512'
+    'frequency_penalty': 0
 }
 ```
 </details>
