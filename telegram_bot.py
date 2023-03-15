@@ -288,7 +288,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
-        application.add_handler(MessageHandler(filters.ATTACHMENT, self.transcribe))
+        application.add_handler(MessageHandler(filters.ATTACHMENT & (~filters.Document.IMAGE), self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP
