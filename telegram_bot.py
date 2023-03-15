@@ -378,7 +378,7 @@ class ChatGPT3TelegramBot:
     async def is_within_budget(self, update: Update) -> bool:
         """
         Checks if the user reached their monthly usage limit.
-        Initializes self.usage for user and guest when needed.
+        Initializes UsageTracker for user and guest when needed.
         """
         user_id = update.message.from_user.id
         if user_id not in self.usage:
@@ -409,7 +409,7 @@ class ChatGPT3TelegramBot:
             for user in allowed_user_ids:
                 if await self.is_user_in_group(update, user):
                     if 'guests' not in self.usage:
-                        self.usage['guests'] = UsageTracker('guests', 'non-users in group chats')
+                        self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
                     if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
                         return True
                     else:
