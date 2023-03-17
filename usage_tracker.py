@@ -96,20 +96,20 @@ class UsageTracker:
         with open(self.user_file, "w") as outfile:
             json.dump(self.usage, outfile)
 
-    def get_token_usage(self, date=date.today()):
-        """Get token amount used on day and month of date-
+    def get_current_token_usage(self):
+        """Get token amounts used for today and this month
 
-        :param date: date of interest, defaults to date.today()
         :return: total number of tokens used per day and per month
-        """        
-        if str(date) in self.usage["usage_history"]["chat_tokens"]:
-            usage_day = self.usage["usage_history"]["chat_tokens"][str(date)]
+        """
+        today = date.today()     
+        if str(today) in self.usage["usage_history"]["chat_tokens"]:
+            usage_day = self.usage["usage_history"]["chat_tokens"][str(today)]
         else:
             usage_day = 0
-        month = str(date)[:7] # year-month as string
+        month = str(today)[:7] # year-month as string
         usage_month = 0
-        for date, tokens in self.usage["usage_history"]["chat_tokens"].items():
-            if date.startswith(month):
+        for today, tokens in self.usage["usage_history"]["chat_tokens"].items():
+            if today.startswith(month):
                 usage_month += tokens
         return usage_day, usage_month
     
@@ -153,20 +153,20 @@ class UsageTracker:
         with open(self.user_file, "w") as outfile:
             json.dump(self.usage, outfile)
 
-    def get_image_count(self, date=date.today()):
-        """Get number of images requested on day and month of date.
+    def get_current_image_count(self):
+        """Get number of images requested for today and this month.
 
-        :param date: date of interest, defaults to date.today()
         :return: total number of images requested per day and per month
-        """      
-        if str(date) in self.usage["usage_history"]["number_images"]:
-            usage_day = sum(self.usage["usage_history"]["number_images"][str(date)])
+        """
+        today=date.today()
+        if str(today) in self.usage["usage_history"]["number_images"]:
+            usage_day = sum(self.usage["usage_history"]["number_images"][str(today)])
         else:
             usage_day = 0
-        month = str(date)[:7] # year-month as string
+        month = str(today)[:7] # year-month as string
         usage_month = 0
-        for date, images in self.usage["usage_history"]["number_images"].items():
-            if date.startswith(month):
+        for today, images in self.usage["usage_history"]["number_images"].items():
+            if today.startswith(month):
                 usage_month += sum(images)
         return usage_day, usage_month
 
@@ -203,20 +203,20 @@ class UsageTracker:
         with open(self.user_file, "w") as outfile:
             json.dump(self.usage, outfile)
 
-    def get_transcription_duration(self, date=date.today()):
-        """Get minutes and seconds of audio transcribed on day and month of date.
+    def get_current_transcription_duration(self):
+        """Get minutes and seconds of audio transcribed for today and this month.
 
-        :param date: date of interest, defaults to date.today()
         :return: total amount of time transcribed per day and per month (4 values)
         """      
-        if str(date) in self.usage["usage_history"]["transcription_seconds"]:
-            seconds_day = self.usage["usage_history"]["transcription_seconds"][str(date)]
+        today = date.today()
+        if str(today) in self.usage["usage_history"]["transcription_seconds"]:
+            seconds_day = self.usage["usage_history"]["transcription_seconds"][str(today)]
         else:
             seconds_day = 0
-        month = str(date)[:7] # year-month as string
+        month = str(today)[:7] # year-month as string
         seconds_month = 0
-        for date, seconds in self.usage["usage_history"]["transcription_seconds"].items():
-            if date.startswith(month):
+        for today, seconds in self.usage["usage_history"]["transcription_seconds"].items():
+            if today.startswith(month):
                 seconds_month += seconds
         minutes_day, seconds_day = divmod(seconds_day, 60)
         minutes_month, seconds_month = divmod(seconds_month, 60)

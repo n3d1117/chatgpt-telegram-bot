@@ -48,6 +48,7 @@ ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
 MONTHLY_USER_BUDGETS="BUDGET_USER_ID_1, BUDGET_USER_ID_2,..." # Defaults to "*" (no restrictions)
 MONTHLY_GUEST_BUDGET="20.0" # Defaults to 100.0
 PROXY="YOUR_PROXY" # e.g. "http://localhost:8080", defaults to none
+OPENAI_MODEL="gpt-3.5-turbo" # Defaults to gpt-3.5-turbo
 ASSISTANT_PROMPT="Custom prompt" # Defaults to "You are a helpful assistant."
 SHOW_USAGE=true # Defaults to false
 MAX_TOKENS=2000 # Defaults to 1200
@@ -56,6 +57,8 @@ MAX_CONVERSATION_AGE_MINUTES=120 # Defaults to 180 (3h)
 VOICE_REPLY_WITH_TRANSCRIPT_ONLY=false # Defaults to true
 N_CHOICES=1 # Defaults to 1
 TEMPERATURE=1.0 # Defaults to 1.0
+PRESENCE_PENALTY=0 # Defaults to 0
+FREQUENCY_PENALTY=0 # Defaults to 0
 IMAGE_SIZE="256x256" # Defaults to 512x512
 GROUP_TRIGGER_KEYWORD="@bot" # Defaults to "" (no keyword required)
 TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
@@ -68,6 +71,9 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `MONTHLY_USER_BUDGETS`: A comma-separated list of $-amounts per user from list ALLOWED_TELEGRAM_USER_IDS to set custom usage limit of OpenAI API costs for each. **Note**: by default, *no limits* for anyone (`*`)
 * `MONTHLY_GUEST_BUDGET`: $-amount as usage limit for all guest users. Guest users are users in group chats that are not in the ALLOWED_TELEGRAM_USER_IDS list. Value is ignored if no usage limits are set in user budgets (MONTHLY_USER_BUDGETS="*").
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
+* `OPENAI_MODEL`: Define which OpenAI model to use (default is `gpt-3.5-turbo`)
+* `PRESENCE_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+* `FREQUENCY_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 * `ASSISTANT_PROMPT`: A system message that sets the tone and controls the behavior of the assistant
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
 * `MAX_TOKENS`: Upper bound on how many tokens the ChatGPT API will return
@@ -81,25 +87,6 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `TOKEN_PRICE`: USD-price per 1000 tokens for cost information in usage statistics. Defaults to [OpenAI price](https://openai.com/pricing) for gpt-3.5-turbo.
 * `IMAGE_PRICES`: A comma-separated list with 3 elements of prices for the different image sizes 256x256,512x512,1024x1024. Defaults to [OpenAI prices](https://openai.com/pricing) for Dall-E.
 * `TRANSCRIPTION_PRICE`: USD-price for one minute of audio transcription. Defaults to [OpenAI price](https://openai.com/pricing) for Whisper.
-
-
-<details><summary>Additional model parameters can be configured from the `main.py` file.</summary>
-
-```python
-{
-    # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
-    'model': 'gpt-3.5-turbo',
-
-    # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
-    # they appear in the text so far, increasing the model's likelihood to talk about new topics. Defaults to 0
-    'presence_penalty': 0,
-    
-    # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
-    # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. Defaults to 0
-    'frequency_penalty': 0
-}
-```
-</details>
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 

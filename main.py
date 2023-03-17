@@ -33,20 +33,20 @@ def main():
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
         'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
         'max_tokens': int(os.environ.get('MAX_TOKENS', 1200)),
-        'n_choices': int(os.environ.get('N_CHOICES', 1200)),
+        'n_choices': int(os.environ.get('N_CHOICES', 1)),
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
-        'model': 'gpt-3.5-turbo',
+        'model': os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo'),
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
         # they appear in the text so far, increasing the model's likelihood to talk about new topics.
-        'presence_penalty': 0,
+        'presence_penalty': int(os.environ.get('PRESENCE_PENALTY', 0)),
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
         # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-        'frequency_penalty': 0
+        'frequency_penalty': int(os.environ.get('FREQUENCY_PENALTY', 0)),
     }
 
     telegram_config = {
