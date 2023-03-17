@@ -129,10 +129,10 @@ class ChatGPT3TelegramBot:
                 photo=image_url
             )
             # add image request to users usage tracker
-            self.usage[update.message.from_user.id].add_image_request(image_size, self.config['image_prices'])
+            user_id = update.message.from_user.id
+            self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
             # add guest chat request to guest usage tracker
-            allowed_user_ids = self.config['allowed_user_ids'].split(',')
-            if str(update.message.from_user.id) not in allowed_user_ids:
+            if str(user_id) not in self.config['allowed_user_ids'].split(','):
                 self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
         except Exception as e:
@@ -194,7 +194,7 @@ class ChatGPT3TelegramBot:
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
-            
+
             # add transcription seconds to usage tracker
             self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
             # add guest chat request to guest usage tracker
@@ -217,7 +217,6 @@ class ChatGPT3TelegramBot:
                 # add chat request to users usage tracker
                 self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
                 # add guest chat request to guest usage tracker
-                allowed_user_ids = self.config['allowed_user_ids'].split(',')
                 if str(user_id) not in allowed_user_ids:
                     self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
@@ -258,6 +257,7 @@ class ChatGPT3TelegramBot:
         
         logging.info(f'New message received from user {update.message.from_user.name}')
         chat_id = update.effective_chat.id
+        user_id = update.message.from_user.id
         prompt = update.message.text
 
         if self.is_group_chat(update):
@@ -272,10 +272,10 @@ class ChatGPT3TelegramBot:
         response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
 
         # add chat request to users usage tracker
-        self.usage[update.message.from_user.id].add_chat_tokens(total_tokens, self.config['token_price'])
+        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
         # add guest chat request to guest usage tracker
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
-        if str(update.message.from_user.id) not in allowed_user_ids:
+        if str(user_id) not in allowed_user_ids:
             self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
         await context.bot.send_message(
@@ -322,8 +322,7 @@ class ChatGPT3TelegramBot:
         """
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=self.budget_limit_message,
-            disable_web_page_preview=True
+            text=self.budget_limit_message
         )
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -397,12 +396,9 @@ class ChatGPT3TelegramBot:
                 logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
                 return False
             user_budget = float(user_budgets[user_index])
-            cost_month = self.usage[user_id].get_current_cost()[1] 
+            cost_month = self.usage[user_id].get_current_cost()[1]
             # Check if allowed user is within budget
-            if user_budget > cost_month:
-                return True
-            else:
-                return False
+            return user_budget > cost_month
 
         # Check if group member is within budget
         if self.is_group_chat(update):
@@ -412,9 +408,8 @@ class ChatGPT3TelegramBot:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
                     if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
                         return True
-                    else:
-                        logging.warning(f'Monthly guest budget for group chats used up.')
-                        return False
+                    logging.warning('Monthly guest budget for group chats used up.')
+                    return False
             logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
         return False
 
@@ -441,7 +436,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(MessageHandler(
-            filters.AUDIO | filters.VOICE | filters.Document.AUDIO | 
+            filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
             self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))

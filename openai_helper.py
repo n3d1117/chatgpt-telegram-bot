@@ -1,5 +1,7 @@
 import datetime
 import logging
+from typing import Tuple, Any
+
 import openai
 
 
@@ -19,12 +21,12 @@ class OpenAIHelper:
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
-    def get_chat_response(self, chat_id: int, query: str) -> str:
+    def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str] | str:
         """
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
-        :return: The answer from the model
+        :return: The answer from the model and the number of tokens used
         """
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
@@ -75,11 +77,12 @@ class OpenAIHelper:
                     answer += "\n\n---\n" \
                               f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
                               f" ({str(response.usage['prompt_tokens'])} prompt," \
-                              f" {str(response.usage['completion_tokens'])} completion)"            
+                              f" {str(response.usage['completion_tokens'])} completion)"
+
                 return answer, response.usage['total_tokens']
-            else:
-                logging.error('No response from GPT-3')
-                return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."
+
+            logging.error('No response from GPT-3')
+            return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."
 
         except openai.error.RateLimitError as e:
             logging.exception(e)
@@ -93,11 +96,11 @@ class OpenAIHelper:
             logging.exception(e)
             return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
-    def generate_image(self, prompt: str) -> str:
+    def generate_image(self, prompt: str) -> tuple[str, str]:
         """
         Generates an image from the given prompt using DALL·E model.
         :param prompt: The prompt to send to the model
-        :return: The image URL
+        :return: The image URL and the image size
         """
         response = openai.Image.create(
             prompt=prompt,
