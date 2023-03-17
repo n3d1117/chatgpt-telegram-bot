@@ -70,11 +70,9 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)
 * `MONTHLY_USER_BUDGETS`: A comma-separated list of $-amounts per user from list `ALLOWED_TELEGRAM_USER_IDS` to set custom usage limit of OpenAI API costs for each. **Note**: by default, *no limits* for anyone (`*`)
-* `MONTHLY_GUEST_BUDGET`: $-amount as usage limit for all guest users. Guest users are users in group chats that are not in the `ALLOWED_TELEGRAM_USER_IDS` list. Value is ignored if no usage limits are set in user budgets (MONTHLY_USER_BUDGETS="*")
+* `MONTHLY_GUEST_BUDGET`: $-amount as usage limit for all guest users. Guest users are users in group chats that are not in the `ALLOWED_TELEGRAM_USER_IDS` list. Value is ignored if no usage limits are set in user budgets (`MONTHLY_USER_BUDGETS`="*")
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
 * `OPENAI_MODEL`: Define which OpenAI model to use (default is `gpt-3.5-turbo`)
-* `PRESENCE_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics
-* `FREQUENCY_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim
 * `ASSISTANT_PROMPT`: A system message that sets the tone and controls the behavior of the assistant
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
 * `MAX_TOKENS`: Upper bound on how many tokens the ChatGPT API will return
@@ -83,6 +81,8 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `VOICE_REPLY_WITH_TRANSCRIPT_ONLY`: Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript ([#38](https://github.com/n3d1117/chatgpt-telegram-bot/issues/38))
 * `N_CHOICES`: Number of answers to generate for each input message
 * `TEMPERATURE`: Number between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic
+* `PRESENCE_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics
+* `FREQUENCY_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim
 * `IMAGE_SIZE`: The DALL·E generated image size. Allowed values: "256x256", "512x512", or "1024x1024"
 * `GROUP_TRIGGER_KEYWORD`: If set, the bot will only respond to messages that start with this keyword. This is useful for bots added to groups with privacy mode disabled. **Note**: by default, *no keyword* is required (`""`)
 * `IGNORE_GROUP_TRANSCRIPTIONS`: If set to true, the bot will not process transcriptions in group chats

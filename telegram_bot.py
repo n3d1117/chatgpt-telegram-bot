@@ -25,7 +25,7 @@ class ChatGPT3TelegramBot:
         self.config = config
         self.openai = openai
         self.commands = [
-            BotCommand(command='help', description='Show this help message'),
+            BotCommand(command='help', description='Show help message'),
             BotCommand(command='reset', description='Reset the conversation'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics')
