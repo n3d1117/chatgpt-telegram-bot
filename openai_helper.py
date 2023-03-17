@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Tuple, Any
+import tiktoken
 
 import openai
 
@@ -34,19 +34,24 @@ class OpenAIHelper:
 
             self.last_updated[chat_id] = datetime.datetime.now()
 
+            self.__add_to_history(chat_id, role="user", content=query)
+
             # Summarize the chat history if it's too long to avoid excessive token usage
-            if len(self.conversations[chat_id]) > self.config['max_history_size']:
+            token_count = self.__count_tokens(self.conversations[chat_id])
+            exceeded_max_tokens = token_count + self.config['max_tokens'] > self.__max_model_tokens()
+            exceeded_max_history_size = len(self.conversations[chat_id]) > self.config['max_history_size']
+
+            if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
-                    summary = self.__summarise(self.conversations[chat_id])
+                    summary = self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
                     self.reset_chat_history(chat_id)
                     self.__add_to_history(chat_id, role="assistant", content=summary)
+                    self.__add_to_history(chat_id, role="user", content=query)
                 except Exception as e:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
-
-            self.__add_to_history(chat_id, role="user", content=query)
 
             response = openai.ChatCompletion.create(
                 model=self.config['model'],
@@ -161,3 +166,35 @@ class OpenAIHelper:
             temperature=0.4
         )
         return response.choices[0]['message']['content']
+
+    def __max_model_tokens(self):
+        if self.config['model'] == "gpt-3.5-turbo" or self.config['model'] == "gpt-3.5-turbo-0301":
+            return 4096
+        raise NotImplementedError(
+            f"Max tokens for model {self.config['model']} is not implemented yet."
+        )
+
+    # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+    def __count_tokens(self, messages):
+        """
+        Counts the number of tokens required to send the given messages.
+        :param messages: the messages to send
+        :return: the number of tokens required
+        """
+        try:
+            model = self.config['model']
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("gpt-3.5-turbo")
+        if model == "gpt-3.5-turbo" or model == "gpt-3.5-turbo-0301":
+            num_tokens = 0
+            for message in messages:
+                num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
+                for key, value in message.items():
+                    num_tokens += len(encoding.encode(value))
+                    if key == "name":  # if there's a name, the role is omitted
+                        num_tokens += -1  # role is always required and always 1 token
+            num_tokens += 2  # every reply is primed with <im_start>assistant
+            return num_tokens
+        else:
+            raise NotImplementedError(f"__count_tokens() is not presently implemented for model {model}")
