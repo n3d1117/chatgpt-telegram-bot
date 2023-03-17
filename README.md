@@ -61,6 +61,7 @@ PRESENCE_PENALTY=0 # Defaults to 0
 FREQUENCY_PENALTY=0 # Defaults to 0
 IMAGE_SIZE="256x256" # Defaults to 512x512
 GROUP_TRIGGER_KEYWORD="@bot" # Defaults to "" (no keyword required)
+IGNORE_GROUP_TRANSCRIPTIONS=true # Whether group transcriptions should be processed or not
 TOKEN_PRICE=0.002 # Defaults to 0.002, current price: https://openai.com/pricing
 IMAGE_PRICES="0.016,0.018,0.02" # Defaults to OpenAI Dall-E pricing for sizes 256x256,512x512,1024x1024
 TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
@@ -84,6 +85,7 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `TEMPERATURE`: Number between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic
 * `IMAGE_SIZE`: The DALL·E generated image size. Allowed values: "256x256", "512x512", or "1024x1024"
 * `GROUP_TRIGGER_KEYWORD`: If set, the bot will only respond to messages that start with this keyword. This is useful for bots added to groups with privacy mode disabled. **Note**: by default, *no keyword* is required (`""`)
+* `IGNORE_GROUP_TRANSCRIPTIONS`: If set to false, the bot will not process transcriptions in group chats. Use this in case your group chats use a lot of audio or video messages
 * `TOKEN_PRICE`: USD-price per 1000 tokens for cost information in usage statistics. Defaults to [OpenAI price](https://openai.com/pricing) for gpt-3.5-turbo.
 * `IMAGE_PRICES`: A comma-separated list with 3 elements of prices for the different image sizes 256x256, 512x512 and 1024x1024. Defaults to [OpenAI prices](https://openai.com/pricing) for Dall-E.
 * `TRANSCRIPTION_PRICE`: USD-price for one minute of audio transcription. Defaults to [OpenAI price](https://openai.com/pricing) for Whisper.
