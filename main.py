@@ -38,15 +38,15 @@ def main():
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
 
         # 'gpt-3.5-turbo' or 'gpt-3.5-turbo-0301'
-        'model': 'gpt-3.5-turbo',
+        'model': os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo'),
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
         # they appear in the text so far, increasing the model's likelihood to talk about new topics.
-        'presence_penalty': 0,
+        'presence_penalty': int(os.environ.get('PRESENCE_PENALTY', 0)),
 
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
         # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-        'frequency_penalty': 0
+        'frequency_penalty': int(os.environ.get('FREQUENCY_PENALTY', 0)),
     }
 
     telegram_config = {

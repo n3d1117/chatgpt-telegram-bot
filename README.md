@@ -46,6 +46,9 @@ TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
 # Optional parameters
 ALLOWED_TELEGRAM_USER_IDS="USER_ID_1,USER_ID_2,..." # Defaults to "*" (everyone)
 PROXY="YOUR_PROXY" # e.g. "http://localhost:8080", defaults to none
+OPENAI_MODEL="gpt-3.5-turbo-0301" # Defaults to gpt-3.5-turbo
+PRESENCE_PENALTY=0 # Number between -2.0 and 2.0.
+FREQUENCY_PENALTY=0 #  Number between -2.0 and 2.0.
 ASSISTANT_PROMPT="Custom prompt" # Defaults to "You are a helpful assistant."
 SHOW_USAGE=true # Defaults to false
 MAX_TOKENS=2000 # Defaults to 1200
@@ -64,6 +67,9 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 * `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
+* `OPENAI_MODEL`: Define which OpenAI model to use (default is gpt-3.5-turbo)
+* `PRESENCE_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+* `FREQUENCY_PENALTY`: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 * `ASSISTANT_PROMPT`: A system message that sets the tone and controls the behavior of the assistant
 * `SHOW_USAGE`: Whether to show OpenAI token usage information after each response
 * `MAX_TOKENS`: Upper bound on how many tokens the ChatGPT API will return
