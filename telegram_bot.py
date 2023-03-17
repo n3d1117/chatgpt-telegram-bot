@@ -32,6 +32,7 @@ class ChatGPT3TelegramBot:
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
+        self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
         self.usage = {}
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -106,6 +107,11 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
+        if not await self.is_within_budget(update):
+            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            await self.send_budget_reached_message(update, context)
+            return
+        
         chat_id = update.effective_chat.id
         image_query = update.message.text.replace('/image', '').strip()
         if image_query == '':
@@ -122,11 +128,12 @@ class ChatGPT3TelegramBot:
                 reply_to_message_id=update.message.message_id,
                 photo=image_url
             )
-            # add image request to usage tracker
-            user_id = update.message.from_user.id
-            if user_id not in self.usage:
-                self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
-            self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
+            # add image request to users usage tracker
+            self.usage[update.message.from_user.id].add_image_request(image_size, self.config['image_prices'])
+            # add guest chat request to guest usage tracker
+            allowed_user_ids = self.config['allowed_user_ids'].split(',')
+            if str(update.message.from_user.id) not in allowed_user_ids:
+                self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
         except Exception as e:
             logging.exception(e)
@@ -143,6 +150,11 @@ class ChatGPT3TelegramBot:
         if not await self.is_allowed(update):
             logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
+            return
+        
+        if not await self.is_within_budget(update):
+            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            await self.send_budget_reached_message(update, context)
             return
 
         chat_id = update.effective_chat.id
@@ -182,8 +194,14 @@ class ChatGPT3TelegramBot:
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
+            
             # add transcription seconds to usage tracker
             self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
+            # add guest chat request to guest usage tracker
+            allowed_user_ids = self.config['allowed_user_ids'].split(',')
+            if str(user_id) not in allowed_user_ids:
+                self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
+
             if self.config['voice_reply_transcript']:
                 # Send the transcript
                 await context.bot.send_message(
@@ -195,8 +213,14 @@ class ChatGPT3TelegramBot:
             else:
                 # Send the response of the transcript
                 response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-                # add chat request to usage tracker
+
+                # add chat request to users usage tracker
                 self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+                # add guest chat request to guest usage tracker
+                allowed_user_ids = self.config['allowed_user_ids'].split(',')
+                if str(user_id) not in allowed_user_ids:
+                    self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=update.message.message_id,
@@ -227,6 +251,11 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
+        if not await self.is_within_budget(update):
+            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            await self.send_budget_reached_message(update, context)
+            return
+        
         logging.info(f'New message received from user {update.message.from_user.name}')
         chat_id = update.effective_chat.id
         prompt = update.message.text
@@ -242,11 +271,12 @@ class ChatGPT3TelegramBot:
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
         response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
 
-        # add chat request to usage tracker
-        user_id = update.message.from_user.id
-        if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
-        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+        # add chat request to users usage tracker
+        self.usage[update.message.from_user.id].add_chat_tokens(total_tokens, self.config['token_price'])
+        # add guest chat request to guest usage tracker
+        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+        if str(update.message.from_user.id) not in allowed_user_ids:
+            self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
         await context.bot.send_message(
             chat_id=chat_id,
@@ -283,6 +313,16 @@ class ChatGPT3TelegramBot:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=self.disallowed_message,
+            disable_web_page_preview=True
+        )
+
+    async def send_budget_reached_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Sends the budget reached message to the user.
+        """
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=self.budget_limit_message,
             disable_web_page_preview=True
         )
 
@@ -333,6 +373,49 @@ class ChatGPT3TelegramBot:
                     return True
             logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
 
+        return False
+
+    async def is_within_budget(self, update: Update) -> bool:
+        """
+        Checks if the user reached their monthly usage limit.
+        Initializes UsageTracker for user and guest when needed.
+        """
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        if self.config['monthly_user_budgets'] == '*':
+            return True
+
+        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+        if str(user_id) in allowed_user_ids:
+            # find budget for allowed user
+            user_index = allowed_user_ids.index(str(user_id))
+            user_budgets = self.config['monthly_user_budgets'].split(',')
+            # check if user is included in budgets list
+            if len(user_budgets) <= user_index:
+                logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
+                return False
+            user_budget = float(user_budgets[user_index])
+            cost_month = self.usage[user_id].get_current_cost()[1] 
+            # Check if allowed user is within budget
+            if user_budget > cost_month:
+                return True
+            else:
+                return False
+
+        # Check if group member is within budget
+        if self.is_group_chat(update):
+            for user in allowed_user_ids:
+                if await self.is_user_in_group(update, user):
+                    if 'guests' not in self.usage:
+                        self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
+                    if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
+                        return True
+                    else:
+                        logging.warning(f'Monthly guest budget for group chats used up.')
+                        return False
+            logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
         return False
 
     async def post_init(self, application: Application) -> None:
