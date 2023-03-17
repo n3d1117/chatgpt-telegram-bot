@@ -157,6 +157,10 @@ class ChatGPT3TelegramBot:
             await self.send_budget_reached_message(update, context)
             return
 
+        if self.is_group_chat(update) and self.config['ignore_group_transcriptions']:
+            logging.info(f'Transcription coming from group chat, ignoring...')
+            return  
+
         chat_id = update.effective_chat.id
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
