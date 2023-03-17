@@ -73,13 +73,13 @@ class ChatGPT3TelegramBot:
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
                      f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_today}.\n"+\
+                     f"💰 For a total amount of ${cost_today:.2f}\n"+\
                      f"\n----------------------------\n\n"+\
                      f"This month:\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
                      f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_month}."
+                     f"💰 For a total amount of ${cost_month:.2f}"
         await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -145,23 +145,30 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'New transcribe request received from user {update.message.from_user.name}')
-
         chat_id = update.effective_chat.id
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
-        if update.message.voice:
-            filename = update.message.voice.file_unique_id
-        elif update.message.audio:
-            filename = update.message.audio.file_unique_id
-        elif update.message.video:
-            filename = update.message.video.file_unique_id
-        else:
+        filename = update.message.effective_attachment.file_unique_id
+        filename_mp3 = f'{filename}.mp3'
+
+        media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
+        await media_file.download_to_drive(filename)
+
+        # detect and extract audio from the attachment with pydub
+        try:
+            audio_track = AudioSegment.from_file(filename)
+            audio_track.export(filename_mp3, format="mp3")
+            logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+
+        except Exception as e:
+            logging.info(f'Unsupported file type recceived from {update.message.from_user.name}')
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 reply_to_message_id=update.message.message_id,
                 text='Unsupported file type'
             )
+            if os.path.exists(filename):
+                os.remove(filename)
             return
 
         filename_mp3 = f'{filename}.mp3'
@@ -170,20 +177,8 @@ class ChatGPT3TelegramBot:
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
+        # send decoded audio to openai
         try:
-            if update.message.voice:
-                media_file = await context.bot.get_file(update.message.voice.file_id)
-
-            elif update.message.audio:
-                media_file = await context.bot.get_file(update.message.audio.file_id)
-
-            elif update.message.video:
-                media_file = await context.bot.get_file(update.message.video.file_id)
-
-            await media_file.download_to_drive(filename)
-            
-            audio_track = AudioSegment.from_file(filename)
-            audio_track.export(filename_mp3, format="mp3")
 
             # Transcribe the audio file
             transcript = self.openai.transcribe(filename_mp3)
@@ -208,6 +203,7 @@ class ChatGPT3TelegramBot:
                     text=f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}',
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
+
         except Exception as e:
             logging.exception(e)
             await context.bot.send_message(
@@ -361,7 +357,10 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
-        application.add_handler(MessageHandler(filters.VOICE | filters.AUDIO | filters.VIDEO, self.transcribe))
+        application.add_handler(MessageHandler(
+            filters.AUDIO | filters.VOICE | filters.Document.AUDIO | 
+            filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
+            self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP
