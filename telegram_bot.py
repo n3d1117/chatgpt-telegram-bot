@@ -64,9 +64,9 @@ class ChatGPT3TelegramBot:
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-        tokens_today, tokens_month = self.usage[user_id].get_token_usage()
-        images_today, images_month = self.usage[user_id].get_image_count()
-        transcribe_durations = self.usage[user_id].get_transcription_duration()
+        tokens_today, tokens_month = self.usage[user_id].get_current_token_usage()
+        images_today, images_month = self.usage[user_id].get_current_image_count()
+        transcribe_durations = self.usage[user_id].get_current_transcription_duration()
         cost_today, cost_month = self.usage[user_id].get_current_cost()
         
         usage_text = f"Today:\n"+\
