@@ -1,3 +1,6 @@
+> **Note**
+> GPT-4 support will be added as soon as APIs are released to the public!
+
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.10-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.0-green.svg)](https://openai.com/)
