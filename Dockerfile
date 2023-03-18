@@ -7,16 +7,11 @@ RUN apt-get update && \
 RUN useradd -m appuser
 USER appuser
 WORKDIR /home/appuser/
-
 ENV PATH="/home/appuser/.local/bin:$PATH"
 
 RUN pip install --user pipenv --no-cache-dir
-
 COPY Pipfile* ./
-
 RUN pipenv install --system --deploy --ignore-pipfile
 
 COPY app ./
-WORKDIR /home/appuser/app
-#CMD ["python", "main.py"]
-CMD ["sleep", "5m"]
+CMD ["python", "main.py"]
