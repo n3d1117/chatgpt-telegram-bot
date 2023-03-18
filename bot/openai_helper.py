@@ -23,7 +23,7 @@ class OpenAIHelper:
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
-    def get_chat_response(self, chat_id: int, query: str) -> Union[tuple[str, str], str]:
+    async def get_chat_response(self, chat_id: int, query: str) -> Union[tuple[str, str], str]:
         """
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID
@@ -46,7 +46,7 @@ class OpenAIHelper:
             if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
-                    summary = self.__summarise(self.conversations[chat_id][:-1])
+                    summary = await self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
                     self.reset_chat_history(chat_id)
                     self.__add_to_history(chat_id, role="assistant", content=summary)
@@ -55,7 +55,7 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
-            response = openai.ChatCompletion.create(
+            response = await openai.ChatCompletion.acreate(
                 model=self.config['model'],
                 messages=self.conversations[chat_id],
                 temperature=self.config['temperature'],
@@ -103,25 +103,25 @@ class OpenAIHelper:
             logging.exception(e)
             return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
 
-    def generate_image(self, prompt: str) -> tuple[str, str]:
+    async def generate_image(self, prompt: str) -> tuple[str, str]:
         """
         Generates an image from the given prompt using DALL·E model.
         :param prompt: The prompt to send to the model
         :return: The image URL and the image size
         """
-        response = openai.Image.create(
+        response = await openai.Image.acreate(
             prompt=prompt,
             n=1,
             size=self.config['image_size']
         )
         return response['data'][0]['url'], self.config['image_size']
 
-    def transcribe(self, filename):
+    async def transcribe(self, filename):
         """
         Transcribes the audio file using the Whisper model.
         """
         with open(filename, "rb") as audio:
-            result = openai.Audio.transcribe("whisper-1", audio)
+            result = await openai.Audio.atranscribe("whisper-1", audio)
             return result.text
 
     def reset_chat_history(self, chat_id):
@@ -152,7 +152,7 @@ class OpenAIHelper:
         """
         self.conversations[chat_id].append({"role": role, "content": content})
 
-    def __summarise(self, conversation) -> str:
+    async def __summarise(self, conversation) -> str:
         """
         Summarises the conversation history.
         :param conversation: The conversation history
@@ -162,7 +162,7 @@ class OpenAIHelper:
             { "role": "assistant", "content": "Summarize this conversation in 700 characters or less" },
             { "role": "user", "content": str(conversation) }
         ]
-        response = openai.ChatCompletion.create(
+        response = await openai.ChatCompletion.acreate(
             model=self.config['model'],
             messages=messages,
             temperature=0.4

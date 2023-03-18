@@ -122,7 +122,7 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
         try:
-            image_url, image_size = self.openai.generate_image(prompt=image_query)
+            image_url, image_size = await self.openai.generate_image(prompt=image_query)
             await context.bot.send_photo(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
@@ -132,7 +132,7 @@ class ChatGPT3TelegramBot:
             user_id = update.message.from_user.id
             self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
             # add guest chat request to guest usage tracker
-            if str(user_id) not in self.config['allowed_user_ids'].split(','):
+            if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
                 self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
         except Exception as e:
@@ -206,7 +206,7 @@ class ChatGPT3TelegramBot:
         try:
 
             # Transcribe the audio file
-            transcript = self.openai.transcribe(filename_mp3)
+            transcript = await self.openai.transcribe(filename_mp3)
 
             # add transcription seconds to usage tracker
             transcription_price = self.config['transcription_price']
@@ -232,7 +232,7 @@ class ChatGPT3TelegramBot:
                     )
             else:
                 # Get the response of the transcript
-                response = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                response = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
                 if not isinstance(response, tuple):
                     raise Exception(response)
 
@@ -299,7 +299,7 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
-        response = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+        response = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
         if not isinstance(response, tuple):
             await context.bot.send_message(
                 chat_id=chat_id,
