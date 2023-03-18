@@ -159,7 +159,7 @@ class ChatGPT3TelegramBot:
 
         if self.is_group_chat(update) and self.config['ignore_group_transcriptions']:
             logging.info(f'Transcription coming from group chat, ignoring...')
-            return  
+            return
 
         chat_id = update.effective_chat.id
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
@@ -175,7 +175,7 @@ class ChatGPT3TelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=f'Failed to download audio file: {str(e)}'
+                text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)'
             )
             return
 
