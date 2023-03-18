@@ -30,6 +30,6 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${{ github.event.release.tag_name }}
-            n3d1117/chatgpt-telegram-bot:${{ github.event.release.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:${{ github.ref_name }}
+            n3d1117/chatgpt-telegram-bot:${{ github.ref_name }}
 
