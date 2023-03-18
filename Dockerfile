@@ -12,10 +12,9 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 
 RUN pip install --user pipenv --no-cache-dir
 
-WORKDIR /home/appuser/app
-COPY . .
-COPY .env .
+COPY Pipfile* ./
 
 RUN pipenv install --system --deploy --ignore-pipfile
 
+WORKDIR /home/appuser/app
 CMD ["python", "main.py"]
