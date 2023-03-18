@@ -1,5 +1,7 @@
 import datetime
 import logging
+from typing import Union
+
 import tiktoken
 
 import openai
@@ -21,7 +23,7 @@ class OpenAIHelper:
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
-    def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str] | str:
+    def get_chat_response(self, chat_id: int, query: str) -> Union[tuple[str, str], str]:
         """
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID

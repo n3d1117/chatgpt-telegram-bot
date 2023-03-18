@@ -2,7 +2,7 @@
 > GPT-4 support will be added as soon as APIs are released to the public!
 
 # ChatGPT Telegram Bot
-![python-version](https://img.shields.io/badge/python-3.10-blue.svg)
+![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.2-orange.svg)](https://openai.com/)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 
@@ -32,7 +32,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 PRs are always welcome!
 
 ## Prerequisites
-- Python 3.10+
+- Python 3.9+
 - A [Telegram bot](https://core.telegram.org/bots#6-botfather) and its token (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 - An [OpenAI](https://openai.com) account (see [configuration](#configuration) section)
 
