@@ -1,15 +1,11 @@
 import logging
 import os
 
-from dotenv import load_dotenv
-
 from openai_helper import OpenAIHelper
 from telegram_bot import ChatGPT3TelegramBot
 
 
 def main():
-    # Read .env file
-    load_dotenv()
 
     # Setup logging
     logging.basicConfig(
