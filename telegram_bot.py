@@ -200,23 +200,34 @@ class ChatGPT3TelegramBot:
             transcript = self.openai.transcribe(filename_mp3)
 
             # add transcription seconds to usage tracker
-            self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
+            transcription_price = self.config['transcription_price']
+            self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
+
             # add guest chat request to guest usage tracker
             allowed_user_ids = self.config['allowed_user_ids'].split(',')
             if str(user_id) not in allowed_user_ids:
-                self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, self.config['transcription_price'])
+                self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
             if self.config['voice_reply_transcript']:
-                # Send the transcript
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
-                    text=f'_Transcript:_\n"{transcript}"',
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
+
+                # Split into chunks of 4096 characters (Telegram's message limit)
+                transcript_output = f'_Transcript:_\n"{transcript}"'
+                chunks = self.split_into_chunks(transcript_output)
+
+                for index, transcript_chunk in enumerate(chunks):
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        reply_to_message_id=update.message.message_id if index == 0 else None,
+                        text=transcript_chunk,
+                        parse_mode=constants.ParseMode.MARKDOWN
+                    )
             else:
-                # Send the response of the transcript
-                response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                # Get the response of the transcript
+                response = self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+                if not isinstance(response, tuple):
+                    raise Exception(response)
+
+                response, total_tokens = response
 
                 # add chat request to users usage tracker
                 self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
@@ -224,12 +235,17 @@ class ChatGPT3TelegramBot:
                 if str(user_id) not in allowed_user_ids:
                     self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
-                    text=f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}',
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
+                # Split into chunks of 4096 characters (Telegram's message limit)
+                transcript_output = f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}'
+                chunks = self.split_into_chunks(transcript_output)
+
+                for index, transcript_chunk in enumerate(chunks):
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        reply_to_message_id=update.message.message_id if index == 0 else None,
+                        text=transcript_chunk,
+                        parse_mode=constants.ParseMode.MARKDOWN
+                    )
 
         except Exception as e:
             logging.exception(e)
@@ -269,11 +285,22 @@ class ChatGPT3TelegramBot:
             if prompt.startswith(trigger_keyword):
                 prompt = prompt[len(trigger_keyword):].strip()
             else:
-                logging.warning(f'Message does not start with trigger keyword, ignoring...')
+                logging.warning('Message does not start with trigger keyword, ignoring...')
                 return
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-        response, total_tokens = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+        response = self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+        if not isinstance(response, tuple):
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                text=response,
+                parse_mode=constants.ParseMode.MARKDOWN
+            )
+            return
+
+        response, total_tokens = response
 
         # add chat request to users usage tracker
         self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
@@ -282,12 +309,16 @@ class ChatGPT3TelegramBot:
         if str(user_id) not in allowed_user_ids:
             self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
-        await context.bot.send_message(
-            chat_id=chat_id,
-            reply_to_message_id=update.message.message_id,
-            text=response,
-            parse_mode=constants.ParseMode.MARKDOWN
-        )
+        # Split into chunks of 4096 characters (Telegram's message limit)
+        chunks = self.split_into_chunks(response)
+
+        for index, chunk in enumerate(chunks):
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id if index == 0 else None,
+                text=chunk,
+                parse_mode=constants.ParseMode.MARKDOWN
+            )
 
     async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -416,6 +447,12 @@ class ChatGPT3TelegramBot:
                     return False
             logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
         return False
+
+    def split_into_chunks(self, text: str, chunk_size: int = 4096) -> list[str]:
+        """
+        Splits a string into chunks of a given size.
+        """
+        return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
     async def post_init(self, application: Application) -> None:
         """
