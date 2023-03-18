@@ -32,7 +32,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 PRs are always welcome!
 
 ## Prerequisites
-- Python 3.10+ and [Pipenv](https://pipenv.readthedocs.io/en/latest/)
+- Python 3.10+
 - A [Telegram bot](https://core.telegram.org/bots#6-botfather) and its token (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
 - An [OpenAI](https://openai.com) account (see [configuration](#configuration) section)
 
@@ -94,22 +94,31 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
 ### Installing
-1. Clone the repository and navigate to the project directory:
+Clone the repository and navigate to the project directory:
 
-```bash
+```shell
 git clone https://github.com/n3d1117/chatgpt-telegram-bot.git
 cd chatgpt-telegram-bot
 ```
 
 #### From Source
-2. Create a new virtual environment with Pipenv and install the required dependencies:
-```
-pipenv install
+1. Create a virtual environment:
+```shell
+python -m venv venv
 ```
 
-3. Activate the virtual environment:
+2. Activate the virtual environment:
+```shell
+# For Linux or macOS:
+source venv/bin/activate
+
+# For Windows:
+venv\Scripts\activate
 ```
-pipenv shell
+
+3. Install the dependencies using `requirements.txt` file:
+```shell
+pip install -r requirements.txt
 ```
 
 4. Use the following command to start the bot:
@@ -119,9 +128,9 @@ python main.py
 
 #### Using Docker Compose
 
-2. Run the following command to build and run the Docker image:
-```bash
-docker-compose up
+Run the following command to build and run the Docker image:
+```shell
+docker compose up
 ```
 
 ## Credits
