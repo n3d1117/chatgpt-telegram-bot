@@ -8,14 +8,7 @@ RUN useradd -m appuser
 USER appuser
 WORKDIR /home/appuser/
 
-ENV PATH="/home/appuser/.local/bin:$PATH"
-
-RUN pip install --user pipenv --no-cache-dir
-
-WORKDIR /home/appuser/app
 COPY --chown=appuser . .
-COPY --chown=appuser .env .
-
-RUN pipenv install --system --deploy --ignore-pipfile
+RUN pip install -r requirements.txt --no-cache-dir
 
 CMD ["python", "main.py"]
