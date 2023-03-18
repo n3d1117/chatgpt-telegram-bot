@@ -4,6 +4,8 @@ import tiktoken
 
 import openai
 
+import requests
+import json
 
 class OpenAIHelper:
     """
@@ -198,3 +200,13 @@ class OpenAIHelper:
             return num_tokens
         else:
             raise NotImplementedError(f"__count_tokens() is not presently implemented for model {model}")
+
+    def get_balance(self):
+
+        headers = {
+            "Authorization": f"Bearer {openai.api_key}"
+        }
+        response = requests.get("https://api.openai.com/dashboard/billing/credit_grants", headers=headers)
+        billing_data = json.loads(response.text)
+        balance = billing_data["total_available"]
+        return balance
