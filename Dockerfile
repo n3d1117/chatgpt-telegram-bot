@@ -11,4 +11,4 @@ WORKDIR /home/appuser/app
 COPY --chown=appuser . .
 RUN pip install -r requirements.txt --no-cache-dir
 
-CMD ["python", "main.py"]
+CMD ["python", "bot/main.py"]

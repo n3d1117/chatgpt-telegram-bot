@@ -123,7 +123,7 @@ pip install -r requirements.txt
 
 4. Use the following command to start the bot:
 ```
-python main.py
+python bot/main.py
 ```
 
 #### Using Docker Compose
