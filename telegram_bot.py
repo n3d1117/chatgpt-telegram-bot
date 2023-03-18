@@ -167,8 +167,17 @@ class ChatGPT3TelegramBot:
         filename = update.message.effective_attachment.file_unique_id
         filename_mp3 = f'{filename}.mp3'
 
-        media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
-        await media_file.download_to_drive(filename)
+        try:
+            media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
+            await media_file.download_to_drive(filename)
+        except Exception as e:
+            logging.exception(e)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                reply_to_message_id=update.message.message_id,
+                text=f'Failed to download audio file: {str(e)}'
+            )
+            return
 
         # detect and extract audio from the attachment with pydub
         try:
@@ -177,7 +186,7 @@ class ChatGPT3TelegramBot:
             logging.info(f'New transcribe request received from user {update.message.from_user.name}')
 
         except Exception as e:
-            logging.info(f'Unsupported file type recceived from {update.message.from_user.name}')
+            logging.exception(e)
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 reply_to_message_id=update.message.message_id,
