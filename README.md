@@ -28,7 +28,6 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 
 ## Additional features - help needed!
 - [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
-- [ ] Handle responses longer than telegram message limit ([#44](https://github.com/n3d1117/chatgpt-telegram-bot/issues/44))
 
 PRs are always welcome!
 
