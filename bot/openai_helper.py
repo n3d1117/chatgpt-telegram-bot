@@ -6,12 +6,14 @@ import tiktoken
 
 import openai
 
+
+import requests
+import json
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS
-
 class OpenAIHelper:
     """
     ChatGPT helper class.
@@ -221,3 +223,13 @@ class OpenAIHelper:
             return num_tokens
         else:
             raise NotImplementedError(f"__count_tokens() is not presently implemented for model {model}")
+
+    def get_balance(self):
+
+        headers = {
+            "Authorization": f"Bearer {openai.api_key}"
+        }
+        response = requests.get("https://api.openai.com/dashboard/billing/credit_grants", headers=headers)
+        billing_data = json.loads(response.text)
+        balance = billing_data["total_available"]
+        return balance

@@ -28,7 +28,8 @@ class ChatGPT3TelegramBot:
             BotCommand(command='help', description='Show help message'),
             BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions for the conversation (e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
-            BotCommand(command='stats', description='Get your current usage statistics')
+            BotCommand(command='stats', description='Get your current usage statistics'),
+            BotCommand(command='balance', description='Get your OpenAI account balance')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
@@ -89,6 +90,20 @@ class ChatGPT3TelegramBot:
                      f"{chat_messages} chat messages in history.\n"+\
                      f"{chat_token_length} chat tokens in history.\n"
         await update.message.reply_text(usage_text)
+
+    async def balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Returns OpenAI account balance.
+        """
+        if not await self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name} is not allowed to request OpenAI account balance')
+            await self.send_disallowed_message(update, context)
+            return
+
+        logging.info(f'User {update.message.from_user.name} requested OpenAI account balance')
+        
+        balance = self.openai.get_balance()
+        await update.message.reply_text(f"The balance of your OpenAI account is: ${balance:.3f}")
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -496,6 +511,7 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
+        application.add_handler(CommandHandler('balance', self.balance))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
