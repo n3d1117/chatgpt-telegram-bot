@@ -315,7 +315,7 @@ class ChatGPT3TelegramBot:
         self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
         # add guest chat request to guest usage tracker
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
-        if str(user_id) not in allowed_user_ids:
+        if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
             self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
         # Split into chunks of 4096 characters (Telegram's message limit)
