@@ -28,7 +28,7 @@ class OpenAIHelper:
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used
+        :return: The answer from the model and the number of tokens used, or an error message
         """
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):

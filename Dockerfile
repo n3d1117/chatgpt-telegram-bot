@@ -1,14 +1,14 @@
 FROM python:3.9-alpine
 
-RUN apt-get update && \
-    apt-get install ffmpeg -y && \
-    rm -rf /var/lib/apt/lists/*
+ENV PYTHONFAULTHANDLER=1 \
+     PYTHONUNBUFFERED=1 \
+     PYTHONDONTWRITEBYTECODE=1 \
+     PIP_DISABLE_PIP_VERSION_CHECK=on
 
-RUN useradd -m appuser
-USER appuser
-WORKDIR /home/appuser/app
+RUN apk --no-cache add ffmpeg
 
-COPY --chown=appuser . .
+WORKDIR /app
+COPY . .
 RUN pip install -r requirements.txt --no-cache-dir
 
 CMD ["python", "bot/main.py"]
