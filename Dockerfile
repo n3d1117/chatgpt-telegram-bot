@@ -18,4 +18,5 @@ RUN pipenv install --system --deploy --ignore-pipfile
 
 COPY app ./
 WORKDIR /home/appuser/app
-CMD ["python", "main.py"]
+#CMD ["python", "main.py"]
+CMD ["sleep", "5m"]
