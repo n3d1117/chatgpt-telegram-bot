@@ -133,11 +133,6 @@ Run the following command to build and run the Docker image:
 docker compose up
 ```
 
-**Note:** After updating `.env` file, you have to rebuild the image:
-```shell
-docker compose up --build
-```
-
 ## Credits
 - [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
 - [python-telegram-bot](https://python-telegram-bot.org)

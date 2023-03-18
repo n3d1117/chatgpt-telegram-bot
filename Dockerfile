@@ -6,7 +6,7 @@ RUN apt-get update && \
 
 RUN useradd -m appuser
 USER appuser
-WORKDIR /home/appuser/
+WORKDIR /home/appuser/app
 
 COPY --chown=appuser . .
 RUN pip install -r requirements.txt --no-cache-dir
