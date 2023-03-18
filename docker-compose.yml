@@ -4,3 +4,21 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY
+      - TELEGRAM_BOT_TOKEN
+      - ALLOWED_TELEGRAM_USER_IDS
+      - ASSISTANT_PROMPT
+      - SHOW_USAGE
+      - MAX_TOKENS
+      - MAX_HISTORY_SIZE
+      - MAX_CONVERSATION_AGE_MINUTES
+      - VOICE_REPLY_WITH_TRANSCRIPT_ONLY
+      - N_CHOICES
+      - TEMPERATURE
+      - IMAGE_SIZE
+      - GROUP_TRIGGER_KEYWORD
+      - TOKEN_PRICE
+      - IMAGE_PRICES
+      - TRANSCRIPTION_PRICE
+
