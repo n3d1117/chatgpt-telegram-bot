@@ -36,7 +36,7 @@ jobs:
         with:
           images: |
             n3d1117/chatgpt-telegram-bot
-            ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+            ghcr.io/${{ github.repository }}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
