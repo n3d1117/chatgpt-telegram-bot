@@ -70,3 +70,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+pip install -r requirements.txt
+
+python bot/main.py

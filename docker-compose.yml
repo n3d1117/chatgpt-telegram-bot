@@ -1,9 +1,11 @@
 version: '3'
 services:
-  chatgpt-telegram-bot:
+  smarai:
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - .:/app
     restart: always
+
+docker compose up

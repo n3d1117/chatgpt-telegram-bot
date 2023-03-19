@@ -132,7 +132,7 @@ python bot/main.py
 
 Run the following command to build and run the Docker image:
 ```shell
-docker compose up
+C
 ```
 
 ## Credits
