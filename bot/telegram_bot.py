@@ -1,5 +1,6 @@
 import logging
 import os
+import regex as re
 
 from telegram import constants
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
@@ -301,12 +302,26 @@ class ChatGPT3TelegramBot:
 
         response = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
         if not isinstance(response, tuple):
-            await context.bot.send_message(
+            bot_message = await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=response,
+                text='🤔',
                 parse_mode=constants.ParseMode.MARKDOWN
             )
+            result = ''
+            answer = ''
+            async for chunk in response:
+                if 'content' in chunk['choices'][0]['delta']:
+                    result = chunk['choices'][0]['delta']['content']
+                    answer += result
+                    if re.search(r"[\p{P}\p{Z}]+|[\r\n]+", result):
+                        await context.bot.edit_message_text(
+                            chat_id=chat_id,
+                            message_id=bot_message.message_id,
+                            text=answer,
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
+                        result = ''
             return
 
         response, total_tokens = response

@@ -63,30 +63,34 @@ class OpenAIHelper:
                 max_tokens=self.config['max_tokens'],
                 presence_penalty=self.config['presence_penalty'],
                 frequency_penalty=self.config['frequency_penalty'],
+                stream=self.config['stream'],
             )
+            stream=self.config['stream']
+            if stream:
+                return response
+            else:
+                if len(response.choices) > 0:
+                    answer = ''
 
-            if len(response.choices) > 0:
-                answer = ''
+                    if len(response.choices) > 1 and self.config['n_choices'] > 1:
+                        for index, choice in enumerate(response.choices):
+                            content = choice['message']['content'].strip()
+                            if index == 0:
+                                self.__add_to_history(chat_id, role="assistant", content=content)
+                            answer += f'{index+1}\u20e3\n'
+                            answer += content
+                            answer += '\n\n'
+                    else:
+                        answer = response.choices[0]['message']['content'].strip()
+                        self.__add_to_history(chat_id, role="assistant", content=answer)
 
-                if len(response.choices) > 1 and self.config['n_choices'] > 1:
-                    for index, choice in enumerate(response.choices):
-                        content = choice['message']['content'].strip()
-                        if index == 0:
-                            self.__add_to_history(chat_id, role="assistant", content=content)
-                        answer += f'{index+1}\u20e3\n'
-                        answer += content
-                        answer += '\n\n'
-                else:
-                    answer = response.choices[0]['message']['content'].strip()
-                    self.__add_to_history(chat_id, role="assistant", content=answer)
+                    if self.config['show_usage']:
+                        answer += "\n\n---\n" \
+                                f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
+                                f" ({str(response.usage['prompt_tokens'])} prompt," \
+                                f" {str(response.usage['completion_tokens'])} completion)"
 
-                if self.config['show_usage']:
-                    answer += "\n\n---\n" \
-                              f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
-                              f" ({str(response.usage['prompt_tokens'])} prompt," \
-                              f" {str(response.usage['completion_tokens'])} completion)"
-
-                return answer, response.usage['total_tokens']
+                    return answer, response.usage['total_tokens']
 
             logging.error('No response from GPT-3')
             return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."

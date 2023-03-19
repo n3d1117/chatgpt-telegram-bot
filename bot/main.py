@@ -47,6 +47,8 @@ def main():
         # Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
         # frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
         'frequency_penalty': int(os.environ.get('FREQUENCY_PENALTY', 0)),
+
+        'stream': os.environ.get('STREAM', 'false').lower() == 'true',
     }
 
     telegram_config = {
