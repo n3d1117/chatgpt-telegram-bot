@@ -124,7 +124,7 @@ class OpenAIHelper:
             result = await openai.Audio.atranscribe("whisper-1", audio)
             return result.text
 
-    def reset_chat_history(self, chat_id, content):
+    def reset_chat_history(self, chat_id, content=''):
         """
         Resets the conversation history.
         """
