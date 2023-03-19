@@ -314,7 +314,7 @@ class ChatGPT3TelegramBot:
                 if 'content' in chunk['choices'][0]['delta']:
                     result = chunk['choices'][0]['delta']['content']
                     answer += result
-                    if re.search(r"[\p{P}\p{Z}]+|[\r\n]+", result):
+                    if re.search(r"[\p{P}]+|[\r\n]+", result):
                         await context.bot.edit_message_text(
                             chat_id=chat_id,
                             message_id=bot_message.message_id,

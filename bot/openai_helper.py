@@ -68,6 +68,7 @@ class OpenAIHelper:
             stream=self.config['stream']
             if stream:
                 return response
+            
             else:
                 if len(response.choices) > 0:
                     answer = ''
