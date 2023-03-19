@@ -444,6 +444,49 @@ class ChatGPT3TelegramBot:
 
         return False
 
+    async def is_admin(self, update: Update) -> bool:
+        """
+        Checks if the user is the admin of the bot.
+        The first user in the user list is the admin.
+        """
+        if self.config['allowed_user_ids'] == '*':
+            return True
+
+        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+
+        # Check if user is the first entry of the user list
+        if str(update.message.from_user.id) == allowed_user_ids[0]:
+            return True
+
+        return False
+
+    async def get_remaining_budget(self, update: Update) -> float:
+        logging.info(f'Getting remaining budget for user: {update.message.from_user.name} ({user_id}).')
+
+        user_id = update.message.from_user.id
+        
+        if self.config['monthly_user_budgets'] == '*':
+            return self.openai.get_balance()
+
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+        if str(user_id) in allowed_user_ids:
+            # find budget for allowed user
+            user_index = allowed_user_ids.index(str(user_id))
+            user_budgets = self.config['monthly_user_budgets'].split(',')
+            # check if user is included in budgets list
+            if len(user_budgets) <= user_index:
+                logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
+                return 0.0
+            user_budget = float(user_budgets[user_index])
+            cost_month = self.usage[user_id].get_current_cost()[1]
+            remaining_budget = user_budget - cost_month
+            return remaining_budget
+        else:
+            return 0.0
+
     async def is_within_budget(self, update: Update) -> bool:
         """
         Checks if the user reached their monthly usage limit.
