@@ -1,21 +1,14 @@
-FROM python:3.10-slim
+FROM python:3.9-alpine
 
-RUN apt-get update && \
-    apt-get install ffmpeg -y && \
-    rm -rf /var/lib/apt/lists/*
+ENV PYTHONFAULTHANDLER=1 \
+     PYTHONUNBUFFERED=1 \
+     PYTHONDONTWRITEBYTECODE=1 \
+     PIP_DISABLE_PIP_VERSION_CHECK=on
 
-RUN useradd -m appuser
-USER appuser
-WORKDIR /home/appuser/
+RUN apk --no-cache add ffmpeg
 
-ENV PATH="/home/appuser/.local/bin:$PATH"
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt --no-cache-dir
 
-RUN pip install --user pipenv --no-cache-dir
-
-WORKDIR /home/appuser/app
-COPY --chown=appuser . .
-COPY --chown=appuser .env .
-
-RUN pipenv install --system --deploy --ignore-pipfile
-
-CMD ["python", "main.py"]
+CMD ["python", "bot/main.py"]
