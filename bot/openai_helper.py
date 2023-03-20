@@ -124,11 +124,13 @@ class OpenAIHelper:
             result = await openai.Audio.atranscribe("whisper-1", audio)
             return result.text
 
-    def reset_chat_history(self, chat_id):
+    def reset_chat_history(self, chat_id, content=''):
         """
         Resets the conversation history.
         """
-        self.conversations[chat_id] = [{"role": "system", "content": self.config['assistant_prompt']}]
+        if content == '':
+            content = self.config['assistant_prompt']
+        self.conversations[chat_id] = [{"role": "system", "content": content}]
 
     def __max_age_reached(self, chat_id) -> bool:
         """
