@@ -172,7 +172,7 @@ class OpenAIHelper:
         return response.choices[0]['message']['content']
 
     def __max_model_tokens(self):
-        if self.config['model'] in ("gpt-3.5-turbo","gpt-3.5-turbo-0301","gpt-4"):
+        if self.config['model'] in ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4"):
             return 4096
         raise NotImplementedError(
             f"Max tokens for model {self.config['model']} is not implemented yet."
