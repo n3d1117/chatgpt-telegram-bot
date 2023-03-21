@@ -6,6 +6,11 @@ import tiktoken
 
 import openai
 
+# Models can be found here: https://platform.openai.com/docs/models/overview
+GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301")
+GPT_4_MODELS = ("gpt-4", "gpt-4-0314")
+GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314")
+GPT_ALL_MODELS = GPT_3_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS
 
 class OpenAIHelper:
     """
@@ -172,8 +177,12 @@ class OpenAIHelper:
         return response.choices[0]['message']['content']
 
     def __max_model_tokens(self):
-        if self.config['model'] in ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4"):
+        if self.config['model'] in GPT_3_MODELS:
             return 4096
+        if self.config['model'] in GPT_4_MODELS:
+            return 8192
+        if self.config['model'] in GPT_4_32K_MODELS:
+            return 32768
         raise NotImplementedError(
             f"Max tokens for model {self.config['model']} is not implemented yet."
         )
@@ -190,7 +199,7 @@ class OpenAIHelper:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             encoding = tiktoken.get_encoding("gpt-3.5-turbo")
-        if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4"):
+        if model in GPT_ALL_MODELS:
             num_tokens = 0
             for message in messages:
                 num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
