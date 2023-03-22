@@ -302,8 +302,11 @@ class ChatGPT3TelegramBot:
             if prompt.startswith(trigger_keyword):
                 prompt = prompt[len(trigger_keyword):].strip()
             else:
-                logging.warning('Message does not start with trigger keyword, ignoring...')
-                return
+                if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
+                    logging.info('Message is a reply to the bot, allowing...')
+                else:
+                    logging.warning('Message does not start with trigger keyword, ignoring...')
+                    return
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
