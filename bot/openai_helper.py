@@ -9,11 +9,15 @@ import openai
 
 import requests
 import json
+from datetime import date
+from calendar import monthrange
+
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS
+
 class OpenAIHelper:
     """
     ChatGPT helper class.
@@ -224,8 +228,11 @@ class OpenAIHelper:
         else:
             raise NotImplementedError(f"__count_tokens() is not presently implemented for model {model}")
 
-    def get_balance(self):
+    def get_grant_balance(self):
+        """Gets remaining grant balance for new users from OpenAI API.
 
+        :return: remaining grant balance
+        """
         headers = {
             "Authorization": f"Bearer {openai.api_key}"
         }
@@ -233,3 +240,25 @@ class OpenAIHelper:
         billing_data = json.loads(response.text)
         balance = billing_data["total_available"]
         return balance
+    
+    def get_billing_current_month(self):
+        """Gets billed usage for current month from OpenAI API.
+
+        :return: dollar amount of usage this month
+        """
+        headers = {
+            "Authorization": f"Bearer {openai.api_key}"
+        }
+        # calculate first and last day of current month
+        today = date.today()
+        first_day = date(today.year, today.month, 1)
+        _, last_day_of_month = monthrange(today.year, today.month)
+        last_day = date(today.year, today.month, last_day_of_month)
+        params = {
+            "start_date": first_day,
+            "end_date": last_day
+        }
+        response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
+        billing_data = json.loads(response.text)
+        usage_month = billing_data["total_usage"] / 100 # convert cent amount to dollars
+        return usage_month

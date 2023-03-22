@@ -60,7 +60,7 @@ class ChatGPT3TelegramBot:
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'User {update.message.from_user.name} requested their token usage statistics')
+        logging.info(f'User {update.message.from_user.name} requested their usage statistics')
         
         user_id = update.message.from_user.id
         if user_id not in self.usage:
@@ -73,37 +73,35 @@ class ChatGPT3TelegramBot:
         
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
+        budget = await self.get_remaining_budget(update)
 
-        usage_text = f"Today:\n"+\
+        text_current_conversation = f"Current conversation:\n"+\
+                     f"{chat_messages} chat messages in history.\n"+\
+                     f"{chat_token_length} chat tokens in history.\n"+\
+                     f"\n----------------------------\n\n"
+        text_today = f"Usage today:\n"+\
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
                      f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
                      f"💰 For a total amount of ${cost_today:.2f}\n"+\
-                     f"\n----------------------------\n\n"+\
-                     f"This month:\n"+\
+                     f"\n----------------------------\n\n"
+        text_month = f"Usage this month:\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
                      f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_month:.2f}"+\
-                     f"\n----------------------------\n\n"+\
-                     f"Current conversation:\n"+\
-                     f"{chat_messages} chat messages in history.\n"+\
-                     f"{chat_token_length} chat tokens in history.\n"
-        await update.message.reply_text(usage_text)
-
-    async def balance(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        Returns OpenAI account balance.
-        """
-        if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to request OpenAI account balance')
-            await self.send_disallowed_message(update, context)
-            return
-
-        logging.info(f'User {update.message.from_user.name} requested OpenAI account balance')
+                     f"💰 For a total amount of ${cost_month:.2f}"
+        text_budget = "\n\n"
+        if budget < float('inf'):
+            text_budget += f"You have a remaining budget of ${budget:.2f} this month.\n"
+        # add OpenAI account information for admin request
+        if await self.is_admin(update):
+            grant_balance = self.openai.get_grant_balance()
+            if grant_balance > 0.0:
+                text_budget += f"Your remaining OpenAI grant balance is ${grant_balance:.2f}.\n"
+            text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
         
-        balance = self.openai.get_balance()
-        await update.message.reply_text(f"The balance of your OpenAI account is: ${balance:.3f}")
+        usage_text = text_current_conversation + text_today + text_month + text_budget
+        await update.message.reply_text(usage_text)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -429,7 +427,6 @@ class ChatGPT3TelegramBot:
             return True
 
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
-
         # Check if user is allowed
         if str(update.message.from_user.id) in allowed_user_ids:
             return True
@@ -461,15 +458,12 @@ class ChatGPT3TelegramBot:
         return False
 
     async def get_remaining_budget(self, update: Update) -> float:
-        logging.info(f'Getting remaining budget for user: {update.message.from_user.name} ({user_id}).')
-
         user_id = update.message.from_user.id
-        
-        if self.config['monthly_user_budgets'] == '*':
-            return self.openai.get_balance()
-
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        if self.config['monthly_user_budgets'] == '*':
+            return float('inf')
 
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
         if str(user_id) in allowed_user_ids:
@@ -554,7 +548,6 @@ class ChatGPT3TelegramBot:
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
-        application.add_handler(CommandHandler('balance', self.balance))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,

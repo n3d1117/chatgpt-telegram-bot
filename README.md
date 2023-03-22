@@ -71,7 +71,7 @@ TRANSCRIPTION_PRICE=0.006 # Defaults to minute price of OpenAI Whisper of 0.006
 ```
 * `OPENAI_API_KEY`: Your OpenAI API key, you can get it from [here](https://platform.openai.com/account/api-keys)
 * `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token, obtained using [BotFather](http://t.me/botfather) (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
-* `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)
+* `ALLOWED_TELEGRAM_USER_IDS`: A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). First USER_ID has access to admin commands. **Note**: by default, *everyone* is allowed (`*`) and has access to admin commands.
 * `MONTHLY_USER_BUDGETS`: A comma-separated list of $-amounts per user from list `ALLOWED_TELEGRAM_USER_IDS` to set custom usage limit of OpenAI API costs for each. **Note**: by default, *no limits* for anyone (`*`)
 * `MONTHLY_GUEST_BUDGET`: $-amount as usage limit for all guest users. Guest users are users in group chats that are not in the `ALLOWED_TELEGRAM_USER_IDS` list. Value is ignored if no usage limits are set in user budgets (`MONTHLY_USER_BUDGETS`="*")
 * `PROXY`: Proxy to be used for OpenAI and Telegram bot
