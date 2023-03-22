@@ -441,8 +441,6 @@ class ChatGPT3TelegramBot:
         if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
             self.usage["guests"].add_chat_tokens(used_tokens, self.config['token_price'])
 
-        logging.info("Updated token usage")
-
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Sends the disallowed message to the user.
