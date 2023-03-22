@@ -2,13 +2,51 @@ import logging
 import os
 
 from telegram import constants
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand, \
+    InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
-    filters, InlineQueryHandler, Application
+    filters, InlineQueryHandler, CallbackQueryHandler, CallbackContext, Application
 
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
+from uuid import uuid4
+
+
+async def error_handler(_update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Handles errors in the telegram-python-bot library.
+    """
+    logging.debug(f'Exception while handling an update: {context.error}')
+
+
+def split_into_chunks(text: str, chunk_size: int = 4096) -> list[str]:
+    """
+    Splits a string into chunks of a given size.
+    """
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
+
+async def is_user_in_group(update: Update, user_id: int) -> bool:
+    """
+    Checks if user_id is a member of the group
+    """
+    member = await update.effective_chat.get_member(user_id)
+    return member.status in [
+        constants.ChatMemberStatus.OWNER,
+        constants.ChatMemberStatus.ADMINISTRATOR,
+        constants.ChatMemberStatus.MEMBER
+    ]
+
+
+def is_group_chat(update: Update) -> bool:
+    """
+    Checks if the message was sent from a group chat
+    """
+    return update.effective_chat.type in [
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP
+    ]
 
 
 class ChatGPT3TelegramBot:
@@ -26,7 +64,9 @@ class ChatGPT3TelegramBot:
         self.openai = openai
         self.commands = [
             BotCommand(command='help', description='Show help message'),
-            BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions for the conversation (e.g. /reset You are a helpful assistant)'),
+            BotCommand(command='reset',
+                       description='Reset the conversation. Optionally pass high-level instructions for the '
+                                   'conversation (e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics')
         ]
@@ -34,8 +74,9 @@ class ChatGPT3TelegramBot:
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
         self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
         self.usage = {}
+        self.inline_queries_cache = {}
 
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def help(self, update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Shows the help menu.
         """
@@ -48,7 +89,6 @@ class ChatGPT3TelegramBot:
                     '\n\n' + \
                     "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
         await update.message.reply_text(help_text, disable_web_page_preview=True)
-
 
     async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -69,17 +109,17 @@ class ChatGPT3TelegramBot:
         images_today, images_month = self.usage[user_id].get_current_image_count()
         transcribe_durations = self.usage[user_id].get_current_transcription_duration()
         cost_today, cost_month = self.usage[user_id].get_current_cost()
-        
-        usage_text = f"Today:\n"+\
-                     f"{tokens_today} chat tokens used.\n"+\
-                     f"{images_today} images generated.\n"+\
-                     f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_today:.2f}\n"+\
-                     f"\n----------------------------\n\n"+\
-                     f"This month:\n"+\
-                     f"{tokens_month} chat tokens used.\n"+\
-                     f"{images_month} images generated.\n"+\
-                     f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
+
+        usage_text = f"Today:\n" + \
+                     f"{tokens_today} chat tokens used.\n" + \
+                     f"{images_today} images generated.\n" + \
+                     f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n" + \
+                     f"💰 For a total amount of ${cost_today:.2f}\n" + \
+                     f"\n----------------------------\n\n" + \
+                     f"This month:\n" + \
+                     f"{tokens_month} chat tokens used.\n" + \
+                     f"{images_month} images generated.\n" + \
+                     f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n" + \
                      f"💰 For a total amount of ${cost_month:.2f}"
         await update.message.reply_text(usage_text)
 
@@ -103,16 +143,8 @@ class ChatGPT3TelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to generate images')
-            await self.send_disallowed_message(update, context)
-            return
+        await self.validate_answering_possibility(update, context, "generate images")
 
-        if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
-            await self.send_budget_reached_message(update, context)
-            return
-        
         chat_id = update.effective_chat.id
         image_query = update.message.text.replace('/image', '').strip()
         if image_query == '':
@@ -148,17 +180,9 @@ class ChatGPT3TelegramBot:
         """
         Transcribe audio messages.
         """
-        if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
-            await self.send_disallowed_message(update, context)
-            return
-        
-        if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
-            await self.send_budget_reached_message(update, context)
-            return
+        await self.validate_answering_possibility(update, context, "transcribe audio messages")
 
-        if self.is_group_chat(update) and self.config['ignore_group_transcriptions']:
+        if is_group_chat(update) and self.config['ignore_group_transcriptions']:
             logging.info(f'Transcription coming from group chat, ignoring...')
             return
 
@@ -222,7 +246,7 @@ class ChatGPT3TelegramBot:
 
                 # Split into chunks of 4096 characters (Telegram's message limit)
                 transcript_output = f'_Transcript:_\n"{transcript}"'
-                chunks = self.split_into_chunks(transcript_output)
+                chunks = split_into_chunks(transcript_output)
 
                 for index, transcript_chunk in enumerate(chunks):
                     await context.bot.send_message(
@@ -238,16 +262,11 @@ class ChatGPT3TelegramBot:
                     raise Exception(response)
 
                 response, total_tokens = response
-
-                # add chat request to users usage tracker
-                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-                # add guest chat request to guest usage tracker
-                if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                    self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+                self.process_used_tokens(user_id, total_tokens)
 
                 # Split into chunks of 4096 characters (Telegram's message limit)
                 transcript_output = f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}'
-                chunks = self.split_into_chunks(transcript_output)
+                chunks = split_into_chunks(transcript_output)
 
                 for index, transcript_chunk in enumerate(chunks):
                     await context.bot.send_message(
@@ -275,22 +294,14 @@ class ChatGPT3TelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to use the bot')
-            await self.send_disallowed_message(update, context)
-            return
+        await self.validate_answering_possibility(update, context)
 
-        if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
-            await self.send_budget_reached_message(update, context)
-            return
-        
         logging.info(f'New message received from user {update.message.from_user.name}')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = update.message.text
 
-        if self.is_group_chat(update):
+        if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
             if prompt.startswith(trigger_keyword):
                 prompt = prompt[len(trigger_keyword):].strip()
@@ -311,16 +322,10 @@ class ChatGPT3TelegramBot:
             return
 
         response, total_tokens = response
-
-        # add chat request to users usage tracker
-        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-        # add guest chat request to guest usage tracker
-        allowed_user_ids = self.config['allowed_user_ids'].split(',')
-        if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-            self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+        self.process_used_tokens(user_id, total_tokens)
 
         # Split into chunks of 4096 characters (Telegram's message limit)
-        chunks = self.split_into_chunks(response)
+        chunks = split_into_chunks(response)
 
         for index, chunk in enumerate(chunks):
             await context.bot.send_message(
@@ -335,21 +340,108 @@ class ChatGPT3TelegramBot:
         Handle the inline query. This is run when you type: @botusername <query>
         """
         query = update.inline_query.query
-
-        if query == "":
+        if len(query) < 3:
             return
 
-        results = [
-            InlineQueryResultArticle(
-                id=query,
-                title="Ask ChatGPT",
-                input_message_content=InputTextMessageContent(query),
-                description=query,
-                thumb_url='https://user-images.githubusercontent.com/11541888/223106202-7576ff11-2c8e-408d-94ea-b02a7a32149a.png'
-            )
-        ]
+        await self.validate_answering_possibility(update, context, use_case='do inline queries', is_inline=True)
 
-        await update.inline_query.answer(results)
+        callback_data_suffix = "gpt:"
+        max_callback_data_length = 64 - len(callback_data_suffix)  # Account for the length of the prefix
+        result_id = str(uuid4())
+        if len(query) > max_callback_data_length:
+            callback_data_suffix = "gpt_lq:"
+            self.inline_queries_cache[result_id] = query
+            callback_data = f'{callback_data_suffix}{result_id}'
+        else:
+            callback_data = f'{callback_data_suffix}{query}'
+
+        try:
+            results = [
+                InlineQueryResultArticle(
+                    id=result_id,
+                    title="Ask ChatGPT",
+                    input_message_content=InputTextMessageContent(query),
+                    description=query,
+                    thumb_url='https://user-images.githubusercontent.com/11541888/223106202-7576ff11-2c8e-408d-94ea'
+                              '-b02a7a32149a.png',
+                    reply_markup=InlineKeyboardMarkup([[
+                        InlineKeyboardButton(text='Answer with ChatGPT',
+                                             callback_data=callback_data)
+                    ]]),
+                )
+            ]
+            await update.inline_query.answer(results)
+        except Exception as e:
+            logging.error(f'An error occurred while generating the result card for inline query {e}')
+
+    async def handle_callback_inline_query(self, update: Update, context: CallbackContext):
+        callback_data = update.callback_query.data
+        user_id = update.callback_query.from_user.id
+        inline_message_id = update.callback_query.inline_message_id
+        name = update.callback_query.from_user.name
+        callback_data_suffix = "gpt:"
+        callback_long_data_suffix = "gpt_lq:"
+        query = ""
+
+        try:
+            if callback_data.startswith(callback_data_suffix):
+                query = callback_data.split(':')[1]
+
+            if callback_data.startswith(callback_long_data_suffix):
+                unique_id = callback_data.split(':')[1]
+
+                # Retrieve the long text from the cache
+                query = self.inline_queries_cache.get(unique_id)
+                if query:
+                    self.inline_queries_cache.pop(unique_id)
+                else:
+                    await context.bot.edit_message_text(inline_message_id=inline_message_id,
+                                                        text='An error occurred while reading your prompt. Please try '
+                                                             'again.')
+                    return
+
+            # Edit the current message to indicate that the answer is being processed
+            await context.bot.edit_message_text(inline_message_id=inline_message_id,
+                                                text=f'Getting the answer...\n\n**Prompt:**\n{query}',
+                                                parse_mode='Markdown')
+
+            logging.info(f'Generating response for inline query by {name}')
+            response, used_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
+            self.process_used_tokens(user_id, used_tokens)
+
+            # Edit the original message with the generated content
+            await context.bot.edit_message_text(inline_message_id=inline_message_id, parse_mode='Markdown',
+                                                text=f'{query}\n\n**GPT:**\n{response}')
+        except Exception as e:
+            await context.bot.edit_message_text(inline_message_id=inline_message_id,
+                                                text=f'Failed to generate the answer. Please try again.')
+            logging.error(f'Failed to respond to an inline query via button callback: {e}')
+
+    async def validate_answering_possibility(self,
+                                             update: Update, context: ContextTypes.DEFAULT_TYPE,
+                                             use_case: str = None, is_inline=False):
+        name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+
+        if not await self.is_allowed(update, is_inline):
+            logging.warning(f'User {name} is not allowed to'
+                            f'{use_case if use_case is not None else "use the bot"}')
+            await self.send_disallowed_message(update, context)
+            return
+
+        if not await self.is_within_budget(update, is_inline):
+            logging.warning(f'User {name} reached their usage limit')
+            await self.send_budget_reached_message(update, context)
+            return
+
+    def process_used_tokens(self, user_id: int, used_tokens):
+        # add chat request to users usage tracker
+        self.usage[user_id].add_chat_tokens(used_tokens, self.config['token_price'])
+
+        # add guest chat request to guest usage tracker
+        if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
+            self.usage["guests"].add_chat_tokens(used_tokens, self.config['token_price'])
+
+        logging.info("Updated token usage")
 
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -370,63 +462,40 @@ class ChatGPT3TelegramBot:
             text=self.budget_limit_message
         )
 
-    async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Handles errors in the telegram-python-bot library.
-        """
-        logging.debug(f'Exception while handling an update: {context.error}')
-
-    def is_group_chat(self, update: Update) -> bool:
-        """
-        Checks if the message was sent from a group chat
-        """
-        return update.effective_chat.type in [
-            constants.ChatType.GROUP,
-            constants.ChatType.SUPERGROUP
-        ]
-
-    async def is_user_in_group(self, update: Update, user_id: int) -> bool:
-        """
-        Checks if user_id is a member of the group
-        """
-        member = await update.effective_chat.get_member(user_id)
-        return member.status in [
-            constants.ChatMemberStatus.OWNER,
-            constants.ChatMemberStatus.ADMINISTRATOR,
-            constants.ChatMemberStatus.MEMBER
-        ]
-
-    async def is_allowed(self, update: Update) -> bool:
+    async def is_allowed(self, update: Update, is_inline=False) -> bool:
         """
         Checks if the user is allowed to use the bot.
         """
         if self.config['allowed_user_ids'] == '*':
             return True
 
+        user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
 
         # Check if user is allowed
-        if str(update.message.from_user.id) in allowed_user_ids:
+        if str(user_id) in allowed_user_ids:
             return True
 
         # Check if it's a group a chat with at least one authorized member
-        if self.is_group_chat(update):
+        if is_group_chat(update):
             for user in allowed_user_ids:
-                if await self.is_user_in_group(update, user):
+                if await is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
             logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
 
         return False
 
-    async def is_within_budget(self, update: Update) -> bool:
+    async def is_within_budget(self, update: Update, is_inline=False) -> bool:
         """
         Checks if the user reached their monthly usage limit.
         Initializes UsageTracker for user and guest when needed.
         """
-        user_id = update.message.from_user.id
+        user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+        name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+
         if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+            self.usage[user_id] = UsageTracker(user_id, name)
 
         if self.config['monthly_user_budgets'] == '*':
             return True
@@ -438,7 +507,7 @@ class ChatGPT3TelegramBot:
             user_budgets = self.config['monthly_user_budgets'].split(',')
             # check if user is included in budgets list
             if len(user_budgets) <= user_index:
-                logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
+                logging.warning(f'No budget set for user: {name} ({user_id}).')
                 return False
             user_budget = float(user_budgets[user_index])
             cost_month = self.usage[user_id].get_current_cost()[1]
@@ -446,23 +515,17 @@ class ChatGPT3TelegramBot:
             return user_budget > cost_month
 
         # Check if group member is within budget
-        if self.is_group_chat(update):
+        if is_group_chat(update):
             for user in allowed_user_ids:
-                if await self.is_user_in_group(update, user):
+                if await is_user_in_group(update, user):
                     if 'guests' not in self.usage:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
                     if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
                         return True
                     logging.warning('Monthly guest budget for group chats used up.')
                     return False
-            logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
+            logging.info(f'Group chat messages from user {name} are not allowed')
         return False
-
-    def split_into_chunks(self, text: str, chunk_size: int = 4096) -> list[str]:
-        """
-        Splits a string into chunks of a given size.
-        """
-        return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
     async def post_init(self, application: Application) -> None:
         """
@@ -492,9 +555,10 @@ class ChatGPT3TelegramBot:
             self.transcribe))
         application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
-            constants.ChatType.GROUP, constants.ChatType.SUPERGROUP
+            constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))
+        application.add_handler(CallbackQueryHandler(self.handle_callback_inline_query))
 
-        application.add_error_handler(self.error_handler)
+        application.add_error_handler(error_handler)
 
         application.run_polling()
