@@ -28,8 +28,7 @@ class ChatGPT3TelegramBot:
             BotCommand(command='help', description='Show help message'),
             BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions for the conversation (e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
-            BotCommand(command='stats', description='Get your current usage statistics'),
-            BotCommand(command='balance', description='Get your OpenAI account balance')
+            BotCommand(command='stats', description='Get your current usage statistics')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
