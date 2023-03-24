@@ -74,21 +74,22 @@ class ChatGPT3TelegramBot:
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
         budget = await self.get_remaining_budget(update)
 
-        text_current_conversation = f"Current conversation:\n"+\
+        text_current_conversation = f"*Current conversation:*\n"+\
                      f"{chat_messages} chat messages in history.\n"+\
                      f"{chat_token_length} chat tokens in history.\n"+\
-                     f"\n----------------------------\n\n"
-        text_today = f"Usage today:\n"+\
+                     f"----------------------------\n"
+        text_today = f"*Usage today:*\n"+\
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
                      f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
                      f"💰 For a total amount of ${cost_today:.2f}\n"+\
-                     f"\n----------------------------\n\n"
-        text_month = f"Usage this month:\n"+\
+                     f"----------------------------\n"
+        text_month = f"*Usage this month:*\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
                      f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
                      f"💰 For a total amount of ${cost_month:.2f}"
+        # text_budget filled with conditional content
         text_budget = "\n\n"
         if budget < float('inf'):
             text_budget += f"You have a remaining budget of ${budget:.2f} this month.\n"
@@ -100,7 +101,7 @@ class ChatGPT3TelegramBot:
             text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
         
         usage_text = text_current_conversation + text_today + text_month + text_budget
-        await update.message.reply_text(usage_text)
+        await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -183,10 +184,8 @@ class ChatGPT3TelegramBot:
 
         chat_id = update.effective_chat.id
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-
         filename = update.message.effective_attachment.file_unique_id
         filename_mp3 = f'{filename}.mp3'
-
         try:
             media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
             await media_file.download_to_drive(filename)
@@ -424,7 +423,10 @@ class ChatGPT3TelegramBot:
         """
         if self.config['allowed_user_ids'] == '*':
             return True
-
+        
+        if await self.is_admin(update):
+            return True
+        
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
         # Check if user is allowed
         if str(update.message.from_user.id) in allowed_user_ids:
@@ -445,13 +447,14 @@ class ChatGPT3TelegramBot:
         Checks if the user is the admin of the bot.
         The first user in the user list is the admin.
         """
-        if self.config['allowed_user_ids'] == '*':
-            return True
+        if self.config['admin_user_ids'] == '-':
+            logging.info('No admin user defined.')
+            return False
 
-        allowed_user_ids = self.config['allowed_user_ids'].split(',')
+        admin_user_ids = self.config['admin_user_ids'].split(',')
 
-        # Check if user is the first entry of the user list
-        if str(update.message.from_user.id) == allowed_user_ids[0]:
+        # Check if user is in the admin user list
+        if str(update.message.from_user.id) in admin_user_ids:
             return True
 
         return False
@@ -460,6 +463,9 @@ class ChatGPT3TelegramBot:
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        if await self.is_admin(update):
+            return float('inf')
 
         if self.config['monthly_user_budgets'] == '*':
             return float('inf')
@@ -488,6 +494,9 @@ class ChatGPT3TelegramBot:
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+        if await self.is_admin(update):
+            return True
 
         if self.config['monthly_user_budgets'] == '*':
             return True

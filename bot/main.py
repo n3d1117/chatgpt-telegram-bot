@@ -51,6 +51,7 @@ def main():
 
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
         'monthly_user_budgets': os.environ.get('MONTHLY_USER_BUDGETS', '*'),
         'monthly_guest_budget': float(os.environ.get('MONTHLY_GUEST_BUDGET', '100.0')),
