@@ -26,7 +26,8 @@ class ChatGPT3TelegramBot:
         self.openai = openai
         self.commands = [
             BotCommand(command='help', description='Show help message'),
-            BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions for the conversation (e.g. /reset You are a helpful assistant)'),
+            BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions '
+                                                    'for the conversation (e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics')
         ]
@@ -240,11 +241,7 @@ class ChatGPT3TelegramBot:
                     )
             else:
                 # Get the response of the transcript
-                response = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-                if not isinstance(response, tuple):
-                    raise Exception(response)
-
-                response, total_tokens = response
+                response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
 
                 # add chat request to users usage tracker
                 self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
@@ -310,34 +307,32 @@ class ChatGPT3TelegramBot:
 
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
-        response = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
-        if not isinstance(response, tuple):
+        try:
+            response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+            # add chat request to users usage tracker
+            self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+            # add guest chat request to guest usage tracker
+            allowed_user_ids = self.config['allowed_user_ids'].split(',')
+            if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+
+            # Split into chunks of 4096 characters (Telegram's message limit)
+            chunks = self.split_into_chunks(response)
+
+            for index, chunk in enumerate(chunks):
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id if index == 0 else None,
+                    text=chunk,
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+        except Exception as e:
+            logging.exception(e)
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=response,
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
-            return
-
-        response, total_tokens = response
-
-        # add chat request to users usage tracker
-        self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-        # add guest chat request to guest usage tracker
-        allowed_user_ids = self.config['allowed_user_ids'].split(',')
-        if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-            self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
-
-        # Split into chunks of 4096 characters (Telegram's message limit)
-        chunks = self.split_into_chunks(response)
-
-        for index, chunk in enumerate(chunks):
-            await context.bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id if index == 0 else None,
-                text=chunk,
-                parse_mode=constants.ParseMode.MARKDOWN
+                text=f'Failed to get response: {str(e)}'
             )
 
     async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -346,13 +341,13 @@ class ChatGPT3TelegramBot:
         """
         query = update.inline_query.query
 
-        if query == "":
+        if query == '':
             return
 
         results = [
             InlineQueryResultArticle(
                 id=query,
-                title="Ask ChatGPT",
+                title='Ask ChatGPT',
                 input_message_content=InputTextMessageContent(query),
                 description=query,
                 thumb_url='https://user-images.githubusercontent.com/11541888/223106202-7576ff11-2c8e-408d-94ea-b02a7a32149a.png'

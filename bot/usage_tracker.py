@@ -49,12 +49,12 @@ class UsageTracker:
         self.logs_dir = logs_dir
         # path to usage file of given user
         self.user_file = f"{logs_dir}/{user_id}.json"
-        
+
         if os.path.isfile(self.user_file):
             with open(self.user_file, "r") as file:
                 self.usage = json.load(file)
         else:
-            # ensure directory exists 
+            # ensure directory exists
             pathlib.Path(logs_dir).mkdir(exist_ok=True)
             # create new dictionary for this user
             self.usage = {
@@ -64,7 +64,7 @@ class UsageTracker:
             }
 
     # token usage functions:
-    
+
     def add_chat_tokens(self, tokens, tokens_price=0.002):
         """Adds used tokens from a request to a users usage history and updates current cost-
         :param tokens: total tokens used in last request
@@ -101,7 +101,7 @@ class UsageTracker:
 
         :return: total number of tokens used per day and per month
         """
-        today = date.today()     
+        today = date.today()
         if str(today) in self.usage["usage_history"]["chat_tokens"]:
             usage_day = self.usage["usage_history"]["chat_tokens"][str(today)]
         else:
@@ -112,7 +112,7 @@ class UsageTracker:
             if today.startswith(month):
                 usage_month += tokens
         return usage_day, usage_month
-    
+
     # image usage functions:
 
     def add_image_request(self, image_size, image_prices="0.016,0.018,0.02"):
@@ -121,7 +121,7 @@ class UsageTracker:
         :param image_size: requested image size
         :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
                              defaults to [0.016, 0.018, 0.02]
-        """        
+        """
         sizes = ["256x256", "512x512", "1024x1024"]
         requested_size = sizes.index(image_size)
         image_cost = image_prices[requested_size]
@@ -207,7 +207,7 @@ class UsageTracker:
         """Get minutes and seconds of audio transcribed for today and this month.
 
         :return: total amount of time transcribed per day and per month (4 values)
-        """      
+        """
         today = date.today()
         if str(today) in self.usage["usage_history"]["transcription_seconds"]:
             seconds_day = self.usage["usage_history"]["transcription_seconds"][str(today)]
@@ -227,7 +227,7 @@ class UsageTracker:
         """Get total USD amount of all requests of the current day and month
 
         :return: cost of current day and month
-        """  
+        """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
         if today == last_update:

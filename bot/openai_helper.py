@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import Union
 
 import tiktoken
 
@@ -36,14 +35,14 @@ class OpenAIHelper:
         """
         if chat_id not in self.conversations:
             self.reset_chat_history(chat_id)
-        return (len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id]))
+        return len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id])
 
-    async def get_chat_response(self, chat_id: int, query: str) -> Union[tuple[str, str], str]:
+    async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
         """
         Gets a response from the GPT-3 model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used, or an error message
+        :return: The answer from the model and the number of tokens used
         """
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
@@ -103,20 +102,17 @@ class OpenAIHelper:
 
                 return answer, response.usage['total_tokens']
 
-            logging.error('No response from GPT-3')
-            return "⚠️ _An error has occurred_ ⚠️\nPlease try again in a while."
+            logging.error(f'No response from GPT: {str(response)}')
+            raise Exception('⚠️ _An error has occurred_ ⚠️\nPlease try again in a while.')
 
         except openai.error.RateLimitError as e:
-            logging.exception(e)
-            return f"⚠️ _OpenAI Rate Limit exceeded_ ⚠️\n{str(e)}"
+            raise Exception(f'⚠️ _OpenAI Rate Limit exceeded_ ⚠️\n{str(e)}') from e
 
         except openai.error.InvalidRequestError as e:
-            logging.exception(e)
-            return f"⚠️ _OpenAI Invalid request_ ⚠️\n{str(e)}"
+            raise Exception(f'⚠️ _OpenAI Invalid request_ ⚠️\n{str(e)}') from e
 
         except Exception as e:
-            logging.exception(e)
-            return f"⚠️ _An error has occurred_ ⚠️\n{str(e)}"
+            raise Exception(f'⚠️ _An error has occurred_ ⚠️\n{str(e)}') from e
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
         """
@@ -124,20 +120,32 @@ class OpenAIHelper:
         :param prompt: The prompt to send to the model
         :return: The image URL and the image size
         """
-        response = await openai.Image.acreate(
-            prompt=prompt,
-            n=1,
-            size=self.config['image_size']
-        )
-        return response['data'][0]['url'], self.config['image_size']
+        try:
+            response = await openai.Image.acreate(
+                prompt=prompt,
+                n=1,
+                size=self.config['image_size']
+            )
+
+            if 'data' not in response or len(response['data']) == 0:
+                logging.error(f'No response from GPT: {str(response)}')
+                raise Exception('⚠️ _An error has occurred_ ⚠️\nPlease try again in a while.')
+
+            return response['data'][0]['url'], self.config['image_size']
+        except Exception as e:
+            raise Exception(f'⚠️ _An error has occurred_ ⚠️\n{str(e)}') from e
 
     async def transcribe(self, filename):
         """
         Transcribes the audio file using the Whisper model.
         """
-        with open(filename, "rb") as audio:
-            result = await openai.Audio.atranscribe("whisper-1", audio)
-            return result.text
+        try:
+            with open(filename, "rb") as audio:
+                result = await openai.Audio.atranscribe("whisper-1", audio)
+                return result.text
+        except Exception as e:
+            logging.exception(e)
+            raise Exception(f'⚠️ _An error has occurred_ ⚠️\n{str(e)}') from e
 
     def reset_chat_history(self, chat_id, content=''):
         """
