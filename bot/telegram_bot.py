@@ -335,7 +335,11 @@ class ChatGPT3TelegramBot:
                             if sent_message is not None:
                                 await context.bot.delete_message(chat_id=sent_message.chat_id,
                                                                  message_id=sent_message.message_id)
-                            sent_message = await update.message.reply_text(content)
+                            sent_message = await context.bot.send_message(
+                                chat_id=chat_id,
+                                reply_to_message_id=update.message.message_id,
+                                text=content
+                            )
                         except:
                             continue
 
