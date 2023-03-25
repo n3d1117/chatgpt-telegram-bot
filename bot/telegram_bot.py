@@ -1,8 +1,12 @@
 import logging
 import os
 
+import asyncio
+
+import telegram
 from telegram import constants
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, Application
 
@@ -18,7 +22,7 @@ class ChatGPT3TelegramBot:
 
     def __init__(self, config: dict, openai: OpenAIHelper):
         """
-        Initializes the bot with the given configuration and GPT-3 bot object.
+        Initializes the bot with the given configuration and GPT bot object.
         :param config: A dictionary containing the bot configuration
         :param openai: OpenAIHelper object
         """
@@ -27,7 +31,7 @@ class ChatGPT3TelegramBot:
         self.commands = [
             BotCommand(command='help', description='Show help message'),
             BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions '
-                                                    'for the conversation (e.g. /reset You are a helpful assistant)'),
+                                                    '(e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics')
         ]
@@ -308,7 +312,73 @@ class ChatGPT3TelegramBot:
         await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
         try:
-            response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+            if self.config['stream']:
+                is_group_chat = self.is_group_chat(update)
+
+                stream_response = self.openai.get_chat_response_stream(chat_id=chat_id, query=prompt)
+                i = 0
+                prev = ''
+                sent_message = None
+
+                async for content, tokens in stream_response:
+                    if len(content.strip()) == 0:
+                        continue
+
+                    if is_group_chat:
+                        # group chats have stricter flood limits
+                        cutoff = 180 if len(content) > 1000 else 120 if len(content) > 200 else 90 if len(content) > 50 else 50
+                    else:
+                        cutoff = 120 if len(content) > 1000 else 100 if len(content) > 200 else 85 if len(content) > 50 else 40
+
+                    if i == 0:
+                        try:
+                            if sent_message is not None:
+                                await context.bot.delete_message(chat_id=sent_message.chat_id,
+                                                                 message_id=sent_message.message_id)
+                            sent_message = await update.message.reply_text(content)
+                        except:
+                            continue
+
+                    elif abs(len(content) - len(prev)) > cutoff or tokens != 'not_finished':
+                        prev = content
+
+                        try:
+                            await context.bot.edit_message_text(content, chat_id=sent_message.chat_id,
+                                                                message_id=sent_message.message_id,
+                                                                parse_mode=constants.ParseMode.MARKDOWN)
+                        except telegram.error.BadRequest as e:
+                            if str(e).startswith("Message is not modified"):
+                                continue
+                            await context.bot.edit_message_text(content, chat_id=sent_message.chat_id,
+                                                                message_id=sent_message.message_id)
+
+                        except RetryAfter as e:
+                            logging.warning(str(e))
+                            await asyncio.sleep(e.retry_after)
+
+                        except TimedOut as e:
+                            logging.warning(str(e))
+                            await asyncio.sleep(1)
+
+                        await asyncio.sleep(0.01)
+
+                    i += 1
+                    if tokens != 'not_finished':
+                        total_tokens = int(tokens)
+
+            else:
+                response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+                # Split into chunks of 4096 characters (Telegram's message limit)
+                chunks = self.split_into_chunks(response)
+
+                for index, chunk in enumerate(chunks):
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        reply_to_message_id=update.message.message_id if index == 0 else None,
+                        text=chunk,
+                        parse_mode=constants.ParseMode.MARKDOWN
+                    )
 
             # add chat request to users usage tracker
             self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
@@ -317,16 +387,6 @@ class ChatGPT3TelegramBot:
             if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
                 self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
-            # Split into chunks of 4096 characters (Telegram's message limit)
-            chunks = self.split_into_chunks(response)
-
-            for index, chunk in enumerate(chunks):
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id if index == 0 else None,
-                    text=chunk,
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
         except Exception as e:
             logging.exception(e)
             await context.bot.send_message(
@@ -484,6 +544,7 @@ class ChatGPT3TelegramBot:
             .proxy_url(self.config['proxy']) \
             .get_updates_proxy_url(self.config['proxy']) \
             .post_init(self.post_init) \
+            .concurrent_updates(True) \
             .build()
 
         application.add_handler(CommandHandler('reset', self.reset))
