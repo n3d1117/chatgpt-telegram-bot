@@ -330,6 +330,7 @@ class ChatGPT3TelegramBot:
                 i = 0
                 prev = ''
                 sent_message = None
+                backoff = 0
 
                 async for content, tokens in stream_response:
                     if len(content.strip()) == 0:
@@ -339,7 +340,9 @@ class ChatGPT3TelegramBot:
                         # group chats have stricter flood limits
                         cutoff = 180 if len(content) > 1000 else 120 if len(content) > 200 else 90 if len(content) > 50 else 50
                     else:
-                        cutoff = 120 if len(content) > 1000 else 100 if len(content) > 200 else 85 if len(content) > 50 else 40
+                        cutoff = 90 if len(content) > 1000 else 45 if len(content) > 200 else 25 if len(content) > 50 else 15
+
+                    cutoff += backoff
 
                     if i == 0:
                         try:
@@ -369,14 +372,17 @@ class ChatGPT3TelegramBot:
 
                         except RetryAfter as e:
                             logging.warning(str(e))
+                            backoff += 5
                             await asyncio.sleep(e.retry_after)
 
                         except TimedOut as e:
                             logging.warning(str(e))
-                            await asyncio.sleep(1)
+                            backoff += 5
+                            await asyncio.sleep(0.5)
 
                         except Exception as e:
                             logging.warning(str(e))
+                            backoff += 5
                             continue
 
                         await asyncio.sleep(0.01)
