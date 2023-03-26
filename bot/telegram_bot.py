@@ -375,6 +375,10 @@ class ChatGPT3TelegramBot:
                             logging.warning(str(e))
                             await asyncio.sleep(1)
 
+                        except Exception as e:
+                            logging.warning(str(e))
+                            continue
+
                         await asyncio.sleep(0.01)
 
                     i += 1
