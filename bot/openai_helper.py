@@ -79,7 +79,7 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
-        response = await self.__common_get_chat_response(chat_id, query)
+        response = await self.__common_get_chat_response(chat_id, query, stream=True)
 
         answer = ''
         async for item in response:
@@ -98,7 +98,7 @@ class OpenAIHelper:
 
         yield answer, tokens_used
 
-    async def __common_get_chat_response(self, chat_id: int, query: str):
+    async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
         """
         Request a response from the GPT model.
         :param chat_id: The chat ID
@@ -138,7 +138,7 @@ class OpenAIHelper:
                 max_tokens=self.config['max_tokens'],
                 presence_penalty=self.config['presence_penalty'],
                 frequency_penalty=self.config['frequency_penalty'],
-                stream=self.config['stream']
+                stream=stream
             )
 
         except openai.error.RateLimitError as e:
