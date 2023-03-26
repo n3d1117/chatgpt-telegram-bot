@@ -99,7 +99,7 @@ class ChatGPT3TelegramBot:
         if budget < float('inf'):
             text_budget += f"You have a remaining budget of ${budget:.2f} this month.\n"
         # add OpenAI account information for admin request
-        if await self.is_admin(update):
+        if self.is_admin(update):
             grant_balance = self.openai.get_grant_balance()
             if grant_balance > 0.0:
                 text_budget += f"Your remaining OpenAI grant balance is ${grant_balance:.2f}.\n"
@@ -486,7 +486,7 @@ class ChatGPT3TelegramBot:
         if self.config['allowed_user_ids'] == '*':
             return True
         
-        if await self.is_admin(update):
+        if self.is_admin(update):
             return True
         
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
@@ -504,7 +504,7 @@ class ChatGPT3TelegramBot:
 
         return False
 
-    async def is_admin(self, update: Update) -> bool:
+    def is_admin(self, update: Update) -> bool:
         """
         Checks if the user is the admin of the bot.
         The first user in the user list is the admin.
@@ -526,7 +526,7 @@ class ChatGPT3TelegramBot:
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-        if await self.is_admin(update):
+        if self.is_admin(update):
             return float('inf')
 
         if self.config['monthly_user_budgets'] == '*':
@@ -557,7 +557,7 @@ class ChatGPT3TelegramBot:
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-        if await self.is_admin(update):
+        if self.is_admin(update):
             return True
 
         if self.config['monthly_user_budgets'] == '*':
