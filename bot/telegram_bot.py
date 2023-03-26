@@ -384,12 +384,15 @@ class ChatGPT3TelegramBot:
                         parse_mode=constants.ParseMode.MARKDOWN
                     )
 
-            # add chat request to users usage tracker
-            self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-            # add guest chat request to guest usage tracker
-            allowed_user_ids = self.config['allowed_user_ids'].split(',')
-            if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+            try:
+                # add chat request to users usage tracker
+                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+                # add guest chat request to guest usage tracker
+                allowed_user_ids = self.config['allowed_user_ids'].split(',')
+                if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                    self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+            except:
+                pass
 
         except Exception as e:
             logging.exception(e)
