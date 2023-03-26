@@ -331,10 +331,28 @@ class ChatGPT3TelegramBot:
                 prev = ''
                 sent_message = None
                 backoff = 0
+                chunk = 0
 
                 async for content, tokens in stream_response:
                     if len(content.strip()) == 0:
                         continue
+
+                    chunks = self.split_into_chunks(content)
+                    if len(chunks) > 1:
+                        content = chunks[-1]
+                        if chunk != len(chunks) - 1:
+                            chunk += 1
+                            try:
+                                await context.bot.edit_message_text(chunks[-2], chat_id=sent_message.chat_id,
+                                                                    message_id=sent_message.message_id,
+                                                                    parse_mode=constants.ParseMode.MARKDOWN)
+                                sent_message = await context.bot.send_message(
+                                    chat_id=sent_message.chat_id,
+                                    text=content if len(content) > 0 else "..."
+                                )
+                            except:
+                                pass
+                            continue
 
                     if is_group_chat:
                         # group chats have stricter flood limits
