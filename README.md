@@ -26,9 +26,9 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Stream support
 
 ## Additional features - help needed!
-- [ ] Add stream support ([#43](https://github.com/n3d1117/chatgpt-telegram-bot/issues/43))
 - [ ] Add session persistence ([#70](https://github.com/n3d1117/chatgpt-telegram-bot/issues/70), [#71](https://github.com/n3d1117/chatgpt-telegram-bot/issues/71))
 
 PRs are always welcome!
@@ -58,6 +58,7 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 | `OPENAI_MODEL`                     | The OpenAI model to use for generating responses                                                                                                                                                                                 | `gpt-3.5-turbo`                |
 | `ASSISTANT_PROMPT`                 | A system message that sets the tone and controls the behavior of the assistant                                                                                                                                                   | `You are a helpful assistant.` |
 | `SHOW_USAGE`                       | Whether to show OpenAI token usage information after each response                                                                                                                                                               | false                          |
+| `STREAM`                           | Whether to stream responses                                                                                                                                                                                                      | true                           |
 | `MAX_TOKENS`                       | Upper bound on how many tokens the ChatGPT API will return                                                                                                                                                                       | 1200                           |
 | `MAX_HISTORY_SIZE`                 | Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage                                                                                                         | 10                             |
 | `MAX_CONVERSATION_AGE_MINUTES`     | Maximum number of minutes a conversation should live since the last message, after which the conversation will be reset                                                                                                          | 180                            |

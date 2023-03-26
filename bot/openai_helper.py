@@ -39,7 +39,63 @@ class OpenAIHelper:
 
     async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
         """
-        Gets a response from the GPT-3 model.
+        Gets a full response from the GPT model.
+        :param chat_id: The chat ID
+        :param query: The query to send to the model
+        :return: The answer from the model and the number of tokens used
+        """
+        response = await self.__common_get_chat_response(chat_id, query)
+        answer = ''
+
+        if len(response.choices) > 1 and self.config['n_choices'] > 1:
+            for index, choice in enumerate(response.choices):
+                content = choice['message']['content'].strip()
+                if index == 0:
+                    self.__add_to_history(chat_id, role="assistant", content=content)
+                answer += f'{index + 1}\u20e3\n'
+                answer += content
+                answer += '\n\n'
+        else:
+            answer = response.choices[0]['message']['content'].strip()
+            self.__add_to_history(chat_id, role="assistant", content=answer)
+
+        if self.config['show_usage']:
+            answer += "\n\n---\n" \
+                      f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
+                      f" ({str(response.usage['prompt_tokens'])} prompt," \
+                      f" {str(response.usage['completion_tokens'])} completion)"
+
+        return answer, response.usage['total_tokens']
+
+    async def get_chat_response_stream(self, chat_id: int, query: str):
+        """
+        Stream response from the GPT model.
+        :param chat_id: The chat ID
+        :param query: The query to send to the model
+        :return: The answer from the model and the number of tokens used, or 'not_finished'
+        """
+        response = await self.__common_get_chat_response(chat_id, query)
+
+        answer = ''
+        async for item in response:
+            if 'choices' not in item or len(item.choices) == 0:
+                continue
+            delta = item.choices[0].delta
+            if 'content' in delta:
+                answer += delta.content
+                yield answer, 'not_finished'
+        answer = answer.strip()
+        self.__add_to_history(chat_id, role="assistant", content=answer)
+        tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
+
+        if self.config['show_usage']:
+            answer += f"\n\n---\n💰 Tokens used: {tokens_used}"
+
+        yield answer, tokens_used
+
+    async def __common_get_chat_response(self, chat_id: int, query: str):
+        """
+        Request a response from the GPT model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
@@ -69,7 +125,7 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
-            response = await openai.ChatCompletion.acreate(
+            return await openai.ChatCompletion.acreate(
                 model=self.config['model'],
                 messages=self.conversations[chat_id],
                 temperature=self.config['temperature'],
@@ -77,33 +133,8 @@ class OpenAIHelper:
                 max_tokens=self.config['max_tokens'],
                 presence_penalty=self.config['presence_penalty'],
                 frequency_penalty=self.config['frequency_penalty'],
+                stream=self.config['stream']
             )
-
-            if len(response.choices) > 0:
-                answer = ''
-
-                if len(response.choices) > 1 and self.config['n_choices'] > 1:
-                    for index, choice in enumerate(response.choices):
-                        content = choice['message']['content'].strip()
-                        if index == 0:
-                            self.__add_to_history(chat_id, role="assistant", content=content)
-                        answer += f'{index+1}\u20e3\n'
-                        answer += content
-                        answer += '\n\n'
-                else:
-                    answer = response.choices[0]['message']['content'].strip()
-                    self.__add_to_history(chat_id, role="assistant", content=answer)
-
-                if self.config['show_usage']:
-                    answer += "\n\n---\n" \
-                              f"💰 Tokens used: {str(response.usage['total_tokens'])}" \
-                              f" ({str(response.usage['prompt_tokens'])} prompt," \
-                              f" {str(response.usage['completion_tokens'])} completion)"
-
-                return answer, response.usage['total_tokens']
-
-            logging.error(f'No response from GPT: {str(response)}')
-            raise Exception('⚠️ _An error has occurred_ ⚠️\nPlease try again in a while.')
 
         except openai.error.RateLimitError as e:
             raise Exception(f'⚠️ _OpenAI Rate Limit exceeded_ ⚠️\n{str(e)}') from e
@@ -206,7 +237,7 @@ class OpenAIHelper:
         )
 
     # https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    def __count_tokens(self, messages):
+    def __count_tokens(self, messages) -> int:
         """
         Counts the number of tokens required to send the given messages.
         :param messages: the messages to send
