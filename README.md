@@ -117,7 +117,7 @@ Run the following command to build and run the Docker image:
 docker compose up
 ```
 
-### Ready-to-use Docker images
+#### Ready-to-use Docker images
 You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/n3d1117/chatgpt-telegram-bot):
 ```shell
 docker pull n3d1117/chatgpt-telegram-bot:latest
