@@ -180,7 +180,8 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=f'Failed to generate image: {str(e)}'
+                text=f'Failed to generate image: {str(e)}',
+                parse_mode=constants.ParseMode.MARKDOWN
             )
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -213,7 +214,8 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)'
+                text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)',
+                parse_mode=constants.ParseMode.MARKDOWN
             )
             return
 
@@ -295,7 +297,8 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=f'Failed to transcribe text: {str(e)}'
+                text=f'Failed to transcribe text: {str(e)}',
+                parse_mode=constants.ParseMode.MARKDOWN
             )
         finally:
             # Cleanup files
@@ -445,7 +448,8 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=update.message.message_id,
-                text=f'Failed to get response: {str(e)}'
+                text=f'Failed to get response: {str(e)}',
+                parse_mode=constants.ParseMode.MARKDOWN
             )
 
     async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
