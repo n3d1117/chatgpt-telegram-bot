@@ -15,9 +15,9 @@ from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
 
 
-class ChatGPT3TelegramBot:
+class ChatGPTTelegramBot:
     """
-    Class representing a Chat-GPT3 Telegram Bot.
+    Class representing a ChatGPT Telegram Bot.
     """
 
     def __init__(self, config: dict, openai: OpenAIHelper):
@@ -343,9 +343,10 @@ class ChatGPT3TelegramBot:
                         if chunk != len(chunks) - 1:
                             chunk += 1
                             try:
-                                await context.bot.edit_message_text(chunks[-2], chat_id=sent_message.chat_id,
-                                                                    message_id=sent_message.message_id,
-                                                                    parse_mode=constants.ParseMode.MARKDOWN)
+                                await self.edit_message_with_retry(context, chat_id, sent_message.message_id, chunks[-2])
+                            except:
+                                pass
+                            try:
                                 sent_message = await context.bot.send_message(
                                     chat_id=sent_message.chat_id,
                                     text=content if len(content) > 0 else "..."
@@ -379,27 +380,19 @@ class ChatGPT3TelegramBot:
                         prev = content
 
                         try:
-                            await context.bot.edit_message_text(content, chat_id=sent_message.chat_id,
-                                                                message_id=sent_message.message_id,
-                                                                parse_mode=constants.ParseMode.MARKDOWN)
-                        except telegram.error.BadRequest as e:
-                            if str(e).startswith("Message is not modified"):
-                                continue
-                            await context.bot.edit_message_text(content, chat_id=sent_message.chat_id,
-                                                                message_id=sent_message.message_id)
+                            await self.edit_message_with_retry(context, chat_id, sent_message.message_id, content)
 
                         except RetryAfter as e:
-                            logging.warning(str(e))
                             backoff += 5
                             await asyncio.sleep(e.retry_after)
+                            continue
 
-                        except TimedOut as e:
-                            logging.warning(str(e))
+                        except TimedOut:
                             backoff += 5
                             await asyncio.sleep(0.5)
+                            continue
 
-                        except Exception as e:
-                            logging.warning(str(e))
+                        except Exception:
                             backoff += 5
                             continue
 
@@ -461,6 +454,39 @@ class ChatGPT3TelegramBot:
         ]
 
         await update.inline_query.answer(results)
+
+    async def edit_message_with_retry(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, text: str):
+        """
+        Edit a message with retry logic in case of failure (e.g. broken markdown)
+        :param context: The context to use
+        :param chat_id: The chat id to edit the message in
+        :param message_id: The message id to edit
+        :param text: The text to edit the message with
+        :return: None
+        """
+        try:
+            await context.bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=text,
+                parse_mode=constants.ParseMode.MARKDOWN
+            )
+        except telegram.error.BadRequest as e:
+            if str(e).startswith("Message is not modified"):
+                return
+            try:
+                await context.bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    text=text
+                )
+            except Exception as e:
+                logging.warning(f'Failed to edit message: {str(e)}')
+                raise e
+
+        except Exception as e:
+            logging.warning(str(e))
+            raise e
 
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """

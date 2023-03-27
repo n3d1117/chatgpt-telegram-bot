@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from openai_helper import OpenAIHelper
-from telegram_bot import ChatGPT3TelegramBot
+from telegram_bot import ChatGPTTelegramBot
 
 
 def main():
@@ -60,7 +60,7 @@ def main():
 
     # Setup and run ChatGPT and Telegram bot
     openai_helper = OpenAIHelper(config=openai_config)
-    telegram_bot = ChatGPT3TelegramBot(config=telegram_config, openai=openai_helper)
+    telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 
 
