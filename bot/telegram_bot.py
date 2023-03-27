@@ -15,18 +15,18 @@ from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
 
 
-def message_text(message: Message) -> str|None:
+def message_text(message: Message) -> str:
     """
     Returns the text of a message, excluding any bot commands.
     """
     message_text = message.text
     if message_text is None:
-        return message_text
+        return ''
 
     for _, text in sorted(message.parse_entities([MessageEntity.BOT_COMMAND]).items(), key=(lambda item: item[0].offset)):
         message_text = message_text.replace(text, '').strip()
 
-    return message_text if len(message_text) > 0 else None
+    return message_text if len(message_text) > 0 else ''
 
 
 class ChatGPTTelegramBot:
