@@ -5,7 +5,7 @@ import asyncio
 
 import telegram
 from telegram import constants
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, Application
@@ -13,6 +13,20 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
+
+
+def message_text(message: Message) -> str|None:
+    """
+    Returns the text of a message, excluding any bot commands.
+    """
+    message_text = message.text
+    if message_text is None:
+        return message_text
+
+    for _, text in sorted(message.parse_entities([MessageEntity.BOT_COMMAND]).items(), key=(lambda item: item[0].offset)):
+        message_text = message_text.replace(text, '').strip()
+
+    return message_text if len(message_text) > 0 else None
 
 
 class ChatGPTTelegramBot:
@@ -120,7 +134,7 @@ class ChatGPTTelegramBot:
         logging.info(f'Resetting the conversation for user {update.message.from_user.name}...')
 
         chat_id = update.effective_chat.id
-        reset_content = update.message.text.replace('/reset', '').strip()
+        reset_content = message_text(update.message)
         self.openai.reset_chat_history(chat_id=chat_id, content=reset_content)
         await context.bot.send_message(chat_id=chat_id, text='Done!')
 
@@ -139,7 +153,7 @@ class ChatGPTTelegramBot:
             return
         
         chat_id = update.effective_chat.id
-        image_query = update.message.text.replace('/image', '').strip()
+        image_query = message_text(update.message)
         if image_query == '':
             await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt! (e.g. /image cat)')
             return
