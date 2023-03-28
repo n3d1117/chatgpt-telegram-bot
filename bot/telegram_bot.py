@@ -160,29 +160,37 @@ class ChatGPTTelegramBot:
 
         logging.info(f'New image generation request received from user {update.message.from_user.name}')
 
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.UPLOAD_PHOTO)
-        try:
-            image_url, image_size = await self.openai.generate_image(prompt=image_query)
-            await context.bot.send_photo(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
-                photo=image_url
-            )
-            # add image request to users usage tracker
-            user_id = update.message.from_user.id
-            self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
-            # add guest chat request to guest usage tracker
-            if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
-                self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
+        async def _generate():
+            try:
+                image_url, image_size = await self.openai.generate_image(prompt=image_query)
+                await context.bot.send_photo(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    photo=image_url
+                )
+                # add image request to users usage tracker
+                user_id = update.message.from_user.id
+                self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
+                # add guest chat request to guest usage tracker
+                if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
+                    self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
-        except Exception as e:
-            logging.exception(e)
-            await context.bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
-                text=f'Failed to generate image: {str(e)}',
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
+            except Exception as e:
+                logging.exception(e)
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    text=f'Failed to generate image: {str(e)}',
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+
+        task = context.application.create_task(_generate(), update=update)
+        while not task.done():
+            context.application.create_task(update.effective_chat.send_action(constants.ChatAction.UPLOAD_PHOTO))
+            try:
+                await asyncio.wait_for(asyncio.shield(task), 4.5)
+            except asyncio.TimeoutError:
+                pass
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -203,109 +211,119 @@ class ChatGPTTelegramBot:
             return
 
         chat_id = update.effective_chat.id
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
         filename = update.message.effective_attachment.file_unique_id
-        filename_mp3 = f'{filename}.mp3'
-        try:
-            media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
-            await media_file.download_to_drive(filename)
-        except Exception as e:
-            logging.exception(e)
-            await context.bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
-                text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)',
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
-            return
 
-        # detect and extract audio from the attachment with pydub
-        try:
-            audio_track = AudioSegment.from_file(filename)
-            audio_track.export(filename_mp3, format="mp3")
-            logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+        async def _execute():
+            filename_mp3 = f'{filename}.mp3'
 
-        except Exception as e:
-            logging.exception(e)
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                reply_to_message_id=update.message.message_id,
-                text='Unsupported file type'
-            )
-            if os.path.exists(filename):
-                os.remove(filename)
-            return
+            try:
+                media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
+                await media_file.download_to_drive(filename)
+            except Exception as e:
+                logging.exception(e)
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)',
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+                return
 
-        filename_mp3 = f'{filename}.mp3'
+            # detect and extract audio from the attachment with pydub
+            try:
+                audio_track = AudioSegment.from_file(filename)
+                audio_track.export(filename_mp3, format="mp3")
+                logging.info(f'New transcribe request received from user {update.message.from_user.name}')
 
-        user_id = update.message.from_user.id
-        if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+            except Exception as e:
+                logging.exception(e)
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    reply_to_message_id=update.message.message_id,
+                    text='Unsupported file type'
+                )
+                if os.path.exists(filename):
+                    os.remove(filename)
+                return
 
-        # send decoded audio to openai
-        try:
+            filename_mp3 = f'{filename}.mp3'
 
-            # Transcribe the audio file
-            transcript = await self.openai.transcribe(filename_mp3)
+            user_id = update.message.from_user.id
+            if user_id not in self.usage:
+                self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-            # add transcription seconds to usage tracker
-            transcription_price = self.config['transcription_price']
-            self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
+            # send decoded audio to openai
+            try:
 
-            # add guest chat request to guest usage tracker
-            allowed_user_ids = self.config['allowed_user_ids'].split(',')
-            if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
+                # Transcribe the audio file
+                transcript = await self.openai.transcribe(filename_mp3)
 
-            if self.config['voice_reply_transcript']:
+                # add transcription seconds to usage tracker
+                transcription_price = self.config['transcription_price']
+                self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
-                # Split into chunks of 4096 characters (Telegram's message limit)
-                transcript_output = f'_Transcript:_\n"{transcript}"'
-                chunks = self.split_into_chunks(transcript_output)
-
-                for index, transcript_chunk in enumerate(chunks):
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        reply_to_message_id=update.message.message_id if index == 0 else None,
-                        text=transcript_chunk,
-                        parse_mode=constants.ParseMode.MARKDOWN
-                    )
-            else:
-                # Get the response of the transcript
-                response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-
-                # add chat request to users usage tracker
-                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
                 # add guest chat request to guest usage tracker
+                allowed_user_ids = self.config['allowed_user_ids'].split(',')
                 if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                    self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+                    self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
-                # Split into chunks of 4096 characters (Telegram's message limit)
-                transcript_output = f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}'
-                chunks = self.split_into_chunks(transcript_output)
+                if self.config['voice_reply_transcript']:
 
-                for index, transcript_chunk in enumerate(chunks):
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        reply_to_message_id=update.message.message_id if index == 0 else None,
-                        text=transcript_chunk,
-                        parse_mode=constants.ParseMode.MARKDOWN
-                    )
+                    # Split into chunks of 4096 characters (Telegram's message limit)
+                    transcript_output = f'_Transcript:_\n"{transcript}"'
+                    chunks = self.split_into_chunks(transcript_output)
 
-        except Exception as e:
-            logging.exception(e)
-            await context.bot.send_message(
-                chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
-                text=f'Failed to transcribe text: {str(e)}',
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
-        finally:
-            # Cleanup files
-            if os.path.exists(filename_mp3):
-                os.remove(filename_mp3)
-            if os.path.exists(filename):
-                os.remove(filename)
+                    for index, transcript_chunk in enumerate(chunks):
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            reply_to_message_id=update.message.message_id if index == 0 else None,
+                            text=transcript_chunk,
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
+                else:
+                    # Get the response of the transcript
+                    response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
+
+                    # add chat request to users usage tracker
+                    self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+                    # add guest chat request to guest usage tracker
+                    if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                        self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
+
+                    # Split into chunks of 4096 characters (Telegram's message limit)
+                    transcript_output = f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}'
+                    chunks = self.split_into_chunks(transcript_output)
+
+                    for index, transcript_chunk in enumerate(chunks):
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            reply_to_message_id=update.message.message_id if index == 0 else None,
+                            text=transcript_chunk,
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
+
+            except Exception as e:
+                logging.exception(e)
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    reply_to_message_id=update.message.message_id,
+                    text=f'Failed to transcribe text: {str(e)}',
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+            finally:
+                # Cleanup files
+                if os.path.exists(filename_mp3):
+                    os.remove(filename_mp3)
+                if os.path.exists(filename):
+                    os.remove(filename)
+
+        task = context.application.create_task(_execute(), update=update)
+        while not task.done():
+            context.application.create_task(update.effective_chat.send_action(constants.ChatAction.TYPING))
+            try:
+                await asyncio.wait_for(asyncio.shield(task), 4.5)
+            except asyncio.TimeoutError:
+                pass
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -337,10 +355,9 @@ class ChatGPTTelegramBot:
                     logging.warning('Message does not start with trigger keyword, ignoring...')
                     return
 
-        await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-
         try:
             if self.config['stream']:
+                await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
                 is_group_chat = self.is_group_chat(update)
 
                 stream_response = self.openai.get_chat_response_stream(chat_id=chat_id, query=prompt)
@@ -420,18 +437,27 @@ class ChatGPTTelegramBot:
                         total_tokens = int(tokens)
 
             else:
-                response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+                async def _reply():
+                    response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
 
-                # Split into chunks of 4096 characters (Telegram's message limit)
-                chunks = self.split_into_chunks(response)
+                    # Split into chunks of 4096 characters (Telegram's message limit)
+                    chunks = self.split_into_chunks(response)
 
-                for index, chunk in enumerate(chunks):
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        reply_to_message_id=update.message.message_id if index == 0 else None,
-                        text=chunk,
-                        parse_mode=constants.ParseMode.MARKDOWN
-                    )
+                    for index, chunk in enumerate(chunks):
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            reply_to_message_id=update.message.message_id if index == 0 else None,
+                            text=chunk,
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
+
+                task = context.application.create_task(_reply(), update=update)
+                while not task.done():
+                    context.application.create_task(update.effective_chat.send_action(constants.ChatAction.TYPING))
+                    try:
+                        await asyncio.wait_for(asyncio.shield(task), 4.5)
+                    except asyncio.TimeoutError:
+                        pass
 
             try:
                 # add chat request to users usage tracker
