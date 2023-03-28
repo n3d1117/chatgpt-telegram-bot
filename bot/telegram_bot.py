@@ -8,7 +8,7 @@ from telegram import constants
 from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
-    filters, InlineQueryHandler, Application
+    filters, InlineQueryHandler, Application, CallbackContext
 
 from pydub import AudioSegment
 from openai_helper import OpenAIHelper
@@ -184,13 +184,7 @@ class ChatGPTTelegramBot:
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
 
-        task = context.application.create_task(_generate(), update=update)
-        while not task.done():
-            context.application.create_task(update.effective_chat.send_action(constants.ChatAction.UPLOAD_PHOTO))
-            try:
-                await asyncio.wait_for(asyncio.shield(task), 4.5)
-            except asyncio.TimeoutError:
-                pass
+        await self.wrap_with_indicator(update, context, constants.ChatAction.UPLOAD_PHOTO, _generate)
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -200,7 +194,7 @@ class ChatGPTTelegramBot:
             logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
             return
-        
+
         if not await self.is_within_budget(update):
             logging.warning(f'User {update.message.from_user.name} reached their usage limit')
             await self.send_budget_reached_message(update, context)
@@ -317,13 +311,7 @@ class ChatGPTTelegramBot:
                 if os.path.exists(filename):
                     os.remove(filename)
 
-        task = context.application.create_task(_execute(), update=update)
-        while not task.done():
-            context.application.create_task(update.effective_chat.send_action(constants.ChatAction.TYPING))
-            try:
-                await asyncio.wait_for(asyncio.shield(task), 4.5)
-            except asyncio.TimeoutError:
-                pass
+        await self.wrap_with_indicator(update, context, constants.ChatAction.TYPING, _execute)
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -451,13 +439,7 @@ class ChatGPTTelegramBot:
                             parse_mode=constants.ParseMode.MARKDOWN
                         )
 
-                task = context.application.create_task(_reply(), update=update)
-                while not task.done():
-                    context.application.create_task(update.effective_chat.send_action(constants.ChatAction.TYPING))
-                    try:
-                        await asyncio.wait_for(asyncio.shield(task), 4.5)
-                    except asyncio.TimeoutError:
-                        pass
+                await self.wrap_with_indicator(update, context, constants.ChatAction.TYPING, _reply)
 
             try:
                 # add chat request to users usage tracker
@@ -531,6 +513,18 @@ class ChatGPTTelegramBot:
         except Exception as e:
             logging.warning(str(e))
             raise e
+
+    async def wrap_with_indicator(self, update: Update, context: CallbackContext, chat_action: constants.ChatAction, coroutine):
+        """
+        Wraps a coroutine while repeatedly sending a chat action to the user.
+        """
+        task = context.application.create_task(coroutine(), update=update)
+        while not task.done():
+            context.application.create_task(update.effective_chat.send_action(chat_action))
+            try:
+                await asyncio.wait_for(asyncio.shield(task), 4.5)
+            except asyncio.TimeoutError:
+                pass
 
     async def send_disallowed_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
