@@ -47,12 +47,14 @@ class ChatGPTTelegramBot:
             BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions '
                                                     '(e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
-            BotCommand(command='stats', description='Get your current usage statistics')
+            BotCommand(command='stats', description='Get your current usage statistics'),
+            BotCommand(command='resend', description='Resend the latest message')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
         self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
         self.usage = {}
+        self.last_message = {}
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -122,6 +124,27 @@ class ChatGPTTelegramBot:
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
+    async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Resend the last request
+        """
+        if not await self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name} is not allowed to resend the message')
+            await self.send_disallowed_message(update, context)
+            return
+
+        chat_id = update.effective_chat.id
+        if chat_id not in self.last_message:
+            logging.warning(f'User {update.message.from_user.name} does not have anything to resend')
+            await context.bot.send_message(chat_id=chat_id, text="You have nothing to resend")
+            return
+
+        # Update message text and send the req to promt
+        logging.info(f'Resending the last prompt from user: {update.message.from_user.name}')
+        with update.message._unfrozen() as message:
+            message.text = self.last_message[chat_id]
+        await self.prompt(update=update, context=context)
+    
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resets the conversation.
@@ -331,6 +354,7 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = update.message.text
+        self.last_message[chat_id] = prompt
 
         if self.is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
@@ -711,6 +735,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('image', self.image))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
+        application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
