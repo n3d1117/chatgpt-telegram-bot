@@ -139,10 +139,11 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(chat_id=chat_id, text="You have nothing to resend")
             return
 
-        # Update message text and send the req to promt
+        # Update message text, clear self.last_message and send the request to promt
         logging.info(f'Resending the last prompt from user: {update.message.from_user.name}')
         with update.message._unfrozen() as message:
-            message.text = self.last_message[chat_id]
+            message.text = self.last_message.pop(chat_id)
+            
         await self.prompt(update=update, context=context)
     
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
