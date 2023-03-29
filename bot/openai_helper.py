@@ -108,6 +108,13 @@ class OpenAIHelper:
 
         yield answer, tokens_used
 
+    def change_model(self, model=GPT_3_MODELS[0]):
+        self.config['model'] = model
+        return self.config['model']
+
+    def get_models(self):
+        return '\n'.join(str(x) for x in GPT_ALL_MODELS)
+
     async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
         """
         Request a response from the GPT model.

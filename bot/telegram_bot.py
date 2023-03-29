@@ -48,7 +48,8 @@ class ChatGPTTelegramBot:
                                                     '(e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics'),
-            BotCommand(command='resend', description='Resend the latest message')
+            BotCommand(command='resend', description='Resend the latest message'),
+            BotCommand(command='model', description='Get your current model or set it (e.g. /model gpt-4')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
@@ -125,6 +126,32 @@ class ChatGPTTelegramBot:
         
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
+
+    async def change_model(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Send current model or change it
+        """
+        if not await self.is_allowed(update):
+            logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
+                            f' is not allowed to change the model')
+            await self.send_disallowed_message(update, context)
+            return
+
+        chat_id = update.effective_chat.id
+        model = message_text(update.message)
+
+        if model == '':
+            model = self.openai.config["model"]
+            available_models = self.openai.get_models()
+            answer = f"Current model = {model}.\nAvailable models:\n{available_models}"
+            await context.bot.send_message(chat_id=chat_id, text=answer)
+            return
+
+        logging.info(f'Changing the model from user {update.message.from_user.name} to {model}'
+                     f'(id: {update.message.from_user.id})...')
+
+        self.openai.change_model(model=model)
+        await context.bot.send_message(chat_id=chat_id, text='Done!')
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -754,6 +781,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('model', self.change_model))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
