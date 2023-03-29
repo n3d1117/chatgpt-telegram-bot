@@ -49,7 +49,7 @@ class ChatGPTTelegramBot:
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics'),
             BotCommand(command='resend', description='Resend the latest message'),
-            BotCommand(command='model', description='Get your current model or set it (e.g. /model gpt-4')
+            BotCommand(command='model', description='Get your current model or set it (e.g. /model gpt-4)')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
