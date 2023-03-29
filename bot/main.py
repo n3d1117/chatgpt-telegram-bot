@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from openai_helper import OpenAIHelper
+from openai_helper import OpenAIHelper, default_max_tokens
 from telegram_bot import ChatGPTTelegramBot
 
 
@@ -25,6 +25,8 @@ def main():
         exit(1)
 
     # Setup configurations
+    model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    max_tokens_default = default_max_tokens(model=model)
     openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
@@ -33,11 +35,11 @@ def main():
         'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 15)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
         'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
-        'max_tokens': int(os.environ.get('MAX_TOKENS', 1200)),
+        'max_tokens': int(os.environ.get('MAX_TOKENS', max_tokens_default)),
         'n_choices': int(os.environ.get('N_CHOICES', 1)),
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
-        'model': os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo'),
+        'model': model,
         'presence_penalty': int(os.environ.get('PRESENCE_PENALTY', 0)),
         'frequency_penalty': int(os.environ.get('FREQUENCY_PENALTY', 0)),
     }

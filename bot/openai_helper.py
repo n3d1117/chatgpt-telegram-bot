@@ -16,6 +16,16 @@ GPT_4_MODELS = ("gpt-4", "gpt-4-0314")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS
 
+
+def default_max_tokens(model: str) -> int:
+    """
+    Gets the default number of max tokens for the given model.
+    :param model: The model name
+    :return: The default number of max tokens
+    """
+    return 1200 if model in GPT_3_MODELS else 2400
+
+
 class OpenAIHelper:
     """
     ChatGPT helper class.
