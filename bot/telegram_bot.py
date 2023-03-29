@@ -76,12 +76,12 @@ class ChatGPTTelegramBot:
         Returns token usage statistics for current day and month.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
             f'requested their usage statistics')
         
         user_id = update.message.from_user.id
@@ -131,34 +131,37 @@ class ChatGPTTelegramBot:
         Resend the last request
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to resend the message')
+            logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
+                            f' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
             return
 
         chat_id = update.effective_chat.id
         if chat_id not in self.last_message:
-            logging.warning(f'User {update.message.from_user.name} does not have anything to resend')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
+                            f' does not have anything to resend')
             await context.bot.send_message(chat_id=chat_id, text="You have nothing to resend")
             return
 
-        # Update message text, clear self.last_message and send the request to promt
-        logging.info(f'Resending the last prompt from user: {update.message.from_user.name}')
+        # Update message text, clear self.last_message and send the request to prompt
+        logging.info(f'Resending the last prompt from user: {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})')
         with update.message._unfrozen() as message:
             message.text = self.last_message.pop(chat_id)
-            
+
         await self.prompt(update=update, context=context)
-    
+
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resets the conversation.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})' \
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'Resetting the conversation for user {update.message.from_user.name} '\
+        logging.info(f'Resetting the conversation for user {update.message.from_user.name} '
             f'(id: {update.message.from_user.id})...')
 
         chat_id = update.effective_chat.id
@@ -171,13 +174,13 @@ class ChatGPTTelegramBot:
         Generates an image for the given prompt using DALL·E APIs
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to generate images')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
@@ -188,7 +191,7 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt! (e.g. /image cat)')
             return
 
-        logging.info(f'New image generation request received from user {update.message.from_user.name} '\
+        logging.info(f'New image generation request received from user {update.message.from_user.name} '
             f'(id: {update.message.from_user.id})')
 
         async def _generate():
@@ -222,13 +225,13 @@ class ChatGPTTelegramBot:
         Transcribe audio messages.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
@@ -260,7 +263,7 @@ class ChatGPTTelegramBot:
             try:
                 audio_track = AudioSegment.from_file(filename)
                 audio_track.export(filename_mp3, format="mp3")
-                logging.info(f'New transcribe request received from user {update.message.from_user.name} '\
+                logging.info(f'New transcribe request received from user {update.message.from_user.name} '
                     f'(id: {update.message.from_user.id})')
 
             except Exception as e:
@@ -352,13 +355,13 @@ class ChatGPTTelegramBot:
         React to incoming messages and respond accordingly.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
@@ -629,7 +632,7 @@ class ChatGPTTelegramBot:
                 if await self.is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
-            logging.info(f'Group chat messages from user {update.message.from_user.name} '\
+            logging.info(f'Group chat messages from user {update.message.from_user.name} '
                 f'(id: {update.message.from_user.id}) are not allowed')
 
         return False
@@ -717,7 +720,7 @@ class ChatGPTTelegramBot:
                         return True
                     logging.warning('Monthly guest budget for group chats used up.')
                     return False
-            logging.info(f'Group chat messages from user {update.message.from_user.name} '\
+            logging.info(f'Group chat messages from user {update.message.from_user.name} '
                 f'(id: {update.message.from_user.id}) are not allowed')
         return False
 
