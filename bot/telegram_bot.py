@@ -147,12 +147,12 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(chat_id=chat_id, text=answer)
             return
 
+        model = self.openai.change_model(model=model)
         if model == "Wrong model":
             await context.bot.send_message(chat_id=chat_id, text='Wrong model name!')
         else:
             logging.info(f'Changing the model from user {update.message.from_user.name} to {model}'
                          f'(id: {update.message.from_user.id})...')
-            model = self.openai.change_model(model=model)
             await context.bot.send_message(chat_id=chat_id, text='Done!')
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
