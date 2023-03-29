@@ -48,11 +48,11 @@ class ChatGPTTelegramBot:
                                                     '(e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics'),
-            BotCommand(command='resend', description='Resend the latest message'),
-            BotCommand(command='model', description='Get your current model or set it (e.g. /model gpt-4)')
+            BotCommand(command='resend', description='Resend the latest message')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
+        self.disallowed_cmd_message = "Sorry, you are not allowed to use this command."
         self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
         self.usage = {}
         self.last_message = {}
@@ -131,10 +131,10 @@ class ChatGPTTelegramBot:
         """
         Send current model or change it
         """
-        if not await self.is_allowed(update):
+        if not self.is_admin(update):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to change the model')
-            await self.send_disallowed_message(update, context)
+            await self.send_disallowed_cmd_message(update, context)
             return
 
         chat_id = update.effective_chat.id
@@ -147,11 +147,13 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(chat_id=chat_id, text=answer)
             return
 
-        logging.info(f'Changing the model from user {update.message.from_user.name} to {model}'
-                     f'(id: {update.message.from_user.id})...')
-
-        self.openai.change_model(model=model)
-        await context.bot.send_message(chat_id=chat_id, text='Done!')
+        model = self.openai.change_model(model=model)
+        if model == "Wrong model":
+            await context.bot.send_message(chat_id=chat_id, text='Wrong model name!')
+        else:
+            logging.info(f'Changing the model from user {update.message.from_user.name} to {model}'
+                         f'(id: {update.message.from_user.id})...')
+            await context.bot.send_message(chat_id=chat_id, text='Done!')
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -600,6 +602,16 @@ class ChatGPTTelegramBot:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=self.disallowed_message,
+            disable_web_page_preview=True
+        )
+
+    async def send_disallowed_cmd_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Sends the non-admin message to the user.
+        """
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=self.disallowed_cmd_message,
             disable_web_page_preview=True
         )
 

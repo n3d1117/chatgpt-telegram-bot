@@ -109,8 +109,11 @@ class OpenAIHelper:
         yield answer, tokens_used
 
     def change_model(self, model=GPT_3_MODELS[0]):
-        self.config['model'] = model
-        return self.config['model']
+        if model in GPT_ALL_MODELS:
+            self.config['model'] = model
+            return self.config['model']
+        else:
+            return "Wrong model"
 
     def get_models(self):
         return '\n'.join(str(x) for x in GPT_ALL_MODELS)
