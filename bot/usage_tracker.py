@@ -74,9 +74,8 @@ class UsageTracker:
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
         token_cost = round(tokens * tokens_price / 1000, 6)
-        # add to all_time cost
-        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
-        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + token_cost
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + token_cost
         # add current cost, update new day
         if today == last_update:
             self.usage["current_cost"]["day"] += token_cost
@@ -132,9 +131,8 @@ class UsageTracker:
 
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
-        # add to all_time cost
-        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
-        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + image_cost
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + image_cost
         # add current cost, update new day
         if today == last_update:
             self.usage["current_cost"]["day"] += image_cost
@@ -182,14 +180,13 @@ class UsageTracker:
     def add_transcription_seconds(self, seconds, minute_price=0.006):
         """Adds requested transcription seconds to a users usage history and updates current cost.
         :param tokens: total tokens used in last request
-        :param tokens_price: price per 1000 tokens, defaults to 0.002
+        :param tokens_price: price per minute transcription, defaults to 0.006
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
         transcription_price = round(seconds * minute_price / 60, 2)
-        # add to all_time cost
-        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
-        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + transcription_price
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + transcription_price
         # add current cost, update new day
         if today == last_update:
             self.usage["current_cost"]["day"] += transcription_price
@@ -250,6 +247,28 @@ class UsageTracker:
                 cost_month = self.usage["current_cost"]["month"]
             else:
                 cost_month = 0.0
-        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
-        cost_all_time = self.usage["current_cost"].get("all_time", all_time_initial)
-        return cost_day, cost_month, cost_all_time
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        cost_all_time = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost())
+        return cost_day, cost_month#, cost_all_time
+
+    def initialize_all_time_cost(self, tokens_price=0.002, image_prices="0.016,0.018,0.02", minute_price=0.006):
+        """Get total USD amount of all requests in history
+        
+        :param tokens_price: price per 1000 tokens, defaults to 0.002
+        :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
+            defaults to [0.016, 0.018, 0.02]
+        :param tokens_price: price per minute transcription, defaults to 0.006
+        :return: total cost of all requests
+        """
+        total_tokens = sum(self.usage['usage_history']['chat_tokens'].values())
+        token_cost = round(total_tokens * tokens_price / 1000, 6)
+        
+        total_images = [sum(values) for values in zip(*self.usage['usage_history']['number_images'].values())]
+        image_prices_list = [float(x) for x in image_prices.split(',')]
+        image_cost = sum([count * price for count, price in zip(total_images, image_prices_list)])
+        
+        total_transcription_seconds = sum(self.usage['usage_history']['transcription_seconds'].values())
+        transcription_cost = round(total_transcription_seconds * minute_price / 60, 2)
+
+        all_time_cost = token_cost + transcription_cost + image_cost
+        return all_time_cost
