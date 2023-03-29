@@ -11,6 +11,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
     filters, InlineQueryHandler, Application, CallbackContext
 
 from pydub import AudioSegment
+from dotenv import set_key
 from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
 
@@ -153,6 +154,7 @@ class ChatGPTTelegramBot:
         else:
             logging.info(f'Changing the model from user {update.message.from_user.name} to {model}'
                          f'(id: {update.message.from_user.id})...')
+            set_key("../.env", "OPENAI_MODEL", model)
             await context.bot.send_message(chat_id=chat_id, text='Done!')
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
