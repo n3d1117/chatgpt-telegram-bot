@@ -249,7 +249,7 @@ class UsageTracker:
                 cost_month = 0.0
         # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
         cost_all_time = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost())
-        return cost_day, cost_month#, cost_all_time
+        return {"cost_today": cost_day, "cost_month": cost_month, "cost_all_time": cost_all_time}
 
     def initialize_all_time_cost(self, tokens_price=0.002, image_prices="0.016,0.018,0.02", minute_price=0.006):
         """Get total USD amount of all requests in history

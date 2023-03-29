@@ -91,7 +91,7 @@ class ChatGPTTelegramBot:
         tokens_today, tokens_month = self.usage[user_id].get_current_token_usage()
         images_today, images_month = self.usage[user_id].get_current_image_count()
         transcribe_durations = self.usage[user_id].get_current_transcription_duration()
-        cost_today, cost_month = self.usage[user_id].get_current_cost()
+        current_cost = self.usage[user_id].get_current_cost()
         
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
@@ -105,13 +105,13 @@ class ChatGPTTelegramBot:
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
                      f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_today:.2f}\n"+\
+                     f"💰 For a total amount of ${current_cost['cost_today']:.2f}\n"+\
                      f"----------------------------\n"
         text_month = f"*Usage this month:*\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
                      f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${cost_month:.2f}"
+                     f"💰 For a total amount of ${current_cost['cost_month']:.2f}"
         # text_budget filled with conditional content
         text_budget = "\n\n"
         if budget < float('inf'):
@@ -662,7 +662,7 @@ class ChatGPTTelegramBot:
                 logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
                 return 0.0
             user_budget = float(user_budgets[user_index])
-            cost_month = self.usage[user_id].get_current_cost()[1]
+            cost_month = self.usage[user_id].get_current_cost()["cost_month"]
             remaining_budget = user_budget - cost_month
             return remaining_budget
         else:
@@ -693,7 +693,7 @@ class ChatGPTTelegramBot:
                 logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
                 return False
             user_budget = float(user_budgets[user_index])
-            cost_month = self.usage[user_id].get_current_cost()[1]
+            cost_month = self.usage[user_id].get_current_cost()["cost_month"]
             # Check if allowed user is within budget
             return user_budget > cost_month
 
@@ -704,7 +704,7 @@ class ChatGPTTelegramBot:
                 if await self.is_user_in_group(update, context, user):
                     if 'guests' not in self.usage:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
-                    if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
+                    if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()["cost_month"]:
                         return True
                     logging.warning('Monthly guest budget for group chats used up.')
                     return False
