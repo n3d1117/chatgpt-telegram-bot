@@ -1,6 +1,3 @@
-> **Note**
-> GPT-4 support will be added as soon as APIs are released to the public!
-
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.2-orange.svg)](https://openai.com/)
@@ -27,6 +24,8 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) Stream support
+- [x] (NEW!) GPT-4 support
+  - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
 
 ## Additional features - help needed!
 - [ ] Add session persistence ([#70](https://github.com/n3d1117/chatgpt-telegram-bot/issues/70), [#71](https://github.com/n3d1117/chatgpt-telegram-bot/issues/71))
