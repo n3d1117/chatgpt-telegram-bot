@@ -74,11 +74,13 @@ class ChatGPTTelegramBot:
         Returns token usage statistics for current day and month.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to request their usage statistics')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'User {update.message.from_user.name} requested their usage statistics')
+        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+            f'requested their usage statistics')
         
         user_id = update.message.from_user.id
         if user_id not in self.usage:
@@ -127,11 +129,13 @@ class ChatGPTTelegramBot:
         Resets the conversation.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to reset the conversation')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})' \
+                f'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'Resetting the conversation for user {update.message.from_user.name}...')
+        logging.info(f'Resetting the conversation for user {update.message.from_user.name} '\
+            f'(id: {update.message.from_user.id})...')
 
         chat_id = update.effective_chat.id
         reset_content = message_text(update.message)
@@ -143,12 +147,14 @@ class ChatGPTTelegramBot:
         Generates an image for the given prompt using DALL·E APIs
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to generate images')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'is not allowed to generate images')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
         
@@ -158,7 +164,8 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt! (e.g. /image cat)')
             return
 
-        logging.info(f'New image generation request received from user {update.message.from_user.name}')
+        logging.info(f'New image generation request received from user {update.message.from_user.name} '\
+            f'(id: {update.message.from_user.id})')
 
         async def _generate():
             try:
@@ -191,12 +198,14 @@ class ChatGPTTelegramBot:
         Transcribe audio messages.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to transcribe audio messages')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
 
@@ -227,7 +236,8 @@ class ChatGPTTelegramBot:
             try:
                 audio_track = AudioSegment.from_file(filename)
                 audio_track.export(filename_mp3, format="mp3")
-                logging.info(f'New transcribe request received from user {update.message.from_user.name}')
+                logging.info(f'New transcribe request received from user {update.message.from_user.name} '\
+                    f'(id: {update.message.from_user.id})')
 
             except Exception as e:
                 logging.exception(e)
@@ -318,16 +328,18 @@ class ChatGPTTelegramBot:
         React to incoming messages and respond accordingly.
         """
         if not await self.is_allowed(update):
-            logging.warning(f'User {update.message.from_user.name} is not allowed to use the bot')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
 
         if not await self.is_within_budget(update):
-            logging.warning(f'User {update.message.from_user.name} reached their usage limit')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '\
+                f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
             return
         
-        logging.info(f'New message received from user {update.message.from_user.name}')
+        logging.info(f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = update.message.text
@@ -592,7 +604,8 @@ class ChatGPTTelegramBot:
                 if await self.is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
-            logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
+            logging.info(f'Group chat messages from user {update.message.from_user.name} '\
+                f'(id: {update.message.from_user.id}) are not allowed')
 
         return False
 
@@ -679,7 +692,8 @@ class ChatGPTTelegramBot:
                         return True
                     logging.warning('Monthly guest budget for group chats used up.')
                     return False
-            logging.info(f'Group chat messages from user {update.message.from_user.name} are not allowed')
+            logging.info(f'Group chat messages from user {update.message.from_user.name} '\
+                f'(id: {update.message.from_user.id}) are not allowed')
         return False
 
     def split_into_chunks(self, text: str, chunk_size: int = 4096) -> list[str]:
