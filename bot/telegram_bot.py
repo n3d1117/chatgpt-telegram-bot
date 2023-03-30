@@ -628,6 +628,15 @@ class ChatGPTTelegramBot:
 
         # Check if it's a group a chat with at least one authorized member
         if self.is_group_chat(update):
+            # Check if this is an allowed group chat
+            if len(self.config['allowed_group_ids']):
+                allowed_group_ids = self.config['allowed_group_ids'].split(',')
+                chat_group_id = str(update.message.chat.id)
+                if chat_group_id in allowed_group_ids:
+                    logging.info(f'Group chat {chat_group_id} found in ALLOWED_TELEGRAM_GROUP_IDS. Allowing group chat message...')
+                    return True
+                else:
+                    logging.info(f'Group chat {chat_group_id} is not found in ALLOWED_TELEGRAM_GROUP_IDS. Ignoring...')
             for user in allowed_user_ids:
                 if await self.is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
