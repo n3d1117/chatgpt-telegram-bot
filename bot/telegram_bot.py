@@ -5,7 +5,7 @@ import asyncio
 
 import telegram
 from telegram import constants
-from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand, ChatMember
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, Application, CallbackContext
@@ -75,7 +75,7 @@ class ChatGPTTelegramBot:
         """
         Returns token usage statistics for current day and month.
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
@@ -130,7 +130,7 @@ class ChatGPTTelegramBot:
         """
         Resend the last request
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
@@ -155,7 +155,7 @@ class ChatGPTTelegramBot:
         """
         Resets the conversation.
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
@@ -173,13 +173,13 @@ class ChatGPTTelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to generate images')
             await self.send_disallowed_message(update, context)
             return
 
-        if not await self.is_within_budget(update):
+        if not await self.is_within_budget(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
@@ -224,13 +224,13 @@ class ChatGPTTelegramBot:
         """
         Transcribe audio messages.
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to transcribe audio messages')
             await self.send_disallowed_message(update, context)
             return
 
-        if not await self.is_within_budget(update):
+        if not await self.is_within_budget(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
@@ -354,13 +354,13 @@ class ChatGPTTelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if not await self.is_allowed(update):
+        if not await self.is_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'is not allowed to use the bot')
             await self.send_disallowed_message(update, context)
             return
 
-        if not await self.is_within_budget(update):
+        if not await self.is_within_budget(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
@@ -600,18 +600,22 @@ class ChatGPTTelegramBot:
             constants.ChatType.SUPERGROUP
         ]
 
-    async def is_user_in_group(self, update: Update, user_id: int) -> bool:
+    async def is_user_in_group(self, update: Update, context: CallbackContext, user_id: int) -> bool:
         """
         Checks if user_id is a member of the group
         """
-        member = await update.effective_chat.get_member(user_id)
-        return member.status in [
-            constants.ChatMemberStatus.OWNER,
-            constants.ChatMemberStatus.ADMINISTRATOR,
-            constants.ChatMemberStatus.MEMBER
-        ]
+        try:
+            chat_member = await context.bot.get_chat_member(update.message.chat_id, user_id)
+            return chat_member.status in [ChatMember.OWNER, ChatMember.ADMINISTRATOR, ChatMember.MEMBER]
+        except telegram.error.BadRequest as e:
+            if str(e) == "User not found":
+                return False
+            else:
+                raise e
+        except Exception as e:
+            raise e
 
-    async def is_allowed(self, update: Update) -> bool:
+    async def is_allowed(self, update: Update, context: CallbackContext) -> bool:
         """
         Checks if the user is allowed to use the bot.
         """
@@ -630,7 +634,7 @@ class ChatGPTTelegramBot:
         if self.is_group_chat(update):
             admin_user_ids = self.config['admin_user_ids'].split(',')
             for user in itertools.chain(allowed_user_ids, admin_user_ids):
-                if await self.is_user_in_group(update, user):
+                if await self.is_user_in_group(update, context, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
             logging.info(f'Group chat messages from user {update.message.from_user.name} '
@@ -682,7 +686,7 @@ class ChatGPTTelegramBot:
         else:
             return 0.0
 
-    async def is_within_budget(self, update: Update) -> bool:
+    async def is_within_budget(self, update: Update, context: CallbackContext) -> bool:
         """
         Checks if the user reached their monthly usage limit.
         Initializes UsageTracker for user and guest when needed.
@@ -715,7 +719,7 @@ class ChatGPTTelegramBot:
         if self.is_group_chat(update):
             admin_user_ids = self.config['admin_user_ids'].split(',')
             for user in itertools.chain(allowed_user_ids, admin_user_ids):
-                if await self.is_user_in_group(update, user):
+                if await self.is_user_in_group(update, context, user):
                     if 'guests' not in self.usage:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
                     if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()[1]:
