@@ -1,6 +1,6 @@
 import logging
 import os
-
+import itertools
 import asyncio
 
 import telegram
@@ -628,7 +628,8 @@ class ChatGPTTelegramBot:
 
         # Check if it's a group a chat with at least one authorized member
         if self.is_group_chat(update):
-            for user in allowed_user_ids:
+            admin_user_ids = self.config['admin_user_ids'].split(',')
+            for user in itertools.chain(allowed_user_ids, admin_user_ids):
                 if await self.is_user_in_group(update, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
@@ -712,7 +713,8 @@ class ChatGPTTelegramBot:
 
         # Check if group member is within budget
         if self.is_group_chat(update):
-            for user in allowed_user_ids:
+            admin_user_ids = self.config['admin_user_ids'].split(',')
+            for user in itertools.chain(allowed_user_ids, admin_user_ids):
                 if await self.is_user_in_group(update, user):
                     if 'guests' not in self.usage:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
