@@ -173,18 +173,9 @@ class ChatGPTTelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not await self.is_allowed(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'is not allowed to generate images')
-            await self.send_disallowed_message(update, context)
+        if not await self.check_allowed_and_within_budget(update, context):
             return
 
-        if not await self.is_within_budget(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'reached their usage limit')
-            await self.send_budget_reached_message(update, context)
-            return
-        
         chat_id = update.effective_chat.id
         image_query = message_text(update.message)
         if image_query == '':
@@ -224,16 +215,7 @@ class ChatGPTTelegramBot:
         """
         Transcribe audio messages.
         """
-        if not await self.is_allowed(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'is not allowed to transcribe audio messages')
-            await self.send_disallowed_message(update, context)
-            return
-
-        if not await self.is_within_budget(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'reached their usage limit')
-            await self.send_budget_reached_message(update, context)
+        if not await self.check_allowed_and_within_budget(update, context):
             return
 
         if self.is_group_chat(update) and self.config['ignore_group_transcriptions']:
@@ -276,8 +258,6 @@ class ChatGPTTelegramBot:
                 if os.path.exists(filename):
                     os.remove(filename)
                 return
-
-            filename_mp3 = f'{filename}.mp3'
 
             user_id = update.message.from_user.id
             if user_id not in self.usage:
@@ -354,16 +334,7 @@ class ChatGPTTelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if not await self.is_allowed(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'is not allowed to use the bot')
-            await self.send_disallowed_message(update, context)
-            return
-
-        if not await self.is_within_budget(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                f'reached their usage limit')
-            await self.send_budget_reached_message(update, context)
+        if not await self.check_allowed_and_within_budget(update, context):
             return
         
         logging.info(f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
@@ -442,7 +413,9 @@ class ChatGPTTelegramBot:
                         prev = content
 
                         try:
-                            await self.edit_message_with_retry(context, chat_id, sent_message.message_id, content)
+                            use_markdown = tokens != 'not_finished'
+                            await self.edit_message_with_retry(context, chat_id, sent_message.message_id,
+                                                               text=content, markdown=use_markdown)
 
                         except RetryAfter as e:
                             backoff += 5
@@ -521,13 +494,15 @@ class ChatGPTTelegramBot:
 
         await update.inline_query.answer(results)
 
-    async def edit_message_with_retry(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, text: str):
+    async def edit_message_with_retry(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int,
+                                      message_id: int, text: str, markdown: bool = True):
         """
         Edit a message with retry logic in case of failure (e.g. broken markdown)
         :param context: The context to use
         :param chat_id: The chat id to edit the message in
         :param message_id: The message id to edit
         :param text: The text to edit the message with
+        :param markdown: Whether to use markdown parse mode
         :return: None
         """
         try:
@@ -535,7 +510,7 @@ class ChatGPTTelegramBot:
                 chat_id=chat_id,
                 message_id=message_id,
                 text=text,
-                parse_mode=constants.ParseMode.MARKDOWN
+                parse_mode=constants.ParseMode.MARKDOWN if markdown else None
             )
         except telegram.error.BadRequest as e:
             if str(e).startswith("Message is not modified"):
@@ -729,6 +704,27 @@ class ChatGPTTelegramBot:
             logging.info(f'Group chat messages from user {update.message.from_user.name} '
                 f'(id: {update.message.from_user.id}) are not allowed')
         return False
+
+    async def check_allowed_and_within_budget(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+        """
+        Checks if the user is allowed to use the bot and if they are within their budget
+        :param update: Telegram update object
+        :param context: Telegram context object
+        :return: Boolean indicating if the user is allowed to use the bot
+        """
+        if not await self.is_allowed(update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                f'is not allowed to use the bot')
+            await self.send_disallowed_message(update, context)
+            return False
+
+        if not await self.is_within_budget(update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                f'reached their usage limit')
+            await self.send_budget_reached_message(update, context)
+            return False
+
+        return True
 
     def split_into_chunks(self, text: str, chunk_size: int = 4096) -> list[str]:
         """
