@@ -445,12 +445,22 @@ class ChatGPTTelegramBot:
                     chunks = self.split_into_chunks(response)
 
                     for index, chunk in enumerate(chunks):
-                        await context.bot.send_message(
-                            chat_id=chat_id,
-                            reply_to_message_id=update.message.message_id if index == 0 else None,
-                            text=chunk,
-                            parse_mode=constants.ParseMode.MARKDOWN
-                        )
+                        try:
+                            await context.bot.send_message(
+                                chat_id=chat_id,
+                                reply_to_message_id=update.message.message_id if index == 0 else None,
+                                text=chunk,
+                                parse_mode=constants.ParseMode.MARKDOWN
+                            )
+                        except Exception:
+                            try:
+                                await context.bot.send_message(
+                                    chat_id=chat_id,
+                                    reply_to_message_id=update.message.message_id if index == 0 else None,
+                                    text=chunk
+                                )
+                            except Exception as e:
+                                raise e
 
                 await self.wrap_with_indicator(update, context, constants.ChatAction.TYPING, _reply)
 
