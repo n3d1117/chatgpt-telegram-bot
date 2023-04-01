@@ -173,7 +173,7 @@ class ChatGPTTelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not await self.check_allowed_and_within_budget(update, context):
+        if not self.config['enable_image_generation'] or not await self.check_allowed_and_within_budget(update, context):
             return
 
         chat_id = update.effective_chat.id
@@ -215,7 +215,7 @@ class ChatGPTTelegramBot:
         """
         Transcribe audio messages.
         """
-        if not await self.check_allowed_and_within_budget(update, context):
+        if not self.config['enable_transcription'] or not await self.check_allowed_and_within_budget(update, context):
             return
 
         if self.is_group_chat(update) and self.config['ignore_group_transcriptions']:
