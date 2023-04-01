@@ -17,7 +17,8 @@ class UsageTracker:
         "user_name": "@user_name",
         "current_cost": {
             "day": 0.45, 
-            "month": 3.23, 
+            "month": 3.23,
+            "all_time": 3.23,
             "last_update": "2023-03-14"},
         "usage_history": {
             "chat_tokens": {
@@ -59,7 +60,7 @@ class UsageTracker:
             # create new dictionary for this user
             self.usage = {
                 "user_name": user_name,
-                "current_cost": {"day": 0.0, "month": 0.0, "last_update": str(date.today())},
+                "current_cost": {"day": 0.0, "month": 0.0, "all_time": 0.0, "last_update": str(date.today())},
                 "usage_history": {"chat_tokens": {}, "transcription_seconds": {}, "number_images": {}}
             }
 
@@ -72,18 +73,21 @@ class UsageTracker:
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        token_cost = round(tokens * tokens_price / 1000, 6)
+        # add to all_time cost
+        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + token_cost
         # add current cost, update new day
         if today == last_update:
-            self.usage["current_cost"]["day"] += round(tokens * tokens_price / 1000, 6)
-            self.usage["current_cost"]["month"] += round(tokens * tokens_price / 1000, 6)
+            self.usage["current_cost"]["day"] += token_cost
+            self.usage["current_cost"]["month"] += token_cost
         else:
             if today.month == last_update.month:
-                self.usage["current_cost"]["month"] += round(tokens * tokens_price / 1000, 6)
+                self.usage["current_cost"]["month"] += token_cost
             else:
-                self.usage["current_cost"]["month"] = round(tokens * tokens_price / 1000, 6)
-            self.usage["current_cost"]["day"] = round(tokens * tokens_price / 1000, 6)
+                self.usage["current_cost"]["month"] = token_cost
+            self.usage["current_cost"]["day"] = token_cost
             self.usage["current_cost"]["last_update"] = str(today)
-
         # update usage_history
         if str(today) in self.usage["usage_history"]["chat_tokens"]:
             # add token usage to existing date
@@ -128,6 +132,9 @@ class UsageTracker:
 
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        # add to all_time cost
+        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + image_cost
         # add current cost, update new day
         if today == last_update:
             self.usage["current_cost"]["day"] += image_cost
@@ -179,16 +186,20 @@ class UsageTracker:
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        transcription_price = round(seconds * minute_price / 60, 2)
+        # add to all_time cost
+        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", all_time_initial) + transcription_price
         # add current cost, update new day
         if today == last_update:
-            self.usage["current_cost"]["day"] += round(seconds * minute_price / 60, 2)
-            self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+            self.usage["current_cost"]["day"] += transcription_price
+            self.usage["current_cost"]["month"] += transcription_price
         else:
             if today.month == last_update.month:
-                self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+                self.usage["current_cost"]["month"] += transcription_price
             else:
-                self.usage["current_cost"]["month"] = round(seconds * minute_price / 60, 2)
-            self.usage["current_cost"]["day"] = round(seconds * minute_price / 60, 2)
+                self.usage["current_cost"]["month"] = transcription_price
+            self.usage["current_cost"]["day"] = transcription_price
             self.usage["current_cost"]["last_update"] = str(today)
 
         # update usage_history
@@ -239,4 +250,6 @@ class UsageTracker:
                 cost_month = self.usage["current_cost"]["month"]
             else:
                 cost_month = 0.0
-        return round(cost_day, 3), round(cost_month, 3)
+        all_time_initial = self.usage["current_cost"]["month"] # set with current month cost, if key doesn't exist (for legacy usage_log files)
+        cost_all_time = self.usage["current_cost"].get("all_time", all_time_initial)
+        return cost_day, cost_month, cost_all_time
