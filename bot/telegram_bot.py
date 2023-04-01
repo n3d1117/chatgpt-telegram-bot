@@ -345,7 +345,7 @@ class ChatGPTTelegramBot:
 
         if self.is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
-            if prompt.startswith(trigger_keyword):
+            if prompt.lower().startswith(trigger_keyword.lower()):
                 prompt = prompt[len(trigger_keyword):].strip()
             else:
                 if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
