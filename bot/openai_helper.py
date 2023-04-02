@@ -281,19 +281,6 @@ class OpenAIHelper:
                     num_tokens += tokens_per_name
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
-
-    def get_grant_balance(self):
-        """Gets remaining grant balance for new users from OpenAI API.
-
-        :return: remaining grant balance
-        """
-        headers = {
-            "Authorization": f"Bearer {openai.api_key}"
-        }
-        response = requests.get("https://api.openai.com/dashboard/billing/credit_grants", headers=headers)
-        billing_data = json.loads(response.text)
-        balance = billing_data["total_available"]
-        return balance
     
     def get_billing_current_month(self):
         """Gets billed usage for current month from OpenAI API.
