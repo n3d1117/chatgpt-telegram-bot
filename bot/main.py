@@ -40,8 +40,8 @@ def main():
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
         'model': model,
-        'presence_penalty': int(os.environ.get('PRESENCE_PENALTY', 0)),
-        'frequency_penalty': int(os.environ.get('FREQUENCY_PENALTY', 0)),
+        'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
+        'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
     }
 
     telegram_config = {
