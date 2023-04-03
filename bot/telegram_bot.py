@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import os
 import itertools
@@ -33,6 +34,11 @@ class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
     """
+    budget_cost_map = {
+            "monthly":"cost_month",
+            "daily":"cost_today",
+            "all-time":"cost_all_time"
+        }
 
     def __init__(self, config: dict, openai: OpenAIHelper):
         """
@@ -641,76 +647,72 @@ class ChatGPTTelegramBot:
 
         return False
 
-    async def get_remaining_budget(self, update: Update) -> float:
+    def get_user_budget(self, update: Update) -> float | None:
+        """
+        Get the user's budget based on their user ID and the bot configuration.
+        :param update: Telegram update object
+        :return: The user's budget as a float, or None if the user is not found in the allowed user list
+        """
+        
+        # no budget restrictions for admins and '*'-budget lists
+        if self.is_admin(update) or self.config['user_budgets'] == '*':
+            return float('inf')
+        
+        user_budgets = self.config['user_budgets'].split(',')
+        if self.config['allowed_user_ids'] == '*':
+            # same budget for all users, use value in first position of budget list
+            if len(user_budgets) > 1:
+                logging.warning('multiple values for budgets set with unrestricted user list'
+                                'only the first value is used as budget for everyone.')
+            return float(user_budgets[0])
+
         user_id = update.message.from_user.id
-        if user_id not in self.usage:
-            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
-
-        if self.is_admin(update):
-            return float('inf')
-
-        if self.config['monthly_user_budgets'] == '*':
-            return float('inf')
-
         allowed_user_ids = self.config['allowed_user_ids'].split(',')
         if str(user_id) in allowed_user_ids:
-            # find budget for allowed user
             user_index = allowed_user_ids.index(str(user_id))
-            user_budgets = self.config['monthly_user_budgets'].split(',')
-            # check if user is included in budgets list
             if len(user_budgets) <= user_index:
-                logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
+                logging.warning(f'No budget set for user id: {user_id}. Budget list shorter than user list.')
                 return 0.0
-            user_budget = float(user_budgets[user_index])
-            cost_month = self.usage[user_id].get_current_cost()["cost_month"]
-            remaining_budget = user_budget - cost_month
-            return remaining_budget
-        else:
-            return 0.0
+            return float(user_budgets[user_index])
+        return None
 
-    async def is_within_budget(self, update: Update, context: CallbackContext) -> bool:
+    def get_remaining_budget(self, update: Update) -> float:
         """
-        Checks if the user reached their monthly usage limit.
+        Calculate the remaining budget for a user based on their current usage.
+        :param update: Telegram update object
+        :return: The remaining budget for the user as a float
+        """
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+        
+        # Get budget for users
+        user_budget = self.get_user_budget(update)
+        budget_type = self.config['budget_type']
+        if user_budget is not None:
+            cost = self.usage[user_id].get_current_cost()[self.budget_cost_map[budget_type]]
+            return user_budget - cost
+
+        # Get budget for guests
+        if 'guests' not in self.usage:
+            self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
+        cost = self.usage['guests'].get_current_cost()[self.budget_cost_map[budget_type]]
+        return self.config['guest_budget'] - cost
+
+    def is_within_budget(self, update: Update) -> bool:
+        """
+        Checks if the user reached their usage limit.
         Initializes UsageTracker for user and guest when needed.
+        :param update: Telegram update object
+        :return: Boolean indicating if the user has a positive budget
         """
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
-        if self.is_admin(update):
-            return True
+        remaining_budget = self.get_remaining_budget(update)
 
-        if self.config['monthly_user_budgets'] == '*':
-            return True
-
-        allowed_user_ids = self.config['allowed_user_ids'].split(',')
-        if str(user_id) in allowed_user_ids:
-            # find budget for allowed user
-            user_index = allowed_user_ids.index(str(user_id))
-            user_budgets = self.config['monthly_user_budgets'].split(',')
-            # check if user is included in budgets list
-            if len(user_budgets) <= user_index:
-                logging.warning(f'No budget set for user: {update.message.from_user.name} ({user_id}).')
-                return False
-            user_budget = float(user_budgets[user_index])
-            cost_month = self.usage[user_id].get_current_cost()["cost_month"]
-            # Check if allowed user is within budget
-            return user_budget > cost_month
-
-        # Check if group member is within budget
-        if self.is_group_chat(update):
-            admin_user_ids = self.config['admin_user_ids'].split(',')
-            for user in itertools.chain(allowed_user_ids, admin_user_ids):
-                if await self.is_user_in_group(update, context, user):
-                    if 'guests' not in self.usage:
-                        self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
-                    if self.config['monthly_guest_budget'] >= self.usage['guests'].get_current_cost()["cost_month"]:
-                        return True
-                    logging.warning('Monthly guest budget for group chats used up.')
-                    return False
-            logging.info(f'Group chat messages from user {update.message.from_user.name} '
-                f'(id: {update.message.from_user.id}) are not allowed')
-        return False
+        return remaining_budget > 0
 
     async def check_allowed_and_within_budget(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
         """
@@ -725,7 +727,7 @@ class ChatGPTTelegramBot:
             await self.send_disallowed_message(update, context)
             return False
 
-        if not await self.is_within_budget(update, context):
+        if not self.is_within_budget(update):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                 f'reached their usage limit')
             await self.send_budget_reached_message(update, context)
