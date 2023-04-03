@@ -34,11 +34,18 @@ class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
     """
+    # Mapping of budget type to cost type
     budget_cost_map = {
             "monthly":"cost_month",
             "daily":"cost_today",
             "all-time":"cost_all_time"
         }
+    # Mapping of budget type to a print output
+    budget_print_map = {
+        "monthly": " this month",
+        "daily": " today",
+        "all-time": ""
+    }
 
     def __init__(self, config: dict, openai: OpenAIHelper):
         """
@@ -58,7 +65,7 @@ class ChatGPTTelegramBot:
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
-        self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
+        self.budget_limit_message = f"Sorry, you have reached your usage limit{self.budget_print_map[config['budget_type']]}."
         self.usage = {}
         self.last_message = {}
 
@@ -96,12 +103,13 @@ class ChatGPTTelegramBot:
 
         tokens_today, tokens_month = self.usage[user_id].get_current_token_usage()
         images_today, images_month = self.usage[user_id].get_current_image_count()
-        transcribe_durations = self.usage[user_id].get_current_transcription_duration()
+        (transcribe_minutes_today, transcribe_seconds_today, transcribe_minutes_month, 
+            transcribe_seconds_month) = self.usage[user_id].get_current_transcription_duration()
         current_cost = self.usage[user_id].get_current_cost()
         
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
-        budget = await self.get_remaining_budget(update)
+        budget = self.get_remaining_budget(update)
 
         text_current_conversation = f"*Current conversation:*\n"+\
                      f"{chat_messages} chat messages in history.\n"+\
@@ -110,18 +118,19 @@ class ChatGPTTelegramBot:
         text_today = f"*Usage today:*\n"+\
                      f"{tokens_today} chat tokens used.\n"+\
                      f"{images_today} images generated.\n"+\
-                     f"{transcribe_durations[0]} minutes and {transcribe_durations[1]} seconds transcribed.\n"+\
+                     f"{transcribe_minutes_today} minutes and {transcribe_seconds_today} seconds transcribed.\n"+\
                      f"💰 For a total amount of ${current_cost['cost_today']:.2f}\n"+\
                      f"----------------------------\n"
         text_month = f"*Usage this month:*\n"+\
                      f"{tokens_month} chat tokens used.\n"+\
                      f"{images_month} images generated.\n"+\
-                     f"{transcribe_durations[2]} minutes and {transcribe_durations[3]} seconds transcribed.\n"+\
+                     f"{transcribe_minutes_month} minutes and {transcribe_seconds_month} seconds transcribed.\n"+\
                      f"💰 For a total amount of ${current_cost['cost_month']:.2f}"
         # text_budget filled with conditional content
         text_budget = "\n\n"
+        budget_type =self.config['budget_type']
         if budget < float('inf'):
-            text_budget += f"You have a remaining budget of ${budget:.2f} this month.\n"
+            text_budget += f"You have a remaining budget of ${budget:.2f}{self.budget_print_map[budget_type]}.\n"
         # add OpenAI account information for admin request
         if self.is_admin(update):
             text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
@@ -630,13 +639,14 @@ class ChatGPTTelegramBot:
 
         return False
 
-    def is_admin(self, update: Update) -> bool:
+    def is_admin(self, update: Update, log_no_admin=False) -> bool:
         """
         Checks if the user is the admin of the bot.
         The first user in the user list is the admin.
         """
         if self.config['admin_user_ids'] == '-':
-            logging.info('No admin user defined.')
+            if log_no_admin:
+                logging.info('No admin user defined.')
             return False
 
         admin_user_ids = self.config['admin_user_ids'].split(',')
