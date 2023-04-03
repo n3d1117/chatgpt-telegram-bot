@@ -17,6 +17,13 @@ def main():
         level=logging.INFO
     )
 
+    # Check if the required environment variables are set
+    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
+    missing_values = [value for value in required_values if os.environ.get(value) is None]
+    if len(missing_values) > 0:
+        logging.error(f'The following environment values are missing in your .env: {", ".join(missing_values)}')
+        exit(1)
+
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     max_tokens_default = default_max_tokens(model=model)
@@ -37,7 +44,7 @@ def main():
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
     }
 
-    # give deprecation warning for old budget variable names
+    # log deprecation warning for old budget variable names
     # old variables are caught in the telegram_config definition for now
     # remove support for old budget names at some point in the future
     if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
