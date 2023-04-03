@@ -187,7 +187,7 @@ class ChatGPTTelegramBot:
                 image_url, image_size = await self.openai.generate_image(prompt=image_query)
                 await context.bot.send_photo(
                     chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
+                    reply_to_message_id=self.get_reply_to_message_id(update),
                     photo=image_url
                 )
                 # add image request to users usage tracker
@@ -201,7 +201,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
+                    reply_to_message_id=self.get_reply_to_message_id(update),
                     text=f'Failed to generate image: {str(e)}',
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
@@ -232,7 +232,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
+                    reply_to_message_id=self.get_reply_to_message_id(update),
                     text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)',
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
@@ -249,7 +249,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    reply_to_message_id=update.message.message_id,
+                    reply_to_message_id=self.get_reply_to_message_id(update),
                     text='Unsupported file type'
                 )
                 if os.path.exists(filename):
@@ -284,7 +284,7 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await context.bot.send_message(
                             chat_id=chat_id,
-                            reply_to_message_id=update.message.message_id if index == 0 else None,
+                            reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
                         )
@@ -305,7 +305,7 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await context.bot.send_message(
                             chat_id=chat_id,
-                            reply_to_message_id=update.message.message_id if index == 0 else None,
+                            reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
                         )
@@ -314,7 +314,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    reply_to_message_id=update.message.message_id,
+                    reply_to_message_id=self.get_reply_to_message_id(update),
                     text=f'Failed to transcribe text: {str(e)}',
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
@@ -400,7 +400,7 @@ class ChatGPTTelegramBot:
                                                                  message_id=sent_message.message_id)
                             sent_message = await context.bot.send_message(
                                 chat_id=chat_id,
-                                reply_to_message_id=update.message.message_id,
+                                reply_to_message_id=self.get_reply_to_message_id(update),
                                 text=content
                             )
                         except:
@@ -445,7 +445,7 @@ class ChatGPTTelegramBot:
                         try:
                             await context.bot.send_message(
                                 chat_id=chat_id,
-                                reply_to_message_id=update.message.message_id if index == 0 else None,
+                                reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                                 text=chunk,
                                 parse_mode=constants.ParseMode.MARKDOWN
                             )
@@ -453,7 +453,7 @@ class ChatGPTTelegramBot:
                             try:
                                 await context.bot.send_message(
                                     chat_id=chat_id,
-                                    reply_to_message_id=update.message.message_id if index == 0 else None,
+                                    reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                                     text=chunk
                                 )
                             except Exception as e:
@@ -475,7 +475,7 @@ class ChatGPTTelegramBot:
             logging.exception(e)
             await context.bot.send_message(
                 chat_id=chat_id,
-                reply_to_message_id=update.message.message_id,
+                reply_to_message_id=self.get_reply_to_message_id(update),
                 text=f'Failed to get response: {str(e)}',
                 parse_mode=constants.ParseMode.MARKDOWN
             )
@@ -732,6 +732,16 @@ class ChatGPTTelegramBot:
             return False
 
         return True
+
+    def get_reply_to_message_id(self, update: Update):
+        """
+        Returns the message id of the message to reply to
+        :param update: Telegram update object
+        :return: Message id of the message to reply to, or None if quoting is disabled
+        """
+        if self.config['enable_quoting'] or self.is_group_chat(update):
+            return update.message.message_id
+        return None
 
     def split_into_chunks(self, text: str, chunk_size: int = 4096) -> list[str]:
         """
