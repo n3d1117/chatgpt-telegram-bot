@@ -17,13 +17,6 @@ def main():
         level=logging.INFO
     )
 
-    # Check if the required environment variables are set
-    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
-    missing_values = [value for value in required_values if os.environ.get(value) is None]
-    if len(missing_values) > 0:
-        logging.error(f'The following environment values are missing in your .env: {", ".join(missing_values)}')
-        exit(1)
-
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     max_tokens_default = default_max_tokens(model=model)
@@ -44,6 +37,16 @@ def main():
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
     }
 
+    # give deprecation warning for old budget variable names
+    # old variables are caught in the telegram_config definition for now
+    # remove support for old budget names at some point in the future
+    if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
+        logging.warning('The environment variable MONTHLY_USER_BUDGETS is deprecated. '
+                     'Please use USER_BUDGETS with BUDGET_TYPE instead.')
+    if os.environ.get('MONTHLY_GUEST_BUDGET') is not None:
+        logging.warning('The environment variable MONTHLY_GUEST_BUDGET is deprecated. '
+                     'Please use GUEST_BUDGET with BUDGET_TYPE instead.')
+
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
         'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
@@ -51,6 +54,9 @@ def main():
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
         'enable_image_generation': os.environ.get('ENABLE_IMAGE_GENERATION', 'true').lower() == 'true',
         'enable_transcription': os.environ.get('ENABLE_TRANSCRIPTION', 'true').lower() == 'true',
+        'budget_type': os.environ.get('BUDGET_TYPE', 'monthly').lower(),
+        'user_budgets': os.environ.get('USER_BUDGETS', os.environ.get('MONTHLY_USER_BUDGETS', '*')),
+        'guest_budget': float(os.environ.get('GUEST_BUDGET', os.environ.get('MONTHLY_GUEST_BUDGET', '100.0'))),
         'monthly_user_budgets': os.environ.get('MONTHLY_USER_BUDGETS', '*'),
         'monthly_guest_budget': float(os.environ.get('MONTHLY_GUEST_BUDGET', '100.0')),
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',
