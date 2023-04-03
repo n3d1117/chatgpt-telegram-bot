@@ -28,7 +28,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
 
 ## Additional features - help needed!
-- [ ] Add session persistence ([#70](https://github.com/n3d1117/chatgpt-telegram-bot/issues/70), [#71](https://github.com/n3d1117/chatgpt-telegram-bot/issues/71))
+If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!
 
 PRs are always welcome!
 
@@ -52,6 +52,7 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 ### Optional configuration
 | Parameter                          | Description                                                                                                                                                                                                                      | Default value                  |
 |------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| `ENABLE_QUOTING`                   | Whether to enable message quoting in private chats                                                                                                                                                                               | true                           |
 | `ENABLE_IMAGE_GENERATION`          | Whether to enable image generation via the `/image` command                                                                                                                                                                      | true                           |
 | `ENABLE_TRANSCRIPTION`             | Whether to enable transcriptions of audio and video messages                                                                                                                                                                     | true                           |
 | `MONTHLY_USER_BUDGETS`             | A comma-separated list of $-amounts per user from list `ALLOWED_TELEGRAM_USER_IDS` to set custom usage limit of OpenAI API costs for each.  **Note**: by default, *no limits* for anyone (`*`)                                   | `*`                            |
