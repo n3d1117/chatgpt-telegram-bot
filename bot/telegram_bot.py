@@ -34,13 +34,13 @@ class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
     """
-    # Mapping of budget type to cost type
+    # Mapping of budget period to cost period
     budget_cost_map = {
             "monthly":"cost_month",
             "daily":"cost_today",
             "all-time":"cost_all_time"
         }
-    # Mapping of budget type to a print output
+    # Mapping of budget period to a print output
     budget_print_map = {
         "monthly": " this month",
         "daily": " today",
@@ -65,7 +65,7 @@ class ChatGPTTelegramBot:
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
-        self.budget_limit_message = f"Sorry, you have reached your usage limit{self.budget_print_map[config['budget_type']]}."
+        self.budget_limit_message = f"Sorry, you have reached your usage limit{self.budget_print_map[config['budget_period']]}."
         self.usage = {}
         self.last_message = {}
 
@@ -128,9 +128,9 @@ class ChatGPTTelegramBot:
                      f"💰 For a total amount of ${current_cost['cost_month']:.2f}"
         # text_budget filled with conditional content
         text_budget = "\n\n"
-        budget_type =self.config['budget_type']
+        budget_period =self.config['budget_period']
         if remaining_budget < float('inf'):
-            text_budget += f"You have a remaining budget of ${remaining_budget:.2f}{self.budget_print_map[budget_type]}.\n"
+            text_budget += f"You have a remaining budget of ${remaining_budget:.2f}{self.budget_print_map[budget_period]}.\n"
         # add OpenAI account information for admin request
         if self.is_admin(update):
             text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
@@ -698,15 +698,15 @@ class ChatGPTTelegramBot:
         
         # Get budget for users
         user_budget = self.get_user_budget(update)
-        budget_type = self.config['budget_type']
+        budget_period = self.config['budget_period']
         if user_budget is not None:
-            cost = self.usage[user_id].get_current_cost()[self.budget_cost_map[budget_type]]
+            cost = self.usage[user_id].get_current_cost()[self.budget_cost_map[budget_period]]
             return user_budget - cost
 
         # Get budget for guests
         if 'guests' not in self.usage:
             self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
-        cost = self.usage['guests'].get_current_cost()[self.budget_cost_map[budget_type]]
+        cost = self.usage['guests'].get_current_cost()[self.budget_cost_map[budget_period]]
         return self.config['guest_budget'] - cost
 
     def is_within_budget(self, update: Update) -> bool:

@@ -49,10 +49,10 @@ def main():
     # remove support for old budget names at some point in the future
     if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
         logging.warning('The environment variable MONTHLY_USER_BUDGETS is deprecated. '
-                     'Please use USER_BUDGETS with BUDGET_TYPE instead.')
+                     'Please use USER_BUDGETS with BUDGET_PERIOD instead.')
     if os.environ.get('MONTHLY_GUEST_BUDGET') is not None:
         logging.warning('The environment variable MONTHLY_GUEST_BUDGET is deprecated. '
-                     'Please use GUEST_BUDGET with BUDGET_TYPE instead.')
+                     'Please use GUEST_BUDGET with BUDGET_PERIOD instead.')
 
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
@@ -61,7 +61,7 @@ def main():
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
         'enable_image_generation': os.environ.get('ENABLE_IMAGE_GENERATION', 'true').lower() == 'true',
         'enable_transcription': os.environ.get('ENABLE_TRANSCRIPTION', 'true').lower() == 'true',
-        'budget_type': os.environ.get('BUDGET_TYPE', 'monthly').lower(),
+        'budget_period': os.environ.get('BUDGET_PERIOD', 'monthly').lower(),
         'user_budgets': os.environ.get('USER_BUDGETS', os.environ.get('MONTHLY_USER_BUDGETS', '*')),
         'guest_budget': float(os.environ.get('GUEST_BUDGET', os.environ.get('MONTHLY_GUEST_BUDGET', '100.0'))),
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',
