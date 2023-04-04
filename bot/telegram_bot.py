@@ -109,7 +109,7 @@ class ChatGPTTelegramBot:
         
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
-        budget = self.get_remaining_budget(update)
+        remaining_budget = self.get_remaining_budget(update)
 
         text_current_conversation = f"*Current conversation:*\n"+\
                      f"{chat_messages} chat messages in history.\n"+\
@@ -129,8 +129,8 @@ class ChatGPTTelegramBot:
         # text_budget filled with conditional content
         text_budget = "\n\n"
         budget_type =self.config['budget_type']
-        if budget < float('inf'):
-            text_budget += f"You have a remaining budget of ${budget:.2f}{self.budget_print_map[budget_type]}.\n"
+        if remaining_budget < float('inf'):
+            text_budget += f"You have a remaining budget of ${remaining_budget:.2f}{self.budget_print_map[budget_type]}.\n"
         # add OpenAI account information for admin request
         if self.is_admin(update):
             text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
