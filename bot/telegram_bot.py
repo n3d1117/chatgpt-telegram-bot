@@ -5,6 +5,7 @@ import itertools
 import asyncio
 
 import telegram
+from uuid import uuid4
 from telegram import constants
 from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand, ChatMember
 from telegram.error import RetryAfter, TimedOut
@@ -506,7 +507,7 @@ class ChatGPTTelegramBot:
 
         results = [
             InlineQueryResultArticle(
-                id=query,
+                id=str(uuid4()),
                 title='Ask ChatGPT',
                 input_message_content=InputTextMessageContent(query),
                 description=query,
