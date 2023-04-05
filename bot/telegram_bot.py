@@ -672,7 +672,7 @@ class ChatGPTTelegramBot:
         if self.config['allowed_user_ids'] == '*':
             # same budget for all users, use value in first position of budget list
             if len(user_budgets) > 1:
-                logging.warning('multiple values for budgets set with unrestricted user list'
+                logging.warning('multiple values for budgets set with unrestricted user list '
                                 'only the first value is used as budget for everyone.')
             return float(user_budgets[0])
 

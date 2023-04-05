@@ -71,14 +71,15 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 | `TEMPERATURE`                      | Number between 0 and 2. Higher values will make the output more random                                                                                                                                                           | 1.0                            |
 | `PRESENCE_PENALTY`                 | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far                                                                                                                 | 0                              |
 | `FREQUENCY_PENALTY`                | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far                                                                                                            | 0                              |
-| `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: `256x256`, `512x512` or `1024x1024`                                                                                                                                             | `512x512`                      |
+| `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: "256x256", "512x512" or "1024x1024"                                                                                                                                             | "512x512"                      |
 | `GROUP_TRIGGER_KEYWORD`            | If set, the bot in group chats will only respond to messages that start with this keyword                                                                                                                                        | ""                             |
 | `IGNORE_GROUP_TRANSCRIPTIONS`      | If set to true, the bot will not process transcriptions in group chats                                                                                                                                                           | true                           |
 | `TOKEN_PRICE`                      | $-price per 1000 tokens used to compute cost information in usage statistics (https://openai.com/pricing)                                                                                                                        | 0.002                          |
 | `IMAGE_PRICES`                     | A comma-separated list with 3 elements of prices for the different image sizes: "256x256", "512x512" and "1024x1024"                                                                                                             | `0.016,0.018,0.02`             |
 | `TRANSCRIPTION_PRICE`              | USD-price for one minute of audio transcription                                                                                                                                                                                  | 0.006                          |
 
-Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
+Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.  
+Check out our [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/184) for possible budget configurations.
 
 ### Installing
 Clone the repository and navigate to the project directory:
