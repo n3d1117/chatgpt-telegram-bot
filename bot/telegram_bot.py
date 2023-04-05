@@ -49,7 +49,8 @@ class ChatGPTTelegramBot:
                                                     '(e.g. /reset You are a helpful assistant)'),
             BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
             BotCommand(command='stats', description='Get your current usage statistics'),
-            BotCommand(command='resend', description='Resend the latest message')
+            BotCommand(command='resend', description='Resend the latest message'),
+            BotCommand(command='mode', description='Choose one of your preseted mode.')
         ]
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
@@ -166,6 +167,26 @@ class ChatGPTTelegramBot:
         reset_content = message_text(update.message)
         self.openai.reset_chat_history(chat_id=chat_id, content=reset_content)
         await context.bot.send_message(chat_id=chat_id, text='Done!')
+
+    async def mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Allow user to choose from pre-defined modes
+        """
+        chat_id = update.effective_chat.id
+        mode_name = message_text(update.message)
+        valid_mode = [item["title"] for item in self.config['presets']]
+
+        if mode_name == '' or mode_name not in valid_mode:
+            valid_mode_str = '\n'.join(f'• {item}' for item in valid_mode)
+            await context.bot.send_message(chat_id=chat_id, text=f'Please provide a valid mode name! (e.g. /mode cat)\n{valid_mode_str}')
+            return
+        
+        
+        logging.info(f'Changing the conversation mode for user {update.message.from_user.name} to {mode_name} '
+            f'(id: {update.message.from_user.id})...')
+        self.openai.change_mode(chat_id=chat_id, mode_name=mode_name)
+        await context.bot.send_message(chat_id=chat_id, text=f'Done!')
+        
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -774,6 +795,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('mode', self.mode))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,

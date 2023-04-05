@@ -1,11 +1,16 @@
 import logging
 import os
+import json
 
 from dotenv import load_dotenv
 
 from openai_helper import OpenAIHelper, default_max_tokens
 from telegram_bot import ChatGPTTelegramBot
 
+def load_config(file_path):
+    with open(file_path, 'r') as f:
+        config = json.load(f)
+    return config
 
 def main():
     # Read .env file
@@ -14,7 +19,7 @@ def main():
     # Setup logging
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
+        level=logging.DEBUG
     )
 
     # Check if the required environment variables are set
@@ -42,6 +47,7 @@ def main():
         'model': model,
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
+        "presets": load_config('./config.json')["presets"]
     }
 
     telegram_config = {
@@ -61,7 +67,9 @@ def main():
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES',"0.016,0.018,0.02").split(",")],
         'transcription_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
+        "presets": load_config('./config.json')["presets"]
     }
+
 
     # Setup and run ChatGPT and Telegram bot
     openai_helper = OpenAIHelper(config=openai_config)

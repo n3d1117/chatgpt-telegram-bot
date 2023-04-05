@@ -39,6 +39,7 @@ class OpenAIHelper:
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
+        self.default_config = config
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
@@ -200,6 +201,17 @@ class OpenAIHelper:
         if content == '':
             content = self.config['assistant_prompt']
         self.conversations[chat_id] = [{"role": "system", "content": content}]
+
+    def change_mode(self, chat_id, mode_name=''):
+        """
+        Changes the mode of the chat.
+        """
+        presets = self.config['presets']
+        new_config = next((item for item in presets if item["title"] == mode_name), None)['openai_config']
+        self.config = self.default_config
+        self.config = {key: new_config[key] if key in new_config else self.config[key] for key in self.config}
+        self.reset_chat_history(chat_id=chat_id)
+        logging.debug(f'New mode: {self.config}')
 
     def __max_age_reached(self, chat_id) -> bool:
         """
