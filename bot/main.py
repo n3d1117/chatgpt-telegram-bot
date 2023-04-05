@@ -19,7 +19,7 @@ def main():
     # Setup logging
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.DEBUG
+        level=logging.INFO
     )
 
     # Check if the required environment variables are set
