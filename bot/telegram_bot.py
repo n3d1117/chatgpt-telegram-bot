@@ -5,7 +5,7 @@ import asyncio
 
 import telegram
 from uuid import uuid4
-from telegram import constants
+from telegram import constants, BotCommandScopeAllGroupChats
 from telegram import Message, MessageEntity, Update, InlineQueryResultArticle, InputTextMessageContent, BotCommand, ChatMember
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, \
@@ -52,6 +52,9 @@ class ChatGPTTelegramBot:
             BotCommand(command='resend', description='Resend the latest message'),
             BotCommand(command='mode', description='Choose one of your preseted mode.')
         ]
+        self.group_commands = [
+            BotCommand(command='chat', description='Chat with the bot!')
+        ] + self.commands
         self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
                                   "https://github.com/n3d1117/chatgpt-telegram-bot"
         self.budget_limit_message = "Sorry, you have reached your monthly usage limit."
@@ -62,10 +65,11 @@ class ChatGPTTelegramBot:
         """
         Shows the help menu.
         """
-        commands = [f'/{command.command} - {command.description}' for command in self.commands]
+        commands = self.group_commands if self.is_group_chat(update) else self.commands
+        commands_description = [f'/{command.command} - {command.description}' for command in commands]
         help_text = 'I\'m a ChatGPT bot, talk to me!' + \
                     '\n\n' + \
-                    '\n'.join(commands) + \
+                    '\n'.join(commands_description) + \
                     '\n\n' + \
                     'Send me a voice message or file and I\'ll transcribe it for you!' + \
                     '\n\n' + \
@@ -359,7 +363,7 @@ class ChatGPTTelegramBot:
         logging.info(f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
-        prompt = update.message.text
+        prompt = message_text(update.message)
         self.last_message[chat_id] = prompt
 
         if self.is_group_chat(update):
@@ -638,6 +642,8 @@ class ChatGPTTelegramBot:
         if self.is_group_chat(update):
             admin_user_ids = self.config['admin_user_ids'].split(',')
             for user in itertools.chain(allowed_user_ids, admin_user_ids):
+                if not user.strip():
+                    continue
                 if await self.is_user_in_group(update, context, user):
                     logging.info(f'{user} is a member. Allowing group chat message...')
                     return True
@@ -723,6 +729,8 @@ class ChatGPTTelegramBot:
         if self.is_group_chat(update):
             admin_user_ids = self.config['admin_user_ids'].split(',')
             for user in itertools.chain(allowed_user_ids, admin_user_ids):
+                if not user.strip():
+                    continue
                 if await self.is_user_in_group(update, context, user):
                     if 'guests' not in self.usage:
                         self.usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
@@ -775,6 +783,7 @@ class ChatGPTTelegramBot:
         """
         Post initialization hook for the bot.
         """
+        await application.bot.set_my_commands(self.group_commands, scope=BotCommandScopeAllGroupChats())
         await application.bot.set_my_commands(self.commands)
 
     def run(self):
@@ -796,6 +805,9 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler('mode', self.mode))
+        application.add_handler(CommandHandler(
+            'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
+        )
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
