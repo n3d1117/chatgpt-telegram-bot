@@ -1,6 +1,6 @@
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
-[![openai-version](https://img.shields.io/badge/openai-0.27.2-orange.svg)](https://openai.com/)
+[![openai-version](https://img.shields.io/badge/openai-0.27.4-orange.svg)](https://openai.com/)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 [![Publish Docker image](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml/badge.svg)](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml)
 
@@ -50,6 +50,8 @@ Customize the configuration by copying `.env.example` and renaming it to `.env`,
 | `ALLOWED_TELEGRAM_USER_IDS` | A comma-separated list of Telegram user IDs that are allowed to interact with the bot (use [getidsbot](https://t.me/getidsbot) to find your user ID). **Note**: by default, *everyone* is allowed (`*`)                       |
 
 ### Optional configuration
+The following parameters are optional and can be set in the `.env` file:
+
 | Parameter                          | Description                                                                                                                                                                                                                      | Default value                  |
 |------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|
 | `ENABLE_QUOTING`                   | Whether to enable message quoting in private chats                                                                                                                                                                               | true                           |
