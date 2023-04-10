@@ -16,7 +16,7 @@ class UsageTracker:
     {
         "user_name": "@user_name",
         "current_cost": {
-            "day": 0.45, 
+            "day": 0.45,
             "month": 3.23,
             "all_time": 3.23,
             "last_update": "2023-03-14"},
@@ -40,7 +40,7 @@ class UsageTracker:
 
     def __init__(self, user_id, user_name, logs_dir="usage_logs"):
         """
-        Initializes UsageTracker for a user with current date. 
+        Initializes UsageTracker for a user with current date.
         Loads usage data from usage log file.
         :param user_id: Telegram ID of the user
         :param user_name: Telegram user name
