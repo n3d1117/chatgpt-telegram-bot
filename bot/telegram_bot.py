@@ -3,6 +3,7 @@ import logging
 import os
 import itertools
 import asyncio
+import json
 
 import telegram
 from uuid import uuid4
@@ -16,6 +17,25 @@ from pydub import AudioSegment
 from openai_helper import OpenAIHelper
 from usage_tracker import UsageTracker
 
+with open('translations.json', 'r', encoding='utf-8') as f:
+    translations = json.load(f)
+
+def localized_text(key, languague):
+    """
+    Return translated text for a key in specified languague.
+    Keys and translations can be found in the translations.json.
+    """
+    try:
+        return translations[languague][key]
+    except KeyError:
+        logging.warning(f"No translation available for languague code '{languague}' and key '{key}'")
+        # Fallback to English if the translation is not available
+        if key in translations['en']:
+            return translations['en'][key]
+        else:
+            logging.warning(f"No english definition found for key '{key}' in translations.json")
+            # return key as text
+            return key
 
 def message_text(message: Message) -> str:
     """
@@ -30,7 +50,6 @@ def message_text(message: Message) -> str:
 
     return message_text if len(message_text) > 0 else ''
 
-
 class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
@@ -41,12 +60,6 @@ class ChatGPTTelegramBot:
             "daily":"cost_today",
             "all-time":"cost_all_time"
         }
-    # Mapping of budget period to a print output
-    budget_print_map = {
-        "monthly": " this month",
-        "daily": " today",
-        "all-time": ""
-    }
 
     def __init__(self, config: dict, openai: OpenAIHelper):
         """
@@ -56,20 +69,19 @@ class ChatGPTTelegramBot:
         """
         self.config = config
         self.openai = openai
+        languague = self.config['languague']
         self.commands = [
-            BotCommand(command='help', description='Show help message'),
-            BotCommand(command='reset', description='Reset the conversation. Optionally pass high-level instructions '
-                                                    '(e.g. /reset You are a helpful assistant)'),
-            BotCommand(command='image', description='Generate image from prompt (e.g. /image cat)'),
-            BotCommand(command='stats', description='Get your current usage statistics'),
-            BotCommand(command='resend', description='Resend the latest message')
+            BotCommand(command='help', description=localized_text('help_description', languague)),
+            BotCommand(command='reset', description=localized_text('reset_description', languague)),
+            BotCommand(command='image', description=localized_text('image_description', languague)),
+            BotCommand(command='stats', description=localized_text('stats_description', languague)),
+            BotCommand(command='resend', description=localized_text('resend_description', languague))
         ]
         self.group_commands = [
-            BotCommand(command='chat', description='Chat with the bot!')
+            BotCommand(command='chat', description=localized_text('chat_description', languague))
         ] + self.commands
-        self.disallowed_message = "Sorry, you are not allowed to use this bot. You can check out the source code at " \
-                                  "https://github.com/n3d1117/chatgpt-telegram-bot"
-        self.budget_limit_message = f"Sorry, you have reached your usage limit{self.budget_print_map[config['budget_period']]}."
+        self.disallowed_message = localized_text('disallowed', languague)
+        self.budget_limit_message = localized_text('budget_limit', languague)
         self.usage = {}
         self.last_message = {}
 
@@ -79,13 +91,16 @@ class ChatGPTTelegramBot:
         """
         commands = self.group_commands if self.is_group_chat(update) else self.commands
         commands_description = [f'/{command.command} - {command.description}' for command in commands]
-        help_text = 'I\'m a ChatGPT bot, talk to me!' + \
-                    '\n\n' + \
-                    '\n'.join(commands_description) + \
-                    '\n\n' + \
-                    'Send me a voice message or file and I\'ll transcribe it for you!' + \
-                    '\n\n' + \
-                    "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"
+        languague = self.config['languague']
+        help_text = (
+            localized_text('help_text', languague)[0] +
+            '\n\n' +
+            '\n'.join(commands_description) +
+            '\n\n' +
+            localized_text('help_text', languague)[1] +
+            '\n\n' +
+            localized_text('help_text', languague)[2]
+        )
         await update.message.reply_text(help_text, disable_web_page_preview=True)
 
 
@@ -115,30 +130,38 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
         remaining_budget = self.get_remaining_budget(update)
-
-        text_current_conversation = f"*Current conversation:*\n"+\
-                     f"{chat_messages} chat messages in history.\n"+\
-                     f"{chat_token_length} chat tokens in history.\n"+\
-                     f"----------------------------\n"
-        text_today = f"*Usage today:*\n"+\
-                     f"{tokens_today} chat tokens used.\n"+\
-                     f"{images_today} images generated.\n"+\
-                     f"{transcribe_minutes_today} minutes and {transcribe_seconds_today} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${current_cost['cost_today']:.2f}\n"+\
-                     f"----------------------------\n"
-        text_month = f"*Usage this month:*\n"+\
-                     f"{tokens_month} chat tokens used.\n"+\
-                     f"{images_month} images generated.\n"+\
-                     f"{transcribe_minutes_month} minutes and {transcribe_seconds_month} seconds transcribed.\n"+\
-                     f"💰 For a total amount of ${current_cost['cost_month']:.2f}"
+        languague = self.config['languague']
+        text_current_conversation = (
+            f"*{localized_text('stats_conversation', languague)[0]}*:\n"
+            f"{chat_messages} {localized_text('stats_conversation', languague)[1]}.\n"
+            f"{chat_token_length} {localized_text('stats_conversation', languague)[2]}.\n"
+            f"----------------------------\n"
+        )
+        text_today = (
+            f"*{localized_text('usage_today', languague)}*\n"
+            f"{tokens_today} {localized_text('stats_tokens', languague)}\n"
+            f"{images_today} {localized_text('stats_images', languague)}\n"
+            f"{transcribe_minutes_today} {localized_text('stats_transcribe', languague)[0]} "
+            f"{transcribe_seconds_today} {localized_text('stats_transcribe', languague)[1]}\n"
+            f"{localized_text('stats_total', languague)}{current_cost['cost_today']:.2f}\n"
+            f"----------------------------\n"
+        )
+        text_month = (
+            f"*{localized_text('usage_month', languague)}*\n"
+            f"{tokens_month} {localized_text('stats_tokens', languague)}\n"
+            f"{images_month} {localized_text('stats_images', languague)}\n"
+            f"{transcribe_minutes_month} {localized_text('stats_transcribe', languague)[0]} "
+            f"{transcribe_seconds_month} {localized_text('stats_transcribe', languague)[1]}\n"
+            f"{localized_text('stats_total', languague)}{current_cost['cost_month']:.2f}"
+        )
         # text_budget filled with conditional content
         text_budget = "\n\n"
         budget_period =self.config['budget_period']
         if remaining_budget < float('inf'):
-            text_budget += f"You have a remaining budget of ${remaining_budget:.2f}{self.budget_print_map[budget_period]}.\n"
+            text_budget += f"{localized_text('stats_budget', languague)} {localized_text(budget_period, languague)}: ${remaining_budget:.2f}.\n"
         # add OpenAI account information for admin request
         if self.is_admin(update):
-            text_budget += f"Your OpenAI account was billed ${self.openai.get_billing_current_month():.2f} this month."
+            text_budget += f"{localized_text('stats_openai', languague)}{self.openai.get_billing_current_month():.2f}."
         
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
@@ -157,7 +180,7 @@ class ChatGPTTelegramBot:
         if chat_id not in self.last_message:
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
                             f' does not have anything to resend')
-            await context.bot.send_message(chat_id=chat_id, text="You have nothing to resend")
+            await context.bot.send_message(chat_id=chat_id, text=localized_text('resend_failed', self.config['languague']))
             return
 
         # Update message text, clear self.last_message and send the request to prompt
@@ -184,7 +207,7 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         reset_content = message_text(update.message)
         self.openai.reset_chat_history(chat_id=chat_id, content=reset_content)
-        await context.bot.send_message(chat_id=chat_id, text='Done!')
+        await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['languague']))
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -196,7 +219,7 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         image_query = message_text(update.message)
         if image_query == '':
-            await context.bot.send_message(chat_id=chat_id, text='Please provide a prompt! (e.g. /image cat)')
+            await context.bot.send_message(chat_id=chat_id, text=localized_text('image_no_prompt', self.config['languague']))
             return
 
         logging.info(f'New image generation request received from user {update.message.from_user.name} '
@@ -222,7 +245,7 @@ class ChatGPTTelegramBot:
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
-                    text=f'Failed to generate image: {str(e)}',
+                    text=f"{localized_text('image_no_prompt', self.config['languague'])}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
 
@@ -244,7 +267,7 @@ class ChatGPTTelegramBot:
 
         async def _execute():
             filename_mp3 = f'{filename}.mp3'
-
+            languague = self.config['languague']
             try:
                 media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
                 await media_file.download_to_drive(filename)
@@ -253,7 +276,7 @@ class ChatGPTTelegramBot:
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
-                    text=f'Failed to download audio file: {str(e)}. Make sure the file is not too large. (max 20MB)',
+                    text=f"{localized_text('media_download_fail', languague)[0]}: {str(e)}. {localized_text('media_download_fail', languague)[1]}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
                 return
@@ -270,7 +293,7 @@ class ChatGPTTelegramBot:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
-                    text='Unsupported file type'
+                    text=localized_text('media_type_fail', languague)
                 )
                 if os.path.exists(filename):
                     os.remove(filename)
@@ -298,7 +321,7 @@ class ChatGPTTelegramBot:
                 if self.config['voice_reply_transcript']:
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
-                    transcript_output = f'_Transcript:_\n"{transcript}"'
+                    transcript_output = f"_{localized_text('transcript', languague)}:_\n\"{transcript}\""
                     chunks = self.split_into_chunks(transcript_output)
 
                     for index, transcript_chunk in enumerate(chunks):
@@ -319,7 +342,7 @@ class ChatGPTTelegramBot:
                         self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
-                    transcript_output = f'_Transcript:_\n"{transcript}"\n\n_Answer:_\n{response}'
+                    transcript_output = f"_{localized_text('transcript', languague)}:_\n\"{transcript}\"\n\n_{localized_text('answer', languague)}:_\n{response}"
                     chunks = self.split_into_chunks(transcript_output)
 
                     for index, transcript_chunk in enumerate(chunks):
@@ -335,7 +358,7 @@ class ChatGPTTelegramBot:
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
-                    text=f'Failed to transcribe text: {str(e)}',
+                    text=f"{localized_text('transcribe_fail', languague)}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
             finally:
@@ -496,7 +519,7 @@ class ChatGPTTelegramBot:
             await context.bot.send_message(
                 chat_id=chat_id,
                 reply_to_message_id=self.get_reply_to_message_id(update),
-                text=f'Failed to get response: {str(e)}',
+                text=f"{localized_text('chat_fail', self.config['languague'])} {str(e)}",
                 parse_mode=constants.ParseMode.MARKDOWN
             )
 
