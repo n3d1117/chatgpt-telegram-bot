@@ -455,7 +455,9 @@ class ChatGPTTelegramBot:
                         total_tokens = int(tokens)
 
             else:
+                total_tokens = 0
                 async def _reply():
+                    nonlocal total_tokens
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
