@@ -490,7 +490,8 @@ class ChatGPTTelegramBot:
                 allowed_user_ids = self.config['allowed_user_ids'].split(',')
                 if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
                     self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
-            except:
+            except Exception as e:
+                logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
                 pass
 
         except Exception as e:
