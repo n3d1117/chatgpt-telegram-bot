@@ -60,8 +60,8 @@
         "image_fail":"Fehler beim Generieren eines Bildes",
         "media_download_fail":["Fehler beim Herunterladen der Audiodatei", "Die Datei könnte zu groß sein. (max 20MB)"],
         "media_type_fail":"Dateityp nicht unterstützt",
-        "transcript_title":"Abschrift",
-        "answer_title":"Antwort",
+        "transcript":"Abschrift",
+        "answer":"Antwort",
         "transcribe_fail":"Fehler bei der Abschrift",
         "chat_fail":"Fehler beim Erhalt der Antwort"
     },
