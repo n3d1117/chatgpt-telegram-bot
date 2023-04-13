@@ -26,9 +26,12 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Stream support
 - [x] (NEW!) GPT-4 support
   - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
+- [x] (NEW!) Localized bot language
+  - Available languages :gb: :de: :ru: :tr:
 
 ## Additional features - help needed!
-If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!
+If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
+If you want to help with translations, check out the [Translations Manual](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219)
 
 PRs are always welcome!
 
@@ -86,7 +89,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: `256x256`, `512x512` or `1024x1024`                                                                                                                                                                                                                                                                                                   | `512x512`                          |
 | `GROUP_TRIGGER_KEYWORD`            | If set, the bot in group chats will only respond to messages that start with this keyword                                                                                                                                                                                                                                                                                              | ""                                 |
 | `IGNORE_GROUP_TRANSCRIPTIONS`      | If set to true, the bot will not process transcriptions in group chats                                                                                                                                                                                                                                                                                                                 | `true`                             |
-| `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`.                                                                                                                                                                                                                                                                                                               | `en`                               |
+| `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`, `tr`.  **Note** [Contribute additional translations](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219)                                                                                                                                                                                         | `en`                               |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
