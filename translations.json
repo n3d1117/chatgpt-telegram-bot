@@ -146,7 +146,7 @@
         "media_type_fail":"Desteklenmeyen dosya türü",
         "transcript":"Yazıya çevirilmiş hali",
         "answer":"Cevap",
-        "transcribe_fail":"Metnin yazıya çevirme işlemi yapılamadı",
+        "transcribe_fail":"Sesin yazıya çevirilme işlemi yapılamadı",
         "chat_fail":"Yanıt alınamadı",
         "prompt":"Komut",
         "completion":"Tamamlama",
