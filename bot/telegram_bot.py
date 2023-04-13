@@ -114,24 +114,24 @@ class ChatGPTTelegramBot:
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
             f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}.\n"
-            f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}.\n"
+            f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
             f"----------------------------\n"
         )
         text_today = (
-            f"*{localized_text('usage_today', bot_language)}*\n"
-            f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_today} {localized_text('stats_images', bot_language)}\n"
+            f"*{localized_text('usage_today', bot_language)}:*\n"
+            f"{tokens_today} {localized_text('stats_tokens', bot_language)}.\n"
+            f"{images_today} {localized_text('stats_images', bot_language)}.\n"
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
+            f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}.\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
             f"----------------------------\n"
         )
         text_month = (
-            f"*{localized_text('usage_month', bot_language)}*\n"
-            f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_month} {localized_text('stats_images', bot_language)}\n"
+            f"*{localized_text('usage_month', bot_language)}:*\n"
+            f"{tokens_month} {localized_text('stats_tokens', bot_language)}.\n"
+            f"{images_month} {localized_text('stats_images', bot_language)}.\n"
             f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
+            f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}.\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
         )
         # text_budget filled with conditional content
@@ -225,7 +225,7 @@ class ChatGPTTelegramBot:
                 await context.bot.send_message(
                     chat_id=chat_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
-                    text=f"{localized_text('image_no_prompt', self.config['bot_language'])}: {str(e)}",
+                    text=f"{localized_text('image_fail', self.config['bot_language'])}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
 
