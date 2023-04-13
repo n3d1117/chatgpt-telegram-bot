@@ -14,28 +14,8 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
     filters, InlineQueryHandler, Application, CallbackContext
 
 from pydub import AudioSegment
-from openai_helper import OpenAIHelper
+from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
-
-with open('translations.json', 'r', encoding='utf-8') as f:
-    translations = json.load(f)
-
-def localized_text(key, bot_language):
-    """
-    Return translated text for a key in specified bot_language.
-    Keys and translations can be found in the translations.json.
-    """
-    try:
-        return translations[bot_language][key]
-    except KeyError:
-        logging.warning(f"No translation available for bot_language code '{bot_language}' and key '{key}'")
-        # Fallback to English if the translation is not available
-        if key in translations['en']:
-            return translations['en'][key]
-        else:
-            logging.warning(f"No english definition found for key '{key}' in translations.json")
-            # return key as text
-            return key
 
 def message_text(message: Message) -> str:
     """
