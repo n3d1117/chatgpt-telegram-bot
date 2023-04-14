@@ -42,6 +42,7 @@ def main():
         'model': model,
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
+        'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
     }
 
     # log deprecation warning for old budget variable names
@@ -72,6 +73,7 @@ def main():
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES',"0.016,0.018,0.02").split(",")],
         'transcription_price': float(os.environ.get('TOKEN_PRICE', 0.006)),
+        'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
     }
 
     # Setup and run ChatGPT and Telegram bot
