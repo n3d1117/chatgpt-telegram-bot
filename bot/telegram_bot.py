@@ -113,35 +113,35 @@ class ChatGPTTelegramBot:
         bot_language = self.config['bot_language']
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
-            f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}.\n"
+            f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}\n"
             f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
             f"----------------------------\n"
         )
         text_today = (
             f"*{localized_text('usage_today', bot_language)}:*\n"
-            f"{tokens_today} {localized_text('stats_tokens', bot_language)}.\n"
-            f"{images_today} {localized_text('stats_images', bot_language)}.\n"
+            f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
+            f"{images_today} {localized_text('stats_images', bot_language)}\n"
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}.\n"
+            f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
             f"----------------------------\n"
         )
         text_month = (
             f"*{localized_text('usage_month', bot_language)}:*\n"
-            f"{tokens_month} {localized_text('stats_tokens', bot_language)}.\n"
-            f"{images_month} {localized_text('stats_images', bot_language)}.\n"
+            f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
+            f"{images_month} {localized_text('stats_images', bot_language)}\n"
             f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}.\n"
+            f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
         )
         # text_budget filled with conditional content
         text_budget = "\n\n"
         budget_period =self.config['budget_period']
         if remaining_budget < float('inf'):
-            text_budget += f"{localized_text('stats_budget', bot_language)} {localized_text(budget_period, bot_language)}: ${remaining_budget:.2f}.\n"
+            text_budget += f"{localized_text('stats_budget', bot_language)}{localized_text(budget_period, bot_language)}: ${remaining_budget:.2f}.\n"
         # add OpenAI account information for admin request
         if self.is_admin(update):
-            text_budget += f"{localized_text('stats_openai', bot_language)}{self.openai.get_billing_current_month():.2f}."
+            text_budget += f"{localized_text('stats_openai', bot_language)}{self.openai.get_billing_current_month():.2f}"
         
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
