@@ -514,16 +514,7 @@ class ChatGPTTelegramBot:
 
                 await self.wrap_with_indicator(update, context, constants.ChatAction.TYPING, _reply)
 
-            try:
-                # add chat request to users usage tracker
-                self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-                # add guest chat request to guest usage tracker
-                allowed_user_ids = self.config['allowed_user_ids'].split(',')
-                if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                    self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
-            except Exception as e:
-                logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
-                pass
+            self.add_chat_request_to_usage_tracker(user_id, total_tokens)
 
         except Exception as e:
             logging.exception(e)
@@ -613,17 +604,7 @@ class ChatGPTTelegramBot:
 
             logging.info(f'Generating response for inline query by {name}')
             response, used_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
-
-            try:
-                # add chat request to users usage tracker
-                self.usage[user_id].add_chat_tokens(used_tokens, self.config['token_price'])
-                # add guest chat request to guest usage tracker
-                allowed_user_ids = self.config['allowed_user_ids'].split(',')
-                if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
-                    self.usage["guests"].add_chat_tokens(used_tokens, self.config['token_price'])
-            except Exception as e:
-                logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
-                pass
+            self.add_chat_request_to_usage_tracker(user_id, used_tokens)
 
             # Edit the original message with the generated content
             await self.edit_message_with_retry(context,
@@ -881,6 +862,18 @@ class ChatGPTTelegramBot:
             return False
 
         return True
+
+    def add_chat_request_to_usage_tracker(self, user_id, used_tokens):
+        try:
+            # add chat request to users usage tracker
+            self.usage[user_id].add_chat_tokens(used_tokens, self.config['token_price'])
+            # add guest chat request to guest usage tracker
+            allowed_user_ids = self.config['allowed_user_ids'].split(',')
+            if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                self.usage["guests"].add_chat_tokens(used_tokens, self.config['token_price'])
+        except Exception as e:
+            logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
+            pass
 
     def get_reply_to_message_id(self, update: Update):
         """
