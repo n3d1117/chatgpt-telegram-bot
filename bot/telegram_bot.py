@@ -403,7 +403,6 @@ class ChatGPTTelegramBot:
 
             if self.config['stream']:
                 await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
-                is_group_chat = self.is_group_chat(update)
 
                 stream_response = self.openai.get_chat_response_stream(chat_id=chat_id, query=prompt)
                 i = 0
@@ -435,14 +434,7 @@ class ChatGPTTelegramBot:
                                 pass
                             continue
 
-                    if is_group_chat:
-                        # group chats have stricter flood limits
-                        cutoff = 180 if len(content) > 1000 else 120 if len(content) > 200 else 90 if len(
-                            content) > 50 else 50
-                    else:
-                        cutoff = 90 if len(content) > 1000 else 45 if len(content) > 200 else 25 if len(
-                            content) > 50 else 15
-
+                    cutoff = self.get_stream_cutoff_values(update, content)
                     cutoff += backoff
 
                     if i == 0:
@@ -606,8 +598,7 @@ class ChatGPTTelegramBot:
                         if len(content.strip()) == 0:
                             continue
 
-                        cutoff = 180 if len(content) > 1000 else 120 if len(content) > 200 else 90 if len(
-                            content) > 50 else 50
+                        cutoff = self.get_stream_cutoff_values(update, content)
                         cutoff += backoff
 
                         if i == 0:
@@ -615,7 +606,7 @@ class ChatGPTTelegramBot:
                                 if sent_message is not None:
                                     await self.edit_message_with_retry(context, chat_id=None,
                                                                        message_id=inline_message_id,
-                                                                       text=f'{query}\n\n_{answer_tr}:_\n{content}',
+                                                                       text=f'{query}\n\n{answer_tr}:\n{content}',
                                                                        is_inline=True)
                             except:
                                 continue
@@ -624,10 +615,14 @@ class ChatGPTTelegramBot:
                             prev = content
                             try:
                                 use_markdown = tokens != 'not_finished'
-                                await self.edit_message_with_retry(context,
-                                                                   chat_id=None, message_id=inline_message_id,
-                                                                   text=f'{query}\n\n_{answer_tr}:_\n{content}',
-                                                                   markdown=use_markdown, is_inline=True)
+                                divider = '_' if use_markdown else ''
+                                text = f'{query}\n\n{divider}{answer_tr}:{divider}\n{content}'
+
+                                # We only want to send the first 4096 characters. No chunking allowed in inline mode.
+                                text = text[:4096]
+
+                                await self.edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
+                                                                   text=text, markdown=use_markdown, is_inline=True)
 
                             except RetryAfter as e:
                                 backoff += 5
@@ -658,10 +653,14 @@ class ChatGPTTelegramBot:
                         logging.info(f'Generating response for inline query by {name}')
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
+                        text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
+
+                        # We only want to send the first 4096 characters. No chunking allowed in inline mode.
+                        text_content = text_content[:4096]
+
                         # Edit the original message with the generated content
                         await self.edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
-                                                           text=f'{query}\n\n_{answer_tr}:_\n{response}',
-                                                           is_inline=True)
+                                                           text=text_content, is_inline=True)
 
                     await self.wrap_with_indicator(update, context, _send_inline_query_response,
                                                    constants.ChatAction.TYPING, is_inline=True)
@@ -760,10 +759,24 @@ class ChatGPTTelegramBot:
         """
         logging.error(f'Exception while handling an update: {context.error}')
 
+    def get_stream_cutoff_values(self, update: Update, content: str) -> int:
+        """
+        Gets the stream cutoff values for the message length
+        """
+        if self.is_group_chat(update):
+            # group chats have stricter flood limits
+            return 180 if len(content) > 1000 else 120 if len(content) > 200 else 90 if len(
+                content) > 50 else 50
+        else:
+            return 90 if len(content) > 1000 else 45 if len(content) > 200 else 25 if len(
+                content) > 50 else 15
+
     def is_group_chat(self, update: Update) -> bool:
         """
         Checks if the message was sent from a group chat
         """
+        if not update.effective_chat:
+            return False
         return update.effective_chat.type in [
             constants.ChatType.GROUP,
             constants.ChatType.SUPERGROUP
