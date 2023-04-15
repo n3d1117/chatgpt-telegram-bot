@@ -148,7 +148,7 @@ class ChatGPTTelegramBot:
                 f"${remaining_budget:.2f}.\n"
             )
         # add OpenAI account information for admin request
-        if self.is_admin(update):
+        if self.is_admin(user_id):
             text_budget += (
                 f"{localized_text('stats_openai', bot_language)}"
                 f"{self.openai.get_billing_current_month():.2f}"
@@ -750,7 +750,7 @@ class ChatGPTTelegramBot:
                          f'(id: {user_id}) are not allowed')
         return False
 
-    def is_admin(self, user_id, log_no_admin=False) -> bool:
+    def is_admin(self, user_id: int, log_no_admin=False) -> bool:
         """
         Checks if the user is the admin of the bot.
         The first user in the user list is the admin.
