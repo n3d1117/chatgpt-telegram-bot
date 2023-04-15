@@ -16,8 +16,9 @@ class UsageTracker:
     {
         "user_name": "@user_name",
         "current_cost": {
-            "day": 0.45, 
-            "month": 3.23, 
+            "day": 0.45,
+            "month": 3.23,
+            "all_time": 3.23,
             "last_update": "2023-03-14"},
         "usage_history": {
             "chat_tokens": {
@@ -39,7 +40,7 @@ class UsageTracker:
 
     def __init__(self, user_id, user_name, logs_dir="usage_logs"):
         """
-        Initializes UsageTracker for a user with current date. 
+        Initializes UsageTracker for a user with current date.
         Loads usage data from usage log file.
         :param user_id: Telegram ID of the user
         :param user_name: Telegram user name
@@ -49,22 +50,22 @@ class UsageTracker:
         self.logs_dir = logs_dir
         # path to usage file of given user
         self.user_file = f"{logs_dir}/{user_id}.json"
-        
+
         if os.path.isfile(self.user_file):
             with open(self.user_file, "r") as file:
                 self.usage = json.load(file)
         else:
-            # ensure directory exists 
+            # ensure directory exists
             pathlib.Path(logs_dir).mkdir(exist_ok=True)
             # create new dictionary for this user
             self.usage = {
                 "user_name": user_name,
-                "current_cost": {"day": 0.0, "month": 0.0, "last_update": str(date.today())},
+                "current_cost": {"day": 0.0, "month": 0.0, "all_time": 0.0, "last_update": str(date.today())},
                 "usage_history": {"chat_tokens": {}, "transcription_seconds": {}, "number_images": {}}
             }
 
     # token usage functions:
-    
+
     def add_chat_tokens(self, tokens, tokens_price=0.002):
         """Adds used tokens from a request to a users usage history and updates current cost-
         :param tokens: total tokens used in last request
@@ -72,18 +73,20 @@ class UsageTracker:
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        token_cost = round(tokens * tokens_price / 1000, 6)
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + token_cost
         # add current cost, update new day
         if today == last_update:
-            self.usage["current_cost"]["day"] += round(tokens * tokens_price / 1000, 6)
-            self.usage["current_cost"]["month"] += round(tokens * tokens_price / 1000, 6)
+            self.usage["current_cost"]["day"] += token_cost
+            self.usage["current_cost"]["month"] += token_cost
         else:
             if today.month == last_update.month:
-                self.usage["current_cost"]["month"] += round(tokens * tokens_price / 1000, 6)
+                self.usage["current_cost"]["month"] += token_cost
             else:
-                self.usage["current_cost"]["month"] = round(tokens * tokens_price / 1000, 6)
-            self.usage["current_cost"]["day"] = round(tokens * tokens_price / 1000, 6)
+                self.usage["current_cost"]["month"] = token_cost
+            self.usage["current_cost"]["day"] = token_cost
             self.usage["current_cost"]["last_update"] = str(today)
-
         # update usage_history
         if str(today) in self.usage["usage_history"]["chat_tokens"]:
             # add token usage to existing date
@@ -101,7 +104,7 @@ class UsageTracker:
 
         :return: total number of tokens used per day and per month
         """
-        today = date.today()     
+        today = date.today()
         if str(today) in self.usage["usage_history"]["chat_tokens"]:
             usage_day = self.usage["usage_history"]["chat_tokens"][str(today)]
         else:
@@ -112,7 +115,7 @@ class UsageTracker:
             if today.startswith(month):
                 usage_month += tokens
         return usage_day, usage_month
-    
+
     # image usage functions:
 
     def add_image_request(self, image_size, image_prices="0.016,0.018,0.02"):
@@ -121,13 +124,15 @@ class UsageTracker:
         :param image_size: requested image size
         :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
                              defaults to [0.016, 0.018, 0.02]
-        """        
+        """
         sizes = ["256x256", "512x512", "1024x1024"]
         requested_size = sizes.index(image_size)
         image_cost = image_prices[requested_size]
 
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + image_cost
         # add current cost, update new day
         if today == last_update:
             self.usage["current_cost"]["day"] += image_cost
@@ -175,20 +180,23 @@ class UsageTracker:
     def add_transcription_seconds(self, seconds, minute_price=0.006):
         """Adds requested transcription seconds to a users usage history and updates current cost.
         :param tokens: total tokens used in last request
-        :param tokens_price: price per 1000 tokens, defaults to 0.002
+        :param tokens_price: price per minute transcription, defaults to 0.006
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
+        transcription_price = round(seconds * minute_price / 60, 2)
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        self.usage["current_cost"]["all_time"] = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost()) + transcription_price
         # add current cost, update new day
         if today == last_update:
-            self.usage["current_cost"]["day"] += round(seconds * minute_price / 60, 2)
-            self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+            self.usage["current_cost"]["day"] += transcription_price
+            self.usage["current_cost"]["month"] += transcription_price
         else:
             if today.month == last_update.month:
-                self.usage["current_cost"]["month"] += round(seconds * minute_price / 60, 2)
+                self.usage["current_cost"]["month"] += transcription_price
             else:
-                self.usage["current_cost"]["month"] = round(seconds * minute_price / 60, 2)
-            self.usage["current_cost"]["day"] = round(seconds * minute_price / 60, 2)
+                self.usage["current_cost"]["month"] = transcription_price
+            self.usage["current_cost"]["day"] = transcription_price
             self.usage["current_cost"]["last_update"] = str(today)
 
         # update usage_history
@@ -207,7 +215,7 @@ class UsageTracker:
         """Get minutes and seconds of audio transcribed for today and this month.
 
         :return: total amount of time transcribed per day and per month (4 values)
-        """      
+        """
         today = date.today()
         if str(today) in self.usage["usage_history"]["transcription_seconds"]:
             seconds_day = self.usage["usage_history"]["transcription_seconds"][str(today)]
@@ -227,7 +235,7 @@ class UsageTracker:
         """Get total USD amount of all requests of the current day and month
 
         :return: cost of current day and month
-        """  
+        """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
         if today == last_update:
@@ -239,4 +247,28 @@ class UsageTracker:
                 cost_month = self.usage["current_cost"]["month"]
             else:
                 cost_month = 0.0
-        return round(cost_day, 3), round(cost_month, 3)
+        # add to all_time cost, initialize with calculation of total_cost if key doesn't exist
+        cost_all_time = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost())
+        return {"cost_today": cost_day, "cost_month": cost_month, "cost_all_time": cost_all_time}
+
+    def initialize_all_time_cost(self, tokens_price=0.002, image_prices="0.016,0.018,0.02", minute_price=0.006):
+        """Get total USD amount of all requests in history
+        
+        :param tokens_price: price per 1000 tokens, defaults to 0.002
+        :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
+            defaults to [0.016, 0.018, 0.02]
+        :param tokens_price: price per minute transcription, defaults to 0.006
+        :return: total cost of all requests
+        """
+        total_tokens = sum(self.usage['usage_history']['chat_tokens'].values())
+        token_cost = round(total_tokens * tokens_price / 1000, 6)
+        
+        total_images = [sum(values) for values in zip(*self.usage['usage_history']['number_images'].values())]
+        image_prices_list = [float(x) for x in image_prices.split(',')]
+        image_cost = sum([count * price for count, price in zip(total_images, image_prices_list)])
+        
+        total_transcription_seconds = sum(self.usage['usage_history']['transcription_seconds'].values())
+        transcription_cost = round(total_transcription_seconds * minute_price / 60, 2)
+
+        all_time_cost = token_cost + transcription_cost + image_cost
+        return all_time_cost
