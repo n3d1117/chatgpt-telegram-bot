@@ -544,7 +544,7 @@ class ChatGPTTelegramBot:
                 reply_markup=reply_markup
             )
 
-            await update.inline_query.answer([inline_query_result])
+            await update.inline_query.answer([inline_query_result], cache_time=0)
         except Exception as e:
             logging.error(f'An error occurred while generating the result card for inline query {e}')
 
