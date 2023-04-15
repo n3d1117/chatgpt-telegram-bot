@@ -36,7 +36,10 @@
         "openai_rate_limit":"OpenAI Rate Limit exceeded",
         "openai_invalid":"OpenAI Invalid request",
         "error":"An error has occurred",
-        "try_again":"Please try again in a while"
+        "try_again":"Please try again in a while",
+        "answer_with_chatgpt":"Answer with ChatGPT",
+        "ask_chatgpt":"Ask ChatGPT",
+        "loading":"Loading..."
     },
     "de": {
         "help_description":"Zeige die Hilfenachricht",
@@ -75,7 +78,10 @@
         "openai_rate_limit":"OpenAI Nutzungslimit überschritten",
         "openai_invalid":"OpenAI ungültige Anfrage",
         "error":"Ein Fehler ist aufgetreten",
-        "try_again":"Bitte versuche es später erneut"
+        "try_again":"Bitte versuche es später erneut",
+        "answer_with_chatgpt":"Antwort mit ChatGPT",
+        "ask_chatgpt":"Frage ChatGPT",
+        "loading":"Lade..."
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -114,7 +120,10 @@
         "openai_rate_limit":"Превышен предел использования OpenAI",
         "openai_invalid":"ошибочный запрос OpenAI",
         "error":"Произошла ошибка",
-        "try_again":"Пожалуйста, повторите попытку позже"
+        "try_again":"Пожалуйста, повторите попытку позже",
+        "answer_with_chatgpt":"Ответить с помощью ChatGPT",
+        "ask_chatgpt":"Задать ChatGPT",
+        "loading":"Загрузка..."
     },
     "tr": {
         "help_description":"Yardım mesajını göster",
@@ -153,7 +162,10 @@
         "openai_rate_limit":"OpenAI maksimum istek limiti aşıldı",
         "openai_invalid":"OpenAI Geçersiz istek",
         "error":"Bir hata oluştu",
-        "try_again":"Lütfen birazdan tekrar deneyiniz"
+        "try_again":"Lütfen birazdan tekrar deneyiniz",
+        "answer_with_chatgpt":"ChatGPT ile cevapla",
+        "ask_chatgpt":"ChatGPT sor",
+        "loading":"Yükleniyor..."
     },
     "it": {
         "help_description":"Mostra il messaggio di aiuto",
@@ -192,6 +204,9 @@
         "openai_rate_limit":"Limite massimo di richieste OpenAI raggiunto",
         "openai_invalid":"Richiesta OpenAI non valida",
         "error":"Si è verificato un errore",
-        "try_again":"Riprova più tardi"
+        "try_again":"Riprova più tardi",
+        "answer_with_chatgpt":"Rispondi con ChatGPT",
+        "ask_chatgpt":"Chiedi a ChatGPT",
+        "loading":"Carico..."
     }
 }
