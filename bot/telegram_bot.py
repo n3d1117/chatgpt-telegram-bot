@@ -3,7 +3,6 @@ import logging
 import os
 import itertools
 import asyncio
-import json
 
 import telegram
 from uuid import uuid4
@@ -356,6 +355,9 @@ class ChatGPTTelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
+        if update.edited_message or update.message.via_bot:
+            return
+
         if not await self.check_allowed_and_within_budget(update, context):
             return
         
@@ -398,7 +400,7 @@ class ChatGPTTelegramBot:
                         if chunk != len(chunks) - 1:
                             chunk += 1
                             try:
-                                await self.edit_message_with_retry(context, chat_id, sent_message.message_id, chunks[-2])
+                                await self.edit_message_with_retry(context, chat_id, str(sent_message.message_id), chunks[-2])
                             except:
                                 pass
                             try:
@@ -436,7 +438,7 @@ class ChatGPTTelegramBot:
 
                         try:
                             use_markdown = tokens != 'not_finished'
-                            await self.edit_message_with_retry(context, chat_id, sent_message.message_id,
+                            await self.edit_message_with_retry(context, chat_id, str(sent_message.message_id),
                                                                text=content, markdown=use_markdown)
 
                         except RetryAfter as e:
@@ -528,15 +530,16 @@ class ChatGPTTelegramBot:
     async def send_inline_query_result(self, update: Update, result_id, message_content, callback_data=""):
         try:
             reply_markup = None
+            bot_language = self.config['bot_language']
             if callback_data:
                 reply_markup = InlineKeyboardMarkup([[
-                    InlineKeyboardButton(text='Answer with ChatGPT',
+                    InlineKeyboardButton(text=f'🤖 {localized_text("answer_with_chatgpt", bot_language)}',
                                          callback_data=callback_data)
                 ]])
 
             inline_query_result = InlineQueryResultArticle(
                 id=result_id,
-                title="Ask ChatGPT",
+                title=localized_text("ask_chatgpt", bot_language),
                 input_message_content=InputTextMessageContent(message_content),
                 description=message_content,
                 thumb_url='https://user-images.githubusercontent.com/11541888/223106202-7576ff11-2c8e-408d-94ea'
@@ -555,6 +558,9 @@ class ChatGPTTelegramBot:
         name = update.callback_query.from_user.name
         callback_data_suffix = "gpt:"
         query = ""
+        bot_language = self.config['bot_language']
+        answer_tr = localized_text("answer", bot_language)
+        loading_tr = localized_text("loading", bot_language)
 
         try:
             if callback_data.startswith(callback_data_suffix):
@@ -565,15 +571,18 @@ class ChatGPTTelegramBot:
                 if query:
                     self.inline_queries_cache.pop(unique_id)
                 else:
-                    await context.bot.edit_message_text(inline_message_id=inline_message_id,
-                                                        text='An error occurred while reading your prompt. Please try '
-                                                             'again.')
+                    error_message = f'{localized_text("error", bot_language)}. {localized_text("try_again", bot_language)}'
+                    await self.edit_message_with_retry(context,
+                                                       chat_id=None,
+                                                       message_id=inline_message_id,
+                                                       text=f'{query}\n\n_{answer_tr}:_\n{error_message}',
+                                                       is_inline=True)
                     return
 
             # Edit the current message to indicate that the answer is being processed
             await context.bot.edit_message_text(inline_message_id=inline_message_id,
-                                                text=f'Getting the answer...\n\n**Prompt:**\n{query}',
-                                                parse_mode='Markdown')
+                                                text=f'{query}\n\n_{answer_tr}:_\n{loading_tr}',
+                                                parse_mode=constants.ParseMode.MARKDOWN)
 
             logging.info(f'Generating response for inline query by {name}')
             response, used_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
@@ -590,15 +599,16 @@ class ChatGPTTelegramBot:
                 pass
 
             # Edit the original message with the generated content
-            await context.bot.edit_message_text(inline_message_id=inline_message_id, parse_mode='Markdown',
-                                                text=f'{query}\n\n**GPT:**\n{response}')
+            await self.edit_message_with_retry(context,
+                                               chat_id=None,
+                                               message_id=inline_message_id,
+                                               text=f'{query}\n\n_{answer_tr}:_\n{response}',
+                                               is_inline=True)
         except Exception as e:
-            await context.bot.edit_message_text(inline_message_id=inline_message_id,
-                                                text=f'Failed to generate the answer. Please try again.')
             logging.error(f'Failed to respond to an inline query via button callback: {e}')
 
-    async def edit_message_with_retry(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int,
-                                      message_id: int, text: str, markdown: bool = True):
+    async def edit_message_with_retry(self, context: ContextTypes.DEFAULT_TYPE, chat_id: int | None,
+                                      message_id: str, text: str, markdown: bool = True, is_inline: bool = False):
         """
         Edit a message with retry logic in case of failure (e.g. broken markdown)
         :param context: The context to use
@@ -606,12 +616,14 @@ class ChatGPTTelegramBot:
         :param message_id: The message id to edit
         :param text: The text to edit the message with
         :param markdown: Whether to use markdown parse mode
+        :param is_inline: Whether the message to edit is an inline message
         :return: None
         """
         try:
             await context.bot.edit_message_text(
                 chat_id=chat_id,
-                message_id=message_id,
+                message_id=int(message_id) if not is_inline else None,
+                inline_message_id=message_id if is_inline else None,
                 text=text,
                 parse_mode=constants.ParseMode.MARKDOWN if markdown else None
             )
