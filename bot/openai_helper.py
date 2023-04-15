@@ -26,8 +26,10 @@ def default_max_tokens(model: str) -> int:
     """
     return 1200 if model in GPT_3_MODELS else 2400
 
+
 with open('translations.json', 'r', encoding='utf-8') as f:
     translations = json.load(f)
+
 
 def localized_text(key, bot_language):
     """
@@ -45,6 +47,7 @@ def localized_text(key, bot_language):
             logging.warning(f"No english definition found for key '{key}' in translations.json")
             # return key as text
             return key
+
 
 class OpenAIHelper:
     """
@@ -172,7 +175,7 @@ class OpenAIHelper:
                 frequency_penalty=self.config['frequency_penalty'],
                 stream=stream
             )
-        
+
         except openai.error.RateLimitError as e:
             raise Exception(f"⚠️ _{localized_text('openai_rate_limit', bot_language)}._ ⚠️\n{str(e)}") from e
 
@@ -198,7 +201,10 @@ class OpenAIHelper:
 
             if 'data' not in response or len(response['data']) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
-                raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{localized_text('try_again', bot_language)}.")
+                raise Exception(
+                    f"⚠️ _{localized_text('error', bot_language)}._ "
+                    f"⚠️\n{localized_text('try_again', bot_language)}."
+                )
 
             return response['data'][0]['url'], self.config['image_size']
         except Exception as e:
@@ -253,8 +259,8 @@ class OpenAIHelper:
         :return: The summary
         """
         messages = [
-            { "role": "assistant", "content": "Summarize this conversation in 700 characters or less" },
-            { "role": "user", "content": str(conversation) }
+            {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
+            {"role": "user", "content": str(conversation)}
         ]
         response = await openai.ChatCompletion.acreate(
             model=self.config['model'],
@@ -281,8 +287,8 @@ class OpenAIHelper:
         :param messages: the messages to send
         :return: the number of tokens required
         """
+        model = self.config['model']
         try:
-            model = self.config['model']
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             encoding = tiktoken.get_encoding("gpt-3.5-turbo")
@@ -304,7 +310,7 @@ class OpenAIHelper:
                     num_tokens += tokens_per_name
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
-    
+
     def get_billing_current_month(self):
         """Gets billed usage for current month from OpenAI API.
 
@@ -324,5 +330,5 @@ class OpenAIHelper:
         }
         response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
         billing_data = json.loads(response.text)
-        usage_month = billing_data["total_usage"] / 100 # convert cent amount to dollars
+        usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
         return usage_month
