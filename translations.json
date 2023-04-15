@@ -79,7 +79,7 @@
         "openai_invalid":"OpenAI ungültige Anfrage",
         "error":"Ein Fehler ist aufgetreten",
         "try_again":"Bitte versuche es später erneut",
-        "answer_with_chatgpt":"Antwort mit ChatGPT",
+        "answer_with_chatgpt":"Antworte mit ChatGPT",
         "ask_chatgpt":"Frage ChatGPT",
         "loading":"Lade..."
     },
@@ -122,7 +122,7 @@
         "error":"Произошла ошибка",
         "try_again":"Пожалуйста, повторите попытку позже",
         "answer_with_chatgpt":"Ответить с помощью ChatGPT",
-        "ask_chatgpt":"Задать ChatGPT",
+        "ask_chatgpt":"Спросить ChatGPT",
         "loading":"Загрузка..."
     },
     "tr": {
