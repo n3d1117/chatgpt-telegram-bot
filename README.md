@@ -17,9 +17,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Docker and Proxy support
 - [x] (NEW!) Image generation using DALL·E via the `/image` command
 - [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
-- [x] (NEW!) Automatic conversation summary to avoid excessive token usage (fixes [#34](https://github.com/n3d1117/chatgpt-telegram-bot/issues/34))
-- [x] (NEW!) Group chat support with inline queries 
-  - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
+- [x] (NEW!) Automatic conversation summary to avoid excessive token usage
 - [x] (NEW!) Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
@@ -28,6 +26,8 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
 - [x] (NEW!) Localized bot language
   - Available languages :gb: :de: :ru: :tr: :it:
+- [x] (NEW!) Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)
+  - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 
 ## Additional features - help needed!
 If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
