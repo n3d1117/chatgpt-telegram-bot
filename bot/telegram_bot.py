@@ -172,6 +172,7 @@ class ChatGPTTelegramBot:
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
                             f' does not have anything to resend')
             await context.bot.send_message(chat_id=chat_id,
+                                           message_thread_id=update.effective_message.message_thread_id,
                                            text=localized_text('resend_failed', self.config['bot_language']))
             return
 
@@ -199,7 +200,9 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         reset_content = message_text(update.message)
         self.openai.reset_chat_history(chat_id=chat_id, content=reset_content)
-        await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['bot_language']))
+        await context.bot.send_message(chat_id=chat_id,
+                                       message_thread_id=update.effective_message.message_thread_id,
+                                       text=localized_text('reset_done', self.config['bot_language']))
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -213,6 +216,7 @@ class ChatGPTTelegramBot:
         image_query = message_text(update.message)
         if image_query == '':
             await context.bot.send_message(chat_id=chat_id,
+                                           message_thread_id=update.effective_message.message_thread_id,
                                            text=localized_text('image_no_prompt', self.config['bot_language']))
             return
 
@@ -238,6 +242,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
+                    message_thread_id=update.effective_message.message_thread_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
                     text=f"{localized_text('image_fail', self.config['bot_language'])}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
@@ -269,6 +274,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
+                    message_thread_id=update.effective_message.message_thread_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
                     text=(
                         f"{localized_text('media_download_fail', bot_language)[0]}: "
@@ -289,6 +295,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
+                    message_thread_id=update.effective_message.message_thread_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
                     text=localized_text('media_type_fail', bot_language)
                 )
@@ -324,6 +331,7 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await context.bot.send_message(
                             chat_id=chat_id,
+                            message_thread_id=update.effective_message.message_thread_id,
                             reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
@@ -348,6 +356,7 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await context.bot.send_message(
                             chat_id=chat_id,
+                            message_thread_id=update.effective_message.message_thread_id,
                             reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
@@ -357,6 +366,7 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await context.bot.send_message(
                     chat_id=chat_id,
+                    message_thread_id=update.effective_message.message_thread_id,
                     reply_to_message_id=self.get_reply_to_message_id(update),
                     text=f"{localized_text('transcribe_fail', bot_language)}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
@@ -429,6 +439,7 @@ class ChatGPTTelegramBot:
                             try:
                                 sent_message = await context.bot.send_message(
                                     chat_id=sent_message.chat_id,
+                                    message_thread_id=update.effective_message.message_thread_id,
                                     text=content if len(content) > 0 else "..."
                                 )
                             except:
@@ -452,6 +463,7 @@ class ChatGPTTelegramBot:
                                                                  message_id=sent_message.message_id)
                             sent_message = await context.bot.send_message(
                                 chat_id=chat_id,
+                                message_thread_id=update.effective_message.message_thread_id,
                                 reply_to_message_id=self.get_reply_to_message_id(update),
                                 text=content
                             )
@@ -498,6 +510,7 @@ class ChatGPTTelegramBot:
                         try:
                             await context.bot.send_message(
                                 chat_id=chat_id,
+                                message_thread_id=update.effective_message.message_thread_id,
                                 reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                                 text=chunk,
                                 parse_mode=constants.ParseMode.MARKDOWN
@@ -506,6 +519,7 @@ class ChatGPTTelegramBot:
                             try:
                                 await context.bot.send_message(
                                     chat_id=chat_id,
+                                    message_thread_id=update.effective_message.message_thread_id,
                                     reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                                     text=chunk
                                 )
@@ -520,6 +534,7 @@ class ChatGPTTelegramBot:
             logging.exception(e)
             await context.bot.send_message(
                 chat_id=chat_id,
+                message_thread_id=update.effective_message.message_thread_id,
                 reply_to_message_id=self.get_reply_to_message_id(update),
                 text=f"{localized_text('chat_fail', self.config['bot_language'])} {str(e)}",
                 parse_mode=constants.ParseMode.MARKDOWN
@@ -672,6 +687,7 @@ class ChatGPTTelegramBot:
         if not is_inline:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
+                message_thread_id=update.effective_message.message_thread_id,
                 text=self.disallowed_message,
                 disable_web_page_preview=True
             )
@@ -686,6 +702,7 @@ class ChatGPTTelegramBot:
         if not is_inline:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
+                message_thread_id=update.effective_message.message_thread_id,
                 text=self.budget_limit_message
             )
         else:
