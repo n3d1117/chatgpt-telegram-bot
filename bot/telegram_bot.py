@@ -22,15 +22,15 @@ def message_text(message: Message) -> str:
     """
     Returns the text of a message, excluding any bot commands.
     """
-    message_text = message.text
-    if message_text is None:
+    message_txt = message.text
+    if message_txt is None:
         return ''
 
     for _, text in sorted(message.parse_entities([MessageEntity.BOT_COMMAND]).items(),
                           key=(lambda item: item[0].offset)):
-        message_text = message_text.replace(text, '').strip()
+        message_txt = message_txt.replace(text, '').strip()
 
-    return message_text if len(message_text) > 0 else ''
+    return message_txt if len(message_txt) > 0 else ''
 
 
 class ChatGPTTelegramBot:
@@ -70,7 +70,7 @@ class ChatGPTTelegramBot:
         self.last_message = {}
         self.inline_queries_cache = {}
 
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Shows the help menu.
         """
@@ -399,6 +399,8 @@ class ChatGPTTelegramBot:
                     return
 
         try:
+            total_tokens = 0
+
             if self.config['stream']:
                 await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
                 is_group_chat = self.is_group_chat(update)
@@ -408,20 +410,20 @@ class ChatGPTTelegramBot:
                 prev = ''
                 sent_message = None
                 backoff = 0
-                chunk = 0
+                stream_chunk = 0
 
                 async for content, tokens in stream_response:
                     if len(content.strip()) == 0:
                         continue
 
-                    chunks = self.split_into_chunks(content)
-                    if len(chunks) > 1:
-                        content = chunks[-1]
-                        if chunk != len(chunks) - 1:
-                            chunk += 1
+                    stream_chunks = self.split_into_chunks(content)
+                    if len(stream_chunks) > 1:
+                        content = stream_chunks[-1]
+                        if stream_chunk != len(stream_chunks) - 1:
+                            stream_chunk += 1
                             try:
                                 await self.edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                                   chunks[-2])
+                                                                   stream_chunks[-2])
                             except:
                                 pass
                             try:
@@ -485,8 +487,6 @@ class ChatGPTTelegramBot:
                         total_tokens = int(tokens)
 
             else:
-                total_tokens = 0
-
                 async def _reply():
                     nonlocal total_tokens
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
@@ -509,8 +509,8 @@ class ChatGPTTelegramBot:
                                     reply_to_message_id=self.get_reply_to_message_id(update) if index == 0 else None,
                                     text=chunk
                                 )
-                            except Exception as e:
-                                raise e
+                            except Exception as exception:
+                                raise exception
 
                 await self.wrap_with_indicator(update, context, constants.ChatAction.TYPING, _reply)
 

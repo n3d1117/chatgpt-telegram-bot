@@ -4,9 +4,9 @@ import json
 from datetime import date
 
 
-def year_month(date):
+def year_month(date_str):
     # extract string of year-month from date, eg: '2023-03'
-    return str(date)[:7]
+    return str(date_str)[:7]
 
 
 class UsageTracker:
@@ -183,8 +183,8 @@ class UsageTracker:
 
     def add_transcription_seconds(self, seconds, minute_price=0.006):
         """Adds requested transcription seconds to a users usage history and updates current cost.
-        :param tokens: total tokens used in last request
-        :param tokens_price: price per minute transcription, defaults to 0.006
+        :param seconds: total seconds used in last request
+        :param minute_price: price per minute transcription, defaults to 0.006
         """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
@@ -262,7 +262,7 @@ class UsageTracker:
         :param tokens_price: price per 1000 tokens, defaults to 0.002
         :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
             defaults to [0.016, 0.018, 0.02]
-        :param tokens_price: price per minute transcription, defaults to 0.006
+        :param minute_price: price per minute transcription, defaults to 0.006
         :return: total cost of all requests
         """
         total_tokens = sum(self.usage['usage_history']['chat_tokens'].values())

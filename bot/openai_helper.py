@@ -287,8 +287,8 @@ class OpenAIHelper:
         :param messages: the messages to send
         :return: the number of tokens required
         """
+        model = self.config['model']
         try:
-            model = self.config['model']
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             encoding = tiktoken.get_encoding("gpt-3.5-turbo")
