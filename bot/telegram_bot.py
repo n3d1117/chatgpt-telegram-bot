@@ -374,7 +374,7 @@ class ChatGPTTelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if update.edited_message or update.message.via_bot:
+        if update.edited_message or not update.message or update.message.via_bot:
             return
 
         if not await self.check_allowed_and_within_budget(update, context):
