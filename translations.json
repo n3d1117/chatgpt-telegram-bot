@@ -292,8 +292,8 @@
         "answer_with_chatgpt": "Jawaban dengan ChatGPT",
         "ask_chatgpt": "Tanya ChatGPT",
         "loading": "Sedang memuat..."
-    }
-        "nl": {
+    },
+    "nl": {
         "help_description":"Toon uitleg",
         "reset_description":"Herstart het gesprek. Voeg eventueel instructies toe (bijv. /reset Je bent een behulpzame assistent)",
         "image_description":"Genereer een afbeelding van een prompt (bijv. /image kat)",
