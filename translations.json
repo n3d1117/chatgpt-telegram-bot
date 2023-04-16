@@ -231,7 +231,7 @@
         "openai_rate_limit": "Batas Rate OpenAI terlampaui",
         "openai_invalid": "Permintaan OpenAI tidak valid",
         "error": "Terjadi kesalahan",
-        "try_again": "Silakan coba lagi nanti"
+        "try_again": "Silakan coba lagi nanti",
         "answer_with_chatgpt": "Jawaban dengan ChatGPT",
         "ask_chatgpt": "Tanya ChatGPT",
         "loading": "Sedang memuat..."
