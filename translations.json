@@ -36,7 +36,52 @@
         "openai_rate_limit":"OpenAI Rate Limit exceeded",
         "openai_invalid":"OpenAI Invalid request",
         "error":"An error has occurred",
-        "try_again":"Please try again in a while"
+        "try_again":"Please try again in a while",
+        "answer_with_chatgpt":"Answer with ChatGPT",
+        "ask_chatgpt":"Ask ChatGPT",
+        "loading":"Loading..."
+    },
+    "es": {
+        "help_description":"Muestra el mensaje de ayuda",
+        "reset_description":"Reinicia la conversación. Opcionalmente, pasa instrucciones de alto nivel (por ejemplo, /reset Eres un asistente útil)",
+        "image_description":"Genera una imagen a partir de una sugerencia (por ejemplo, /image gato)",
+        "stats_description":"Obtén tus estadísticas de uso actuales",
+        "resend_description":"Reenvía el último mensaje",
+        "chat_description":"¡Chatea con el bot!",
+        "disallowed":"Lo siento, no tienes permiso para usar este bot. Puedes revisar el código fuente en https://github.com/n3d1117/chatgpt-telegram-bot",
+        "budget_limit":"Lo siento, has alcanzado tu límite de uso.",
+        "help_text":["Soy un bot de ChatGPT, ¡háblame!", "Envíame un mensaje de voz o un archivo y lo transcribiré para ti", "Código abierto en https://github.com/n3d1117/chatgpt-telegram-bot"],
+        "stats_conversation":["Conversación actual", "mensajes de chat en el historial", "tokens de chat en el historial"],
+        "usage_today":"Uso hoy",
+        "usage_month":"Uso este mes",
+        "stats_tokens":"tokens de chat usados",
+        "stats_images":"imágenes generadas",
+        "stats_transcribe":["minutos y", "segundos transcritos"],
+        "stats_total":"💰 Por un monto total de $",
+        "stats_budget":"Tu presupuesto restante",
+        "monthly":" para este mes",
+        "daily":" para hoy",
+        "all-time":"",
+        "stats_openai":"Este mes se facturó $ a tu cuenta de OpenAI",
+        "resend_failed":"No tienes nada que reenviar",
+        "reset_done":"¡Listo!",
+        "image_no_prompt":"¡Por favor proporciona una sugerencia! (por ejemplo, /image gato)",
+        "image_fail":"No se pudo generar la imagen",
+        "media_download_fail":["No se pudo descargar el archivo de audio", "Asegúrate de que el archivo no sea demasiado grande. (máx. 20MB)"],
+        "media_type_fail":"Tipo de archivo no compatible",
+        "transcript":"Transcripción",
+        "answer":"Respuesta",
+        "transcribe_fail":"No se pudo transcribir el texto",
+        "chat_fail":"No se pudo obtener la respuesta",
+        "prompt":"sugerencia",
+        "completion":"completado",
+        "openai_rate_limit":"Límite de tasa de OpenAI excedido",
+        "openai_invalid":"Solicitud inválida de OpenAI",
+        "error":"Ha ocurrido un error",
+        "try_again":"Por favor, inténtalo de nuevo más tarde",
+        "answer_with_chatgpt":"Responder con ChatGPT",
+        "ask_chatgpt":"Preguntar a ChatGPT",
+        "loading":"Cargando..."
     },
     "de": {
         "help_description":"Zeige die Hilfenachricht",
@@ -75,7 +120,10 @@
         "openai_rate_limit":"OpenAI Nutzungslimit überschritten",
         "openai_invalid":"OpenAI ungültige Anfrage",
         "error":"Ein Fehler ist aufgetreten",
-        "try_again":"Bitte versuche es später erneut"
+        "try_again":"Bitte versuche es später erneut",
+        "answer_with_chatgpt":"Antworte mit ChatGPT",
+        "ask_chatgpt":"Frage ChatGPT",
+        "loading":"Lade..."
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -114,7 +162,10 @@
         "openai_rate_limit":"Превышен предел использования OpenAI",
         "openai_invalid":"ошибочный запрос OpenAI",
         "error":"Произошла ошибка",
-        "try_again":"Пожалуйста, повторите попытку позже"
+        "try_again":"Пожалуйста, повторите попытку позже",
+        "answer_with_chatgpt":"Ответить с помощью ChatGPT",
+        "ask_chatgpt":"Спросить ChatGPT",
+        "loading":"Загрузка..."
     },
     "tr": {
         "help_description":"Yardım mesajını göster",
@@ -153,7 +204,10 @@
         "openai_rate_limit":"OpenAI maksimum istek limiti aşıldı",
         "openai_invalid":"OpenAI Geçersiz istek",
         "error":"Bir hata oluştu",
-        "try_again":"Lütfen birazdan tekrar deneyiniz"
+        "try_again":"Lütfen birazdan tekrar deneyiniz",
+        "answer_with_chatgpt":"ChatGPT ile cevapla",
+        "ask_chatgpt":"ChatGPT'ye sor",
+        "loading":"Yükleniyor..."
     },
     "it": {
         "help_description":"Mostra il messaggio di aiuto",
@@ -192,7 +246,10 @@
         "openai_rate_limit":"Limite massimo di richieste OpenAI raggiunto",
         "openai_invalid":"Richiesta OpenAI non valida",
         "error":"Si è verificato un errore",
-        "try_again":"Riprova più tardi"
+        "try_again":"Riprova più tardi",
+        "answer_with_chatgpt":"Rispondi con ChatGPT",
+        "ask_chatgpt":"Chiedi a ChatGPT",
+        "loading":"Carico..."
     },
     "id": {
         "help_description": "Menampilkan pesan bantuan",
