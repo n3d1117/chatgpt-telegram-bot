@@ -25,7 +25,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) GPT-4 support
   - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
 - [x] (NEW!) Localized bot language
-  - Available languages :gb: :de: :ru: :tr: :it: :es: :id:
+  - Available languages :gb: :de: :ru: :tr: :it: :es: :indonesia:
 - [x] (NEW!) Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 
