@@ -68,6 +68,7 @@ def main():
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',
         'proxy': os.environ.get('PROXY', None),
         'voice_reply_transcript': os.environ.get('VOICE_REPLY_WITH_TRANSCRIPT_ONLY', 'false').lower() == 'true',
+        'voice_reply_prompts': () if os.environ.get('VOICE_REPLY_PROMPTS', None) is None else os.environ.get('VOICE_REPLY_PROMPTS').split(";"),
         'ignore_group_transcriptions': os.environ.get('IGNORE_GROUP_TRANSCRIPTIONS', 'true').lower() == 'true',
         'group_trigger_keyword': os.environ.get('GROUP_TRIGGER_KEYWORD', ''),
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
