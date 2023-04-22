@@ -321,7 +321,10 @@ class ChatGPTTelegramBot:
                 if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
                     self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
-                if self.config['voice_reply_transcript']:
+                # check if transcript starts with any of the prefixes
+                response_to_transcription = any(transcript.startswith(prefix) if prefix else False for prefix in self.config['voice_reply_prompts'])
+
+                if self.config['voice_reply_transcript'] and not response_to_transcription:
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
                     transcript_output = f"_{localized_text('transcript', bot_language)}:_\n\"{transcript}\""
