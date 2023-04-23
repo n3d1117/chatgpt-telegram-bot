@@ -58,7 +58,8 @@ class ChatGPTTelegramBot:
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
-            BotCommand(command='resend', description=localized_text('resend_description', bot_language))
+            BotCommand(command='resend', description=localized_text('resend_description', bot_language)),
+            BotCommand(command='unsend', description=localized_text('unsend_description', bot_language))
         ]
         self.group_commands = [
                                   BotCommand(command='chat',
@@ -205,6 +206,60 @@ class ChatGPTTelegramBot:
            message_thread_id=self.get_thread_id(update),
            text=localized_text('reset_done', self.config['bot_language'])
         )
+    
+    async def unsend(self, update: Update, context: CallbackContext):
+        """
+        Unsend the last message sent by the bot
+        """
+        if not await self.is_allowed(update, context):
+            logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
+                            f' is not allowed to unsend the message')
+            await self.send_disallowed_message(update, context)
+            return
+
+        chat_id = update.effective_chat.id
+        if chat_id not in self.last_message:
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
+                            f' does not have any messages to delete')
+            await context.bot.send_message(chat_id=chat_id, text="You have no messages to delete")
+            return
+
+        # Unsend the last message
+        logging.info(f'Unsending the last message sent by the bot to user {update.effective_user.username} '
+                    f'(id: {update.effective_user.id})')
+
+        chat_id = update.effective_chat.id
+        message_id = update.message.message_id
+
+        # # ---- Testing Start -----
+
+        # for i in range(-4, 0):
+        #     print(update.message)
+
+
+        # # ---- Testing Stop -----
+
+
+        # Delete the chat
+        # delete conversions from history
+
+        self.openai.conversations[chat_id].pop() # removes last_chat from history-the unsend command
+        self.openai.conversations[chat_id].pop(-1) # removes second_to_last_chat from history-the bot last reply
+        self.openai.conversations[chat_id].pop(-2) # removes third_to_last_chat from history-the user's last message
+
+        context.bot_data.clear() # clears bot cache
+
+        # last_message = message_id # unsend command
+        second_to_last_message = message_id - 1 # bot's last message
+        third_to_last_message = message_id - 2 # user's last message
+    
+        # delete messages from user interface
+
+        await context.bot.delete_message(chat_id=chat_id, message_id=third_to_last_message) # delete the user's last message
+        await context.bot.delete_message(chat_id=chat_id, message_id=second_to_last_message) # delete the bot's last message
+        # await context.bot.delete_message(chat_id=chat_id, message_id=last_message) # delete the unsend command
+
+        await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['bot_language']))
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -1015,6 +1070,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('unsend', self.unsend))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
         )

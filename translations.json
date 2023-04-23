@@ -39,7 +39,8 @@
         "try_again":"Please try again in a while",
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
-        "loading":"Loading..."
+        "loading":"Loading...",
+        "unsend_description":"Unsend the latest message"
     },
     "es": {
         "help_description":"Muestra el mensaje de ayuda",
@@ -81,7 +82,8 @@
         "try_again":"Por favor, inténtalo de nuevo más tarde",
         "answer_with_chatgpt":"Responder con ChatGPT",
         "ask_chatgpt":"Preguntar a ChatGPT",
-        "loading":"Cargando..."
+        "loading":"Cargando...",
+        "unsend_description":"Cancelar el envío del último mensaje"
     },
     "de": {
         "help_description":"Zeige die Hilfenachricht",
@@ -123,7 +125,8 @@
         "try_again":"Bitte versuche es später erneut",
         "answer_with_chatgpt":"Antworte mit ChatGPT",
         "ask_chatgpt":"Frage ChatGPT",
-        "loading":"Lade..."
+        "loading":"Lade...",
+        "unsend_description":"Senden Sie die letzte Nachricht zurück"
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -165,7 +168,8 @@
         "try_again":"Пожалуйста, повторите попытку позже",
         "answer_with_chatgpt":"Ответить с помощью ChatGPT",
         "ask_chatgpt":"Спросить ChatGPT",
-        "loading":"Загрузка..."
+        "loading":"Загрузка...",
+        "unsend_description":"Отменить последнее сообщение"
     },
     "tr": {
         "help_description":"Yardım mesajını göster",
@@ -207,7 +211,8 @@
         "try_again":"Lütfen birazdan tekrar deneyiniz",
         "answer_with_chatgpt":"ChatGPT ile cevapla",
         "ask_chatgpt":"ChatGPT'ye sor",
-        "loading":"Yükleniyor..."
+        "loading":"Yükleniyor...",
+        "unsend_description":"En son mesajın gönderilmesini iptal et"
     },
     "it": {
         "help_description":"Mostra il messaggio di aiuto",
@@ -249,7 +254,8 @@
         "try_again":"Riprova più tardi",
         "answer_with_chatgpt":"Rispondi con ChatGPT",
         "ask_chatgpt":"Chiedi a ChatGPT",
-        "loading":"Carico..."
+        "loading":"Carico...",
+        "unsend_description":"Annulla l'invio dell'ultimo messaggio"
     },
     "id": {
         "help_description": "Menampilkan pesan bantuan",
@@ -291,7 +297,8 @@
         "try_again": "Silakan coba lagi nanti",
         "answer_with_chatgpt": "Jawaban dengan ChatGPT",
         "ask_chatgpt": "Tanya ChatGPT",
-        "loading": "Sedang memuat..."
+        "loading": "Sedang memuat...",
+        "unsend_description":"Batalkan pengiriman pesan terbaru"
     },
     "nl": {
         "help_description":"Toon uitleg",
@@ -333,7 +340,8 @@
         "try_again":"Probeer het a.u.b. later opnieuw",
         "answer_with_chatgpt":"Antwoord met ChatGPT",
         "ask_chatgpt":"Vraag ChatGPT",
-        "loading":"Laden..."
+        "loading":"Laden...",
+        "unsend_description":"Maak de verzending van het laatste bericht ongedaan"
     },
     "cn": {
         "help_description":"显示帮助信息",
@@ -375,7 +383,8 @@
         "try_again":"请稍后再试",
         "answer_with_chatgpt":"使用ChatGPT回答",
         "ask_chatgpt":"询问ChatGPT",
-        "loading":"载入中..."
+        "loading":"载入中...",
+        "unsend_description":"取消发送最新消息"
     },
     "vi": {
         "help_description":"Hiển thị trợ giúp",
@@ -417,6 +426,7 @@
         "try_again":"Vui lòng thử lại sau một lúc",
         "answer_with_chatgpt":"Trả lời với ChatGPT",
         "ask_chatgpt":"Hỏi ChatGPT",
-        "loading":"Đang tải..."
+        "loading":"Đang tải...",
+        "unsend_description":"Hủy gửi tin nhắn mới nhất"
     }
 }
