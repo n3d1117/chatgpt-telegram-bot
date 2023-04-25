@@ -4,46 +4,46 @@
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 [![Publish Docker image](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml/badge.svg)](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml)
 
-OpenAI'nin _resmi_ [ChatGPT](https://openai.com/blog/chatgpt/), [DALL-E](https://openai.com/product/dall-e-2) ve [Whisper](https://openai.com/research/whisper) API'leriyle entegre olarak yanıtlar sağlayan bir [Telegram botu](https://core.telegram.org/bots/api). Minimum yapılandırma ile kullanıma hazırdır.
+A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/), [DALL·E](https://openai.com/product/dall-e-2) and [Whisper](https://openai.com/research/whisper) APIs to provide answers. Ready to use with minimal configuration required.
 
-## Ekran Görüntüleri
+## Screenshots
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
-## Özellikler
-- [x] Yanıtlarda Markdown desteği.
-- [x] Konuşmayı `/reset` komutu ile sıfırlama özelliği.
-- [x] Yanıt oluşturulurken yazıyor işareti.
-- [x] İzin verilen kullanıcıların bir listesi belirtilerek erişim kısıtlanabilir.
-- [x] Docker ve Proxy desteği mevcuttur.
-- [x] (YENİ!) `/image` komutu aracılığıyla DALL·E kullanarak resim oluşturma özelliği.
-- [x] (YENİ!) Whisper kullanarak sesli ve videolu mesajları metne çevirme özelliği (ffmpeg gerekebilir).
-- [x] (YENİ!) Fazla token kullanımını önlemek için otomatik konuşma özeti.
-- [x] (YENİ!) Kullanıcı başına token kullanım takibi - @AlexHTW tarafından.
-- [x] (YENİ!) `/stats` komutu aracılığıyla kişisel token kullanım istatistikleri ve günlük/aylık maliyet bilgileri alma - @AlexHTW tarafından 
-- [x] (YENİ!) Kullanıcı bütçeleri ve misafir bütçeleri desteği - @AlexHTW tarafından.
-- [x] (YENİ!) Akış desteği.
-- [x] (YENİ!) GPT-4 desteği.
- -GPT-4 API'ye erişiminiz varsa, `OPENAI_MODEL` parametresini `gpt-4` olarak değiştirmeniz yeterlidir.
-- [x] (YENİ!) Yerelleştirilmiş bot dili desteği.
- -Kullanılabilir diller :gb: :de: :ru: :tr: :it: :es: :indonesia: :netherlands: :cn: :vietnam:
-- [x] (YENİ!) Grup ve özel sohbetlerde geliştirilmiş satır içi sorgu desteği - @bugfloyd tarafından.
- -Bu özelliği kullanmak için, BotFather'da `/setinline` komutu aracılığıyla botunuza satır içi sorgu(inline queries) özelliğini etkinleştirmeniz gerekmektedir.
+## Features
+- [x] Support markdown in answers
+- [x] Reset conversation with the `/reset` command
+- [x] Typing indicator while generating a response
+- [x] Access can be restricted by specifying a list of allowed users
+- [x] Docker and Proxy support
+- [x] (NEW!) Image generation using DALL·E via the `/image` command
+- [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
+- [x] (NEW!) Automatic conversation summary to avoid excessive token usage
+- [x] (NEW!) Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Stream support
+- [x] (NEW!) GPT-4 support
+  - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
+- [x] (NEW!) Localized bot language
+  - Available languages :gb: :de: :ru: :tr: :it: :es: :indonesia: :netherlands: :cn: :vietnam:
+- [x] (NEW!) Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)
+  - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 
-## Ek özellikler - yardıma ihtiyaç var!
-Eğer yardım etmek isterseniz, [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) bölümüne göz atın ve katkıda bulunun!
-Çevirilere yardımcı olmak istiyorsanız, [Translations Manual]'a göz atın (https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219)
+## Additional features - help needed!
+If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
+If you want to help with translations, check out the [Translations Manual](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219)
 
-PR'lara(Pull request'lere) her zaman açığız!
+PRs are always welcome!
 
-## Ön Gereklilikler
+## Prerequisites
 - Python 3.9+
-- Bir [Telegram botu](https://core.telegram.org/bots#6-botfather) ve token'i (bkz. [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
-- Bir [OpenAI](https://openai.com) hesabı (bkz. [Konfigürasyon](#Konfigürasyon) bölümü)
+- A [Telegram bot](https://core.telegram.org/bots#6-botfather) and its token (see [tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token))
+- An [OpenAI](https://openai.com) account (see [configuration](#configuration) section)
 
-## Başlarken
+## Getting started
 
-### Konfigürasyon
-`.env.example` dosyasını kopyalayıp `.env` olarak yeniden adlandırarak yapılandırmayı özelleştirin ve ardından gerekli parametreleri istediğiniz gibi düzenleyin:
+### Configuration
+Customize the configuration by copying `.env.example` and renaming it to `.env`, then editing the required parameters as desired:
 
 | Parameter                   | Description                                                                                                                                                                                                                   |
 |-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
