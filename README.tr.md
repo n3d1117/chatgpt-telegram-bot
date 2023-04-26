@@ -52,7 +52,7 @@ PR'larınızı(Pull request) her zaman bekliyoruz!
 | `ADMIN_USER_IDS`            | Adminlerin kullanıcı ID'leri. Bu kullanıcılar spesifik komutlara erişebilirler, bilgi ve bütçe kısıtlamaları yoktur. Yönetici ID'lerinin `ALLOWED_TELEGRAM_USER_IDS`'a eklenmesi gerekmez. **Not**: Varsayılan olarak, admin yoktur (`-`) |
 | `ALLOWED_TELEGRAM_USER_IDS` | Botla etkileşime girmesine izin verilen Telegram kullanıcı kimliklerinin virgülle ayrılmış bir listesi (kullanıcı kimliklerini bulmak için [getidsbot](https://t.me/getidsbot) kullanın). **Not**: varsayılan olarak *herkese* izin verilir (`*`) |
 
-### İsteğe bağlı konfigürasyon
+### İsteğe Bağlı Konfigürasyon
 Aşağıdaki parametreler isteğe bağlıdır ve `.env` dosyasında ayarlanabilir:
 
 #### Bütçeler   
@@ -86,73 +86,73 @@ Olası bütçe yapılandırmaları için [Bütçe Kılavuzu](https://github.com/
 | `N_CHOICES`                        | Her girdi mesajı için üretilecek cevap sayısı. **Not**: `STREAM` etkinleştirilmişse bunu 1'den büyük bir sayıya ayarlamak düzgün çalışmamasına sebep olacaktır                                                                           | `1`                                |
 | `TEMPERATURE`                      | 0 ile 2 arasında bir sayı. Daha yüksek değerler çıktıyı daha rastgele hale getirecektir                                                                                                                                                         | `1.0`                              |
 | `PRESENCE_PENALTY`                 |  -2.0 ile 2.0 arasında değerler verilebilir. Pozitif değer verildiğinde bir sonraki kelimenin metinle ilişkili olmasına dikkat edilir. Örneğin "Ben bir ..." cümlesi için; ayar pozitif bir değer ise, model daha önce metinde geçen kelimelere daha fazla ağırlık verir ve bu, örneğin "yazarım" yerine "öğrenciyim" kelimesinin daha yüksek bir olasılıkla önerilmesine neden olabilir.                                                                                                                  | `0.0`                              |
-| `FREQUENCY_PENALTY`                | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far                                                                                                          | `0.0`                              |
-| `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: `256x256`, `512x512` or `1024x1024`                                                                                                                                           | `512x512`                          |
-| `GROUP_TRIGGER_KEYWORD`            | If set, the bot in group chats will only respond to messages that start with this keyword                                                                                                                                      | -                                  |
-| `IGNORE_GROUP_TRANSCRIPTIONS`      | If set to true, the bot will not process transcriptions in group chats                                                                                                                                                         | `true`                             |
-| `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`, `tr`, `it`, `es`, `id`, `nl`, `cn`, `vi`.  [Contribute with additional translations](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219) | `en`                               |
+| `FREQUENCY_PENALTY`                | -2.0 ile 2.0 arasında değerler verilebilir. Pozitif değer verildiğinde sık kullanılan kelimelere daha az ağırlık verilir                                                                                                          | `0.0`                              |
+| `IMAGE_SIZE`                       | DALL-E tarafından oluşturulan görüntü boyutu. İzin verilen değerler: `256x256`, `512x512` veya `1024x1024`                                                                                                                                           | `512x512`                          |
+| `GROUP_TRIGGER_KEYWORD`            | Ayarlanırsa, grup sohbetlerindeki bot yalnızca bu anahtar sözcükle başlayan mesajlara yanıt verir                                                                                                                                      | -                                  |
+| `IGNORE_GROUP_TRANSCRIPTIONS`      | true olarak ayarlanırsa, bot grup sohbetlerindeki sesten yazıya çevirme işlemlerini gerçekleştirmez                                                                                                                                                         | `true`                             |
+| `BOT_LANGUAGE`                     | Genel bot mesajlarının dili. Şu anda mevcut olan diller: `en`, `de`, `ru`, `tr`, `it`, `es`, `id`, `nl`, `cn`, `vi`.  [Ek çevirilerle katkıda bulunun](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219) | `en`                               |
 
-Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
+Daha fazla ayrıntı için, [resmi API referansına](https://platform.openai.com/docs/api-reference/chat) bakabilirsiniz
 
-### Installing
-Clone the repository and navigate to the project directory:
+### Kurulum
+Depoyu klonlayın ve proje dizinine gidin:
 
 ```shell
 git clone https://github.com/n3d1117/chatgpt-telegram-bot.git
 cd chatgpt-telegram-bot
 ```
 
-#### From Source
-1. Create a virtual environment:
+#### Kaynak Koddan Kurulum İçin: 
+1. Sanal ortamı oluşturun:
 ```shell
 python -m venv venv
 ```
 
-2. Activate the virtual environment:
+2. Sanal ortamı etkinleştirin:
 ```shell
-# For Linux or macOS:
+# Linux veya macOS için:
 source venv/bin/activate
 
-# For Windows:
+# Windows için:
 venv\Scripts\activate
 ```
 
-3. Install the dependencies using `requirements.txt` file:
+3. requirements.txt'i kullanarak gereksinimleri kurun:
 ```shell
 pip install -r requirements.txt
 ```
 
-4. Use the following command to start the bot:
+4. Bot'u başlatmak için aşağıdaki komutu kullanın:
 ```
 python bot/main.py
 ```
 
-#### Using Docker Compose
+#### Docker Compose kullanarak:
 
-Run the following command to build and run the Docker image:
+Docker imajını oluşturmak ve çalıştırmak için aşağıdaki komutu kullanın:
 ```shell
 docker compose up
 ```
 
-#### Ready-to-use Docker images
-You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/n3d1117/chatgpt-telegram-bot):
+#### Kullanıma hazır Docker imajları
+Docker görüntüsünü [Docker Hub](https://hub.docker.com/r/n3d1117/chatgpt-telegram-bot) adresinden de kullanabilirsiniz:
 ```shell
 docker pull n3d1117/chatgpt-telegram-bot:latest
 ```
 
-or using the [GitHub Container Registry](https://github.com/n3d1117/chatgpt-telegram-bot/pkgs/container/chatgpt-telegram-bot/):
+veya [GitHub Container Registry](https://github.com/n3d1117/chatgpt-telegram-bot/pkgs/container/chatgpt-telegram-bot/) kullanarak:
 
 ```shell
 docker pull ghcr.io/n3d1117/chatgpt-telegram-bot:latest
 ```
 
-## Credits
+## Kullanılan Kaynaklar
 - [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
 - [python-telegram-bot](https://python-telegram-bot.org)
 - [jiaaro/pydub](https://github.com/jiaaro/pydub)
 
-## Disclaimer
-This is a personal project and is not affiliated with OpenAI in any way.
+## Uyarı
+Bu bir kişisel proje olup hiçbir şekilde OpenAI ile bağlantılı değildir.
 
-## License
-This project is released under the terms of the GPL 2.0 license. For more information, see the [LICENSE](LICENSE) file included in the repository.
+## Lisans
+Bu proje GPL 2.0 lisansı şartları altında yayınlanmıştır. Daha fazla bilgi için, depoya dahil edilen [LICENSE](LICENSE) dosyasına bakın.
