@@ -166,7 +166,7 @@
         "answer_with_chatgpt":"Vastaa ChatGPT:n avulla",
         "ask_chatgpt":"Kysy ChatGPT:ltä",
         "loading":"Lataa..."
-    }
+    },
     "ru": {
         "help_description":"Показать справочное сообщение",
         "reset_description":"Перезагрузить разговор. По желанию передай общие инструкции (например, /reset ты полезный помощник)",
