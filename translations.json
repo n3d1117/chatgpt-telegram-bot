@@ -40,7 +40,7 @@
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
         "loading":"Loading...",
-        "unsend_description":"Unsend the latest message"
+        "unsend_description":"Unsend the last message"
     },
     "es": {
         "help_description":"Muestra el mensaje de ayuda",

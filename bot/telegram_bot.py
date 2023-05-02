@@ -77,7 +77,6 @@ class ChatGPTTelegramBot:
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
-
         self.bot_commands = {}
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
