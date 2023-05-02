@@ -168,7 +168,8 @@
         "try_again":"Yritä myöhemmin uudelleen",
         "answer_with_chatgpt":"Vastaa ChatGPT:n avulla",
         "ask_chatgpt":"Kysy ChatGPT:ltä",
-        "loading":"Lataa..."
+        "loading":"Lataa...",
+        "unsend_description":"Peruuta viimeinen viesti"
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -468,7 +469,8 @@
         "try_again":"請稍後重試",
         "answer_with_chatgpt":"使用 ChatGPT 回答",
         "ask_chatgpt":"詢問 ChatGPT",
-        "loading":"載入中…"
+        "loading":"載入中…",
+        "unsend_description":"取消發送最後一條消息"
     },
     "vi": {
         "help_description":"Hiển thị trợ giúp",
@@ -553,6 +555,7 @@
         "try_again":"لطفا بعد از مدتی دوباره امتحان کنید",
         "answer_with_chatgpt":"با ChatGPT پاسخ دهید",
         "ask_chatgpt":"از ChatGPT بپرسید",
-        "loading":"در حال بارگذاری..."
+        "loading":"در حال بارگذاری...",
+        "unsend_description":"لغو ارسال آخرین پیام"
     }
 }
