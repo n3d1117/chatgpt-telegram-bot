@@ -231,35 +231,38 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         message_id = update.message.message_id
 
-        # # ---- Testing Start -----
+        # ---- Testing Start -----
+        
+        d = self.last_message
+        messages = update.message.history()
+        second_to_last_message = messages[-2].text
 
-        # for i in range(-4, 0):
-        #     print(update.message)
+        print(d)
+        print(second_to_last_message)
+
+        # ---- Testing Stop -----
 
 
-        # # ---- Testing Stop -----
+        # # Delete the chat
+        # # delete conversions from history
 
+        # self.openai.conversations[chat_id].pop() # removes last_chat from history-the unsend command
+        # self.openai.conversations[chat_id].pop(-1) # removes second_to_last_chat from history-the bot last reply
+        # self.openai.conversations[chat_id].pop(-2) # removes third_to_last_chat from history-the user's last message
 
-        # Delete the chat
-        # delete conversions from history
+        # context.bot_data.clear() # clears bot cache
 
-        self.openai.conversations[chat_id].pop() # removes last_chat from history-the unsend command
-        self.openai.conversations[chat_id].pop(-1) # removes second_to_last_chat from history-the bot last reply
-        self.openai.conversations[chat_id].pop(-2) # removes third_to_last_chat from history-the user's last message
-
-        context.bot_data.clear() # clears bot cache
-
-        # last_message = message_id # unsend command
-        second_to_last_message = message_id - 1 # bot's last message
-        third_to_last_message = message_id - 2 # user's last message
+        # # last_message = message_id # unsend command
+        # second_to_last_message = message_id - 1 # bot's last message
+        # third_to_last_message = message_id - 2 # user's last message
     
-        # delete messages from user interface
+        # # delete messages from user interface
 
-        await context.bot.delete_message(chat_id=chat_id, message_id=third_to_last_message) # delete the user's last message
-        await context.bot.delete_message(chat_id=chat_id, message_id=second_to_last_message) # delete the bot's last message
-        # await context.bot.delete_message(chat_id=chat_id, message_id=last_message) # delete the unsend command
+        # await context.bot.delete_message(chat_id=chat_id, message_id=third_to_last_message) # delete the user's last message
+        # await context.bot.delete_message(chat_id=chat_id, message_id=second_to_last_message) # delete the bot's last message
+        # # await context.bot.delete_message(chat_id=chat_id, message_id=last_message) # delete the unsend command
 
-        await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['bot_language']))
+        # await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['bot_language']))
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
