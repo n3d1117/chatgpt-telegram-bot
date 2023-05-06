@@ -401,6 +401,14 @@ class ChatGPTTelegramBot:
             trigger_keyword = self.config['group_trigger_keyword']
             if prompt.lower().startswith(trigger_keyword.lower()):
                 prompt = prompt[len(trigger_keyword):].strip()
+
+                if update.message.reply_to_message and \
+                        update.message.reply_to_message.text and \
+                        update.message.reply_to_message.from_user.id != context.bot.id:
+                    prompt = '"{reply}" {prompt}'.format(
+                        reply=update.message.reply_to_message.text,
+                        prompt=prompt
+                    )
             else:
                 if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
                     logging.info('Message is a reply to the bot, allowing...')
