@@ -138,12 +138,20 @@ docker compose up
 You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/n3d1117/chatgpt-telegram-bot):
 ```shell
 docker pull n3d1117/chatgpt-telegram-bot:latest
+docker run -it --env-file .env n3d1117/chatgpt-telegram-bot
 ```
 
 or using the [GitHub Container Registry](https://github.com/n3d1117/chatgpt-telegram-bot/pkgs/container/chatgpt-telegram-bot/):
 
 ```shell
 docker pull ghcr.io/n3d1117/chatgpt-telegram-bot:latest
+docker run -it --env-file .env ghcr.io/n3d1117/chatgpt-telegram-bot
+```
+
+#### Docker manual build
+```shell
+docker build -t chatgpt-telegram-bot .
+docker run -it --env-file .env chatgpt-telegram-bot
 ```
 
 ## Credits
