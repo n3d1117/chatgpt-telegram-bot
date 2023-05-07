@@ -4,13 +4,15 @@
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 [![Publish Docker image](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml/badge.svg)](https://github.com/n3d1117/chatgpt-telegram-bot/actions/workflows/publish.yaml)
 
+![img_4.png](static/img_4.png)
+
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/), [DALL·E](https://openai.com/product/dall-e-2) and [Whisper](https://openai.com/research/whisper) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
 ## Features
-- [x] Support change model (gpt-3.5-turbo / gpt-4) on fly in telegram
+- [x] Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
