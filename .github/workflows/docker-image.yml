@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image CI - Releases - Latest
 on:
   push:
     tags: [ r* ]
