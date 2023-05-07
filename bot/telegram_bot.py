@@ -81,17 +81,17 @@ class ChatGPTTelegramBot:
         bot_language = self.config['bot_language']
 
         current_model = user_model_selection.get(user_id, 'gpt-3.5-turbo')
-        msg = f"gpt-3.5-turbo:\n" \
-              f"🟢🟢🟢🟢🟢 - Fast\n" \
-              f"🟢🟢🟢🟤🟤 - Smart\n" \
-              f"🟢🟢🟢🟢🟢 - Cheap\n" \
+        msg = f"`gpt-3.5-turbo`:\n" \
+              f"🟢🟢🟢🟢🟢 - `Fast`\n" \
+              f"🟢🟢🟢🟤🟤 - `Smart`\n" \
+              f"🟢🟢🟢🟢🟢 - `Cheap`\n" \
               f"---\n" \
-              f"gpt-4:\n" \
-              f"🟢🟢🟢🟤🟤 - Fast\n" \
-              f"🟢🟢🟢🟢🟢 - Smart\n" \
-              f"🟢🟢🟢🟤🟤 - Cheap\n" \
+              f"`gpt-4`:\n" \
+              f"🟢🟢🟢🟤🟤 - `Fast`\n" \
+              f"🟢🟢🟢🟢🟢 - `Smart`\n" \
+              f"🟢🟢🟢🟤🟤 - `Cheap`\n" \
               f"---\n" \
-              f"{localized_text('current_model', bot_language)}: {current_model}"
+              f"{localized_text('current_model', bot_language)}: `{current_model}`"
         selected = "✅"
         gpt_3_status = ""
         gpt_4_status = ""
@@ -101,8 +101,8 @@ class ChatGPTTelegramBot:
             gpt_4_status = selected
 
         reply_markup = InlineKeyboardMarkup([[
-            InlineKeyboardButton(text=f"{gpt_3_status}gpt-3.5-turbo", callback_data="model_gpt-3.5-turbo"),
-            InlineKeyboardButton(text=f"{gpt_4_status}gpt-4", callback_data="model_gpt-4")
+            InlineKeyboardButton(text=f"{gpt_3_status} gpt-3.5-turbo", callback_data="model_gpt-3.5-turbo"),
+            InlineKeyboardButton(text=f"{gpt_4_status} gpt-4", callback_data="model_gpt-4")
         ]])
         await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
