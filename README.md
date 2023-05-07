@@ -34,7 +34,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 
 ## Additional features - help needed!
-If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
+If you'd like to help, check out the [issues](https://github.com/ZorgeR/chatgpt-telegram-bot/issues) section and contribute!  
 If you want to help with translations, check out the [Translations Manual](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219)
 
 PRs are always welcome!
@@ -102,7 +102,7 @@ Check out the [official API reference](https://platform.openai.com/docs/api-refe
 Clone the repository and navigate to the project directory:
 
 ```shell
-git clone https://github.com/n3d1117/chatgpt-telegram-bot.git
+git clone https://github.com/ZorgeR/chatgpt-telegram-bot.git
 cd chatgpt-telegram-bot
 ```
 

@@ -114,10 +114,10 @@ async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: i
     try:
         await context.bot.edit_message_text(
             chat_id=chat_id,
-            message_id=int(message_id) if not is_inline else None,
+            message_id=None if is_inline else int(message_id),
             inline_message_id=message_id if is_inline else None,
             text=text,
-            parse_mode=constants.ParseMode.MARKDOWN if markdown else None
+            parse_mode=constants.ParseMode.MARKDOWN if markdown else None,
         )
     except telegram.error.BadRequest as e:
         if str(e).startswith("Message is not modified"):
@@ -125,9 +125,9 @@ async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: i
         try:
             await context.bot.edit_message_text(
                 chat_id=chat_id,
-                message_id=int(message_id) if not is_inline else None,
+                message_id=None if is_inline else int(message_id),
                 inline_message_id=message_id if is_inline else None,
-                text=text
+                text=text,
             )
         except Exception as e:
             logging.warning(f'Failed to edit message: {str(e)}')
