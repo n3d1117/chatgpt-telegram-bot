@@ -138,7 +138,7 @@ docker compose up
 ```
 
 #### Ready-to-use Docker images
-You can also use the Docker image from [Docker Hub](https://hub.docker.com/repository/docker/mezorg/chatgpt-telegram-bot/general):
+You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/mezorg/chatgpt-telegram-bot):
 ```shell
 docker pull mezorg/chatgpt-telegram-bot:2023-05-07--58-23
 docker run -it --env-file .env mezorg/chatgpt-telegram-bot
