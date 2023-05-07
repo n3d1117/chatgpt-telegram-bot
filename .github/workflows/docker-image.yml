@@ -23,17 +23,19 @@ jobs:
     - name: Get current date # get the date of the build
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d--%M-%S')"
-    #- name: Build the Docker image # push The image to the docker hub
-    #  run: docker build . --file Dockerfile --tag $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
-    - name: Extract metadata for the Docker image
-      id: meta
-      uses: docker/metadata-action@v4.4.0
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-    - name: Docker Push
+    - name: Build Docker image
       uses: docker/build-push-action@v4
       with:
+        context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: |
+          $DOCKER_USER/$REPO_NAME:latest
+          $DOCKER_USER/$REPO_NAME:${{ github.sha }}
+    - name: Add latest tag and push
+      run: |
+        docker tag $DOCKER_USER/$REPO_NAME:latest $DOCKER_USER/$REPO_NAME:${{ github.sha }}
+        docker push $DOCKER_USER/$REPO_NAME:latest
+        
+    #- name: Build the Docker image # push The image to the docker hub
+    #  run: docker build . --file Dockerfile --tag $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
       # run: docker push $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
