@@ -137,6 +137,8 @@ Run the following command to build and run the Docker image:
 docker compose up
 ```
 
+### DockerHub
+![DockerHub](https://d36jcksde1wxzq.cloudfront.net/54e48877dab8df8f92cd.png)
 #### Ready-to-use Docker images
 You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/mezorg/chatgpt-telegram-bot):
 ```shell
