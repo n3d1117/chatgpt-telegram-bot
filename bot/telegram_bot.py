@@ -77,7 +77,13 @@ class ChatGPTTelegramBot:
         """
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
-        current_model = user_model_selection[user_id]
+        current_model = None
+
+        try:
+            current_model = user_model_selection[user_id]
+        except:
+            user_model_selection[user_id] = 'gpt-3.5-turbo'
+            print(f"User {user_id} request his model. But hi's dont selected it before.")
 
         if current_model is None:
             msg = 'Current model: gpt-3.5-turbo'
@@ -272,6 +278,13 @@ class ChatGPTTelegramBot:
         chat_id = update.effective_chat.id
         filename = update.message.effective_attachment.file_unique_id
 
+        user_id = update.message.from_user.id
+        try:
+            current_model = user_model_selection[user_id]
+        except:
+            user_model_selection[user_id] = 'gpt-3.5-turbo'
+            print(f"User {user_id} request his model. But hi's dont selected it before.")
+
         async def _execute():
             filename_mp3 = f'{filename}.mp3'
             bot_language = self.config['bot_language']
@@ -379,6 +392,7 @@ class ChatGPTTelegramBot:
         await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
         """
         React to incoming messages and respond accordingly.
         """
@@ -394,6 +408,12 @@ class ChatGPTTelegramBot:
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
         self.last_message[chat_id] = prompt
+
+        try:
+            current_model = user_model_selection[user_id]
+        except:
+            user_model_selection[user_id] = 'gpt-3.5-turbo'
+            print(f"User {user_id} request his model. But hi's dont selected it before.")
 
         if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
@@ -592,6 +612,12 @@ class ChatGPTTelegramBot:
         bot_language = self.config['bot_language']
         answer_tr = localized_text("answer", bot_language)
         loading_tr = localized_text("loading", bot_language)
+
+        try:
+            current_model = user_model_selection[user_id]
+        except:
+            user_model_selection[user_id] = 'gpt-3.5-turbo'
+            print(f"User {user_id} request his model. But hi's dont selected it before.")
 
         try:
             if callback_data.startswith(callback_data_suffix):
