@@ -2,7 +2,8 @@
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.4-orange.svg)](https://openai.com/)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
-[![Publish Docker image](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image.yml/badge.svg)
+[![Docker Image CI - Dev](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-dev.yml/badge.svg)](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-dev.yml)
+[![Docker Image CI - Releases - Latest](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-release.yml/badge.svg)](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-release.yml)
 
 ![img_4.png](static/img_4.png)
 
