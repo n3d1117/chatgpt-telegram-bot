@@ -28,6 +28,5 @@ jobs:
           ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
     - name: Add latest tag and push
       run: |
-        docker tag ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
         docker push ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
         
