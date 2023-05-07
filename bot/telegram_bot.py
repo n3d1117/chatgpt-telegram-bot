@@ -720,17 +720,15 @@ class ChatGPTTelegramBot:
             elif callback_data == "model_gpt-3.5-turbo":
                 current_model = 'gpt-3.5-turbo'
                 user_model_selection[user_id] = current_model
-                await edit_message_with_retry(context, chat_id=None,
-                                              message_id=inline_message_id,
-                                              text=f"Model changed to: {current_model}",
-                                              is_inline=True)
+                await context.bot.edit_message_text(inline_message_id=inline_message_id,
+                                                    text=f"Model changed to: {current_model}",
+                                                    parse_mode=constants.ParseMode.MARKDOWN)
             elif callback_data == "model_gpt-4":
                 current_model = 'gpt-4'
                 user_model_selection[user_id] = current_model
-                await edit_message_with_retry(context, chat_id=None,
-                                              message_id=inline_message_id,
-                                              text=f"Model changed to: {current_model}",
-                                              is_inline=True)
+                await context.bot.edit_message_text(inline_message_id=inline_message_id,
+                                                    text=f"Model changed to: {current_model}",
+                                                    parse_mode=constants.ParseMode.MARKDOWN)
 
         except Exception as e:
             logging.error(f'Failed to respond to an inline query via button callback: {e}')
