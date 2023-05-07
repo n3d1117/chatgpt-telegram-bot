@@ -12,7 +12,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
 ## Features
-- [x] Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
+- [x] (NEW!) Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
