@@ -11,6 +11,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 
 ## Screenshots
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
+![model_selection](static/img_5.png)
 
 ## Features
 - [x] (NEW!) Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
