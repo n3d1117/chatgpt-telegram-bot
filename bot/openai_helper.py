@@ -77,14 +77,14 @@ class OpenAIHelper:
             self.reset_chat_history(chat_id)
         return len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id])
 
-    async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
+    async def get_chat_response(self, chat_id: int, query: str, model='gpt-3.5-turbo') -> tuple[str, str]:
         """
         Gets a full response from the GPT model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
         """
-        response = await self.__common_get_chat_response(chat_id, query)
+        response = await self.__common_get_chat_response(chat_id, query, model=model)
         answer = ''
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
@@ -108,14 +108,14 @@ class OpenAIHelper:
 
         return answer, response.usage['total_tokens']
 
-    async def get_chat_response_stream(self, chat_id: int, query: str):
+    async def get_chat_response_stream(self, chat_id: int, query: str, model='gpt-3.5-turbo'):
         """
         Stream response from the GPT model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
-        response = await self.__common_get_chat_response(chat_id, query, stream=True)
+        response = await self.__common_get_chat_response(chat_id, query, stream=True, model=model)
 
         answer = ''
         async for item in response:
@@ -134,7 +134,9 @@ class OpenAIHelper:
 
         yield answer, tokens_used
 
-    async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
+    async def __common_get_chat_response(self, chat_id: int, query: str, stream=False, model='gpt-3.5-turbo'):
+        if model is None:
+            model = 'gpt-3.5-turbo'
         """
         Request a response from the GPT model.
         :param chat_id: The chat ID
@@ -168,7 +170,7 @@ class OpenAIHelper:
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
             return await openai.ChatCompletion.acreate(
-                model=self.config['model'],
+                model=model,  # self.config['model']
                 messages=self.conversations[chat_id],
                 temperature=self.config['temperature'],
                 n=self.config['n_choices'],

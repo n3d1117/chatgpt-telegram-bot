@@ -2,6 +2,7 @@
     "en": {
         "help_description":"Show help message",
         "reset_description":"Reset the conversation. Optionally pass high-level instructions (e.g. /reset You are a helpful assistant)",
+        "model_description": "Select ChatGPT model",
         "image_description":"Generate image from prompt (e.g. /image cat)",
         "stats_description":"Get your current usage statistics",
         "resend_description":"Resend the latest message",
