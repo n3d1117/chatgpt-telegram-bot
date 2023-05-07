@@ -83,13 +83,13 @@ class ChatGPTTelegramBot:
         current_model = user_model_selection.get(user_id, 'gpt-3.5-turbo')
         msg = f"`gpt-3.5-turbo`:\n" \
               f"🟢🟢🟢🟢🟢 - `Fast`\n" \
-              f"🟢🟢🟢🟤🟤 - `Smart`\n" \
+              f"🟡🟡🟡🟤🟤 - `Smart`\n" \
               f"🟢🟢🟢🟢🟢 - `Cheap`\n" \
               f"---\n" \
               f"`gpt-4`:\n" \
-              f"🟢🟢🟢🟤🟤 - `Fast`\n" \
+              f"🟡🟡🟡🟤🟤 - `Fast`\n" \
               f"🟢🟢🟢🟢🟢 - `Smart`\n" \
-              f"🟢🟢🟢🟤🟤 - `Cheap`\n" \
+              f"🟠🟠🟤🟤🟤 - `Cheap`\n" \
               f"---\n" \
               f"{localized_text('current_model', bot_language)}: `{current_model}`"
         selected = "✅"
