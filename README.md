@@ -138,17 +138,10 @@ docker compose up
 ```
 
 #### Ready-to-use Docker images
-You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/n3d1117/chatgpt-telegram-bot):
+You can also use the Docker image from [Docker Hub](https://hub.docker.com/repository/docker/mezorg/chatgpt-telegram-bot/general):
 ```shell
 docker pull n3d1117/chatgpt-telegram-bot:latest
 docker run -it --env-file .env n3d1117/chatgpt-telegram-bot
-```
-
-or using the [GitHub Container Registry](https://github.com/n3d1117/chatgpt-telegram-bot/pkgs/container/chatgpt-telegram-bot/):
-
-```shell
-docker pull ghcr.io/n3d1117/chatgpt-telegram-bot:latest
-docker run -it --env-file .env ghcr.io/n3d1117/chatgpt-telegram-bot
 ```
 
 #### Docker manual build
@@ -171,7 +164,7 @@ This project is released under the terms of the GPL 2.0 license. For more inform
 ## ❤️ Donate
 This project is Open Source. You may use it under license.
 
-You can make a donation / subscription.
+You can make a donation / subscription, or say thanks in Telegram: https://t.me/ZorgeR
 
 #### Boosty (Donate / Subscription) : https://boosty.to/zorgg
 
