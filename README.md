@@ -10,6 +10,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 
 ## Features
+- [x] Support change model (gpt-3.5-turbo / gpt-4) on fly in telegram
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
@@ -164,3 +165,26 @@ This is a personal project and is not affiliated with OpenAI in any way.
 
 ## License
 This project is released under the terms of the GPL 2.0 license. For more information, see the [LICENSE](LICENSE) file included in the repository.
+
+## ❤️ Donate
+This project is Open Source. You may use it under license.
+
+You can make a donation / subscription.
+
+#### Boosty (Donate / Subscription) : https://boosty.to/zorgg
+
+#### BTC:
+![img_1.png](static/img_1.png)
+`bc1qyymy3ufvq3c3uq2q4927ll6x4rhvdw8gxlydwc`
+
+#### ETH:
+![img_2.png](static/img_2.png)
+`0x0213A705065B193D14f1A3cd075977e28Da8F9B3`
+
+#### DOGE:
+![img_3.png](static/img_3.png)
+`D9RbkgazaGhkT4FHkJtHoh4hDxkzAZwQnK`
+
+#### TON (TONCOIN):
+![img.png](static/img.png)
+`EQA9WB-PZIpA076uMsw11Xcrnvo_nZJ0Eg-KQUYr_zMek3gh`
