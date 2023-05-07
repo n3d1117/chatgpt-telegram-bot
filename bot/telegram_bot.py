@@ -20,7 +20,8 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
-user_model_selection = []
+user_model_selection = {}
+
 
 class ChatGPTTelegramBot:
     """
