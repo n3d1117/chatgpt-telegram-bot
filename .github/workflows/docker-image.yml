@@ -29,12 +29,12 @@ jobs:
         context: .
         push: true
         tags: |
-          $DOCKER_USER/$REPO_NAME:latest
-          $DOCKER_USER/$REPO_NAME:${{ github.sha }}
+          ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:latest
+          ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
     - name: Add latest tag and push
       run: |
-        docker tag $DOCKER_USER/$REPO_NAME:latest $DOCKER_USER/$REPO_NAME:${{ github.sha }}
-        docker push $DOCKER_USER/$REPO_NAME:latest
+        docker tag ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:latest ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
+        docker push ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:latest
         
     #- name: Build the Docker image # push The image to the docker hub
     #  run: docker build . --file Dockerfile --tag $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
