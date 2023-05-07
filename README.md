@@ -140,7 +140,7 @@ docker compose up
 #### Ready-to-use Docker images
 You can also use the Docker image from [Docker Hub](https://hub.docker.com/r/mezorg/chatgpt-telegram-bot):
 ```shell
-docker pull mezorg/chatgpt-telegram-bot:2023-05-07--58-23
+docker pull mezorg/chatgpt-telegram-bot:latest
 docker run -it --env-file .env mezorg/chatgpt-telegram-bot
 ```
 
