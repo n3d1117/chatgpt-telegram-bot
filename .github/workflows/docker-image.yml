@@ -1,5 +1,10 @@
 name: Docker Image CI
-on: [push] # When pushing to any branch then run this action
+on:
+  push:
+    tags: [ r* ]
+#   branches: [ "main" ]
+#   pull_request:
+#     branches: [ "main" ]
 # Env variable
 
 env:
@@ -21,4 +26,9 @@ jobs:
     - name: Build the Docker image # push The image to the docker hub
       run: docker build . --file Dockerfile --tag $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
     - name: Docker Push
-      run: docker push $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
+      uses: docker/build-push-action@v4
+      with:
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+      # run: docker push $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
