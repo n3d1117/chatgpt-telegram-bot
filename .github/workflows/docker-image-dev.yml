@@ -1,0 +1,33 @@
+name: Docker Image CI - Dev
+on:
+  push:
+    branches: [ "dev" ]
+
+env:
+  DOCKER_USER: ${{secrets.DOCKER_USER}}
+  DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+  REPO_NAME: ${{secrets.REPO_NAME}}
+  
+jobs:
+  push-image-to-docker-hub:  # job name
+    runs-on: ubuntu-latest  # runner name : (ubuntu latest version) 
+    steps:
+    - uses: actions/checkout@v2 # first action : checkout source code
+    - name: docker login
+      run: | # log into docker hub account
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD  
+    - name: Get current date # get the date of the build
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d--%M-%S')"
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
+    - name: Add latest tag and push
+      run: |
+        docker tag ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
+        docker push ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
+        
