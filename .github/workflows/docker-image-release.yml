@@ -2,10 +2,7 @@ name: Docker Image CI - Releases - Latest
 on:
   push:
     tags: [ r* ]
-#   branches: [ "main" ]
-#   pull_request:
-#     branches: [ "main" ]
-# Env variable
+    branches: [ "main" ]
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -35,7 +32,3 @@ jobs:
       run: |
         docker tag ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:latest ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:${{ github.sha }}
         docker push ${{secrets.DOCKER_USER}}/${{secrets.REPO_NAME}}:latest
-        
-    #- name: Build the Docker image # push The image to the docker hub
-    #  run: docker build . --file Dockerfile --tag $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
-      # run: docker push $DOCKER_USER/$REPO_NAME:${{ steps.date.outputs.date }}
