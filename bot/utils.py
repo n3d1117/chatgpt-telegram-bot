@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import itertools
 import logging
 
@@ -67,12 +68,12 @@ def is_group_chat(update: Update) -> bool:
     """
     Checks if the message was sent from a group chat
     """
-    if not update.effective_chat:
-        return False
-    return update.effective_chat.type in [
-        constants.ChatType.GROUP,
-        constants.ChatType.SUPERGROUP
-    ]
+    return (
+        update.effective_chat.type
+        in [constants.ChatType.GROUP, constants.ChatType.SUPERGROUP]
+        if update.effective_chat
+        else False
+    )
 
 
 def split_into_chunks(text: str, chunk_size: int = 4096) -> list[str]:
@@ -93,10 +94,8 @@ async def wrap_with_indicator(update: Update, context: CallbackContext, coroutin
             context.application.create_task(
                 update.effective_chat.send_action(chat_action, message_thread_id=get_thread_id(update))
             )
-        try:
+        with contextlib.suppress(asyncio.TimeoutError):
             await asyncio.wait_for(asyncio.shield(task), 4.5)
-        except asyncio.TimeoutError:
-            pass
 
 
 async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: int | None,
@@ -173,6 +172,7 @@ async def is_allowed(config, update: Update, context: CallbackContext, is_inline
                      f'(id: {user_id}) are not allowed')
     return False
 
+
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """
     Checks if the user is the admin of the bot.
@@ -186,10 +186,7 @@ def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     admin_user_ids = config['admin_user_ids'].split(',')
 
     # Check if user is in the admin user list
-    if str(user_id) in admin_user_ids:
-        return True
-
-    return False
+    return str(user_id) in admin_user_ids
 
 
 def get_user_budget(config, user_id) -> float | None:
@@ -292,7 +289,6 @@ def add_chat_request_to_usage_tracker(usage, config, user_id, used_tokens):
             usage["guests"].add_chat_tokens(used_tokens, config['token_price'])
     except Exception as e:
         logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
-        pass
 
 
 def get_reply_to_message_id(config, update: Update):

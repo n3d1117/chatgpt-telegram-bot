@@ -27,11 +27,13 @@ def default_max_tokens(model: str) -> int:
     """
     return 1200 if model in GPT_3_MODELS else 2400
 
+
 # Load translations
 parent_dir_path = os.path.join(os.path.dirname(__file__), os.pardir)
 translations_file_path = os.path.join(parent_dir_path, 'translations.json')
 with open(translations_file_path, 'r', encoding='utf-8') as f:
     translations = json.load(f)
+
 
 def localized_text(key, bot_language):
     """
@@ -42,13 +44,11 @@ def localized_text(key, bot_language):
         return translations[bot_language][key]
     except KeyError:
         logging.warning(f"No translation available for bot_language code '{bot_language}' and key '{key}'")
-        # Fallback to English if the translation is not available
         if key in translations['en']:
             return translations['en'][key]
-        else:
-            logging.warning(f"No english definition found for key '{key}' in translations.json")
-            # return key as text
-            return key
+        logging.warning(f"No english definition found for key '{key}' in translations.json")
+        # return key as text
+        return key
 
 
 class OpenAIHelper:
@@ -79,9 +79,10 @@ class OpenAIHelper:
 
     async def get_chat_response(self, chat_id: int, query: str, model='gpt-3.5-turbo') -> tuple[str, str]:
         """
-        Gets a full response from the GPT model.
+        Gets a full response from the GPT model
         :param chat_id: The chat ID
         :param query: The query to send to the model
+        :param model: ChatGPT model selection
         :return: The answer from the model and the number of tokens used
         """
         response = await self.__common_get_chat_response(chat_id, query, model=model)
@@ -110,9 +111,10 @@ class OpenAIHelper:
 
     async def get_chat_response_stream(self, chat_id: int, query: str, model='gpt-3.5-turbo'):
         """
-        Stream response from the GPT model.
+        Stream response from the GPT model
         :param chat_id: The chat ID
         :param query: The query to send to the model
+        :param model: ChatGPT model selection
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
         response = await self.__common_get_chat_response(chat_id, query, stream=True, model=model)
@@ -315,6 +317,7 @@ class OpenAIHelper:
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
+
     def get_billing_current_month(self):
         """Gets billed usage for current month from OpenAI API.
 
@@ -334,5 +337,4 @@ class OpenAIHelper:
         }
         response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
         billing_data = json.loads(response.text)
-        usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
-        return usage_month
+        return billing_data["total_usage"] / 100  # convert cent amount to dollars and return month usage

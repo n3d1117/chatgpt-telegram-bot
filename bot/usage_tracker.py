@@ -100,10 +100,11 @@ class UsageTracker:
         else:
             usage_day = 0
         month = str(today)[:7]  # year-month as string
-        usage_month = 0
-        for today, tokens in self.usage["usage_history"]["chat_tokens"].items():
-            if today.startswith(month):
-                usage_month += tokens
+        usage_month = sum(
+            tokens
+            for today, tokens in self.usage["usage_history"]["chat_tokens"].items()
+            if today.startswith(month)
+        )
         return usage_day, usage_month
 
     # image usage functions:
@@ -122,14 +123,11 @@ class UsageTracker:
         self.add_current_costs(image_cost)
 
         # update usage_history
-        if str(today) in self.usage["usage_history"]["number_images"]:
-            # add token usage to existing date
-            self.usage["usage_history"]["number_images"][str(today)][requested_size] += 1
-        else:
+        if str(today) not in self.usage["usage_history"]["number_images"]:
             # create new entry for current date
             self.usage["usage_history"]["number_images"][str(today)] = [0, 0, 0]
-            self.usage["usage_history"]["number_images"][str(today)][requested_size] += 1
-
+        # add token usage to existing date
+        self.usage["usage_history"]["number_images"][str(today)][requested_size] += 1
         # write updated image number to user file
         with open(self.user_file, "w") as outfile:
             json.dump(self.usage, outfile)
@@ -145,10 +143,13 @@ class UsageTracker:
         else:
             usage_day = 0
         month = str(today)[:7]  # year-month as string
-        usage_month = 0
-        for today, images in self.usage["usage_history"]["number_images"].items():
-            if today.startswith(month):
-                usage_month += sum(images)
+        usage_month = sum(
+            sum(images)
+            for today, images in self.usage["usage_history"][
+                "number_images"
+            ].items()
+            if today.startswith(month)
+        )
         return usage_day, usage_month
 
     # transcription usage functions:
@@ -207,10 +208,13 @@ class UsageTracker:
         else:
             seconds_day = 0
         month = str(today)[:7]  # year-month as string
-        seconds_month = 0
-        for today, seconds in self.usage["usage_history"]["transcription_seconds"].items():
-            if today.startswith(month):
-                seconds_month += seconds
+        seconds_month = sum(
+            seconds
+            for today, seconds in self.usage["usage_history"][
+                "transcription_seconds"
+            ].items()
+            if today.startswith(month)
+        )
         minutes_day, seconds_day = divmod(seconds_day, 60)
         minutes_month, seconds_month = divmod(seconds_month, 60)
         return int(minutes_day), round(seconds_day, 2), int(minutes_month), round(seconds_month, 2)
@@ -250,10 +254,11 @@ class UsageTracker:
 
         total_images = [sum(values) for values in zip(*self.usage['usage_history']['number_images'].values())]
         image_prices_list = [float(x) for x in image_prices.split(',')]
-        image_cost = sum([count * price for count, price in zip(total_images, image_prices_list)])
+        image_cost = sum(
+            count * price for count, price in zip(total_images, image_prices_list)
+        )
 
         total_transcription_seconds = sum(self.usage['usage_history']['transcription_seconds'].values())
         transcription_cost = round(total_transcription_seconds * minute_price / 60, 2)
 
-        all_time_cost = token_cost + transcription_cost + image_cost
-        return all_time_cost
+        return token_cost + transcription_cost + image_cost
