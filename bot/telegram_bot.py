@@ -58,6 +58,7 @@ class ChatGPTTelegramBot:
         """
         Shows the help menu.
         """
+        user_id = update.message.from_user.id
         commands = self.group_commands if is_group_chat(update) else self.commands
         commands_description = [f'/{command.command} - {command.description}' for command in commands]
         bot_language = self.config['bot_language']
@@ -68,7 +69,9 @@ class ChatGPTTelegramBot:
                 '\n\n' +
                 localized_text('help_text', bot_language)[1] +
                 '\n\n' +
-                localized_text('help_text', bot_language)[2]
+                localized_text('help_text', bot_language)[2] +
+                '\n\n' +
+                f"Personal ID: {user_id}"
         )
         await update.message.reply_text(help_text, disable_web_page_preview=True)
 
