@@ -4,6 +4,4 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - .:/app
     restart: unless-stopped
