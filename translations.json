@@ -39,7 +39,9 @@
         "try_again":"Please try again in a while",
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
-        "loading":"Loading..."
+        "loading":"Loading...",
+        "unsend_description":"Unsend the last message",
+        "cannot_unsend" : "!Opps, sorry you can't delete your last message because it not part of the main conversation"
     },
     "es": {
         "help_description":"Muestra el mensaje de ayuda",
@@ -81,7 +83,9 @@
         "try_again":"Por favor, inténtalo de nuevo más tarde",
         "answer_with_chatgpt":"Responder con ChatGPT",
         "ask_chatgpt":"Preguntar a ChatGPT",
-        "loading":"Cargando..."
+        "loading":"Cargando...",
+        "unsend_description":"Cancelar el envío del último mensaje",
+        "cannot_unsend" : "!Opps, lo siento, no puedes borrar tu último mensaje porque no forma parte de la conversación principal"
     },
     "pt-br":{
         "help_description": "Mostra a mensagem de ajuda",
@@ -123,7 +127,10 @@
         "try_again": "Por favor, tente novamente mais tarde",
         "answer_with_chatgpt": "Responder com ChatGPT",
         "ask_chatgpt": "Perguntar ao ChatGPT",
-        "loading": "Carregando..."},
+        "loading": "Carregando...",
+        "unsend_description":"Cancelar o envio da última mensagem",
+        "cannot_unsend" : "!Opps, desculpe, você não pode deletar sua última mensagem porque ela não faz parte da conversa principal"
+    },
     "de": {
         "help_description":"Zeige die Hilfenachricht",
         "reset_description":"Setze die Konversation zurück. Optionale Eingabe einer grundlegenden Anweisung (z.B. /reset Du bist ein hilfreicher Assistent)",
@@ -164,7 +171,9 @@
         "try_again":"Bitte versuche es später erneut",
         "answer_with_chatgpt":"Antworte mit ChatGPT",
         "ask_chatgpt":"Frage ChatGPT",
-        "loading":"Lade..."
+        "loading":"Lade...",
+        "unsend_description":"Senden Sie die letzte Nachricht zurück",
+        "cannot_unsend" : "!Upps, es tut mir leid, dass Sie Ihre letzte Nachricht nicht löschen können, da sie nicht Teil der Hauptkonversation ist"
     },
     "fi": {
         "help_description":"Näytä ohjeet",
@@ -206,7 +215,9 @@
         "try_again":"Yritä myöhemmin uudelleen",
         "answer_with_chatgpt":"Vastaa ChatGPT:n avulla",
         "ask_chatgpt":"Kysy ChatGPT:ltä",
-        "loading":"Lataa..."
+        "loading":"Lataa...",
+        "unsend_description":"Peruuta viimeinen viesti",
+        "cannot_unsend" : "!Ops, valitettavasti et voi poistaa viimeistä viestiäsi, koska se ei kuulu pääkeskusteluun"
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -248,7 +259,9 @@
         "try_again":"Пожалуйста, повторите попытку позже",
         "answer_with_chatgpt":"Ответить с помощью ChatGPT",
         "ask_chatgpt":"Спросить ChatGPT",
-        "loading":"Загрузка..."
+        "loading":"Загрузка...",
+        "unsend_description":"Отменить последнее сообщение",
+        "cannot_unsend" : "!Opps, извините, вы не можете удалить свое последнее сообщение, потому что оно не является частью основного разговора"
     },
     "tr": {
         "help_description":"Yardım mesajını göster",
@@ -290,7 +303,9 @@
         "try_again":"Lütfen birazdan tekrar deneyiniz",
         "answer_with_chatgpt":"ChatGPT ile cevapla",
         "ask_chatgpt":"ChatGPT'ye sor",
-        "loading":"Yükleniyor..."
+        "loading":"Yükleniyor...",
+        "unsend_description":"En son mesajın gönderilmesini iptal et",
+        "cannot_unsend" : "!Opps, son mesajınızı silemezsiniz çünkü ana konuşmanın bir parçası değildir"
     },
     "it": {
         "help_description":"Mostra il messaggio di aiuto",
@@ -332,7 +347,9 @@
         "try_again":"Riprova più tardi",
         "answer_with_chatgpt":"Rispondi con ChatGPT",
         "ask_chatgpt":"Chiedi a ChatGPT",
-        "loading":"Carico..."
+        "loading":"Carico...",
+        "unsend_description":"Annulla l'invio dell'ultimo messaggio",
+        "cannot_unsend" : "!Opps, mi dispiace non puoi eliminare il tuo ultimo messaggio perché non fa parte della conversazione principale"
     },
     "id": {
         "help_description": "Menampilkan pesan bantuan",
@@ -374,7 +391,9 @@
         "try_again": "Silakan coba lagi nanti",
         "answer_with_chatgpt": "Jawaban dengan ChatGPT",
         "ask_chatgpt": "Tanya ChatGPT",
-        "loading": "Sedang memuat..."
+        "loading": "Sedang memuat...",
+        "unsend_description":"Batalkan pengiriman pesan terbaru",
+        "cannot_unsend" : "!Ups, maaf Anda tidak dapat menghapus pesan terakhir Anda karena itu bukan bagian dari percakapan utama"
     },
     "nl": {
         "help_description":"Toon uitleg",
@@ -416,7 +435,9 @@
         "try_again":"Probeer het a.u.b. later opnieuw",
         "answer_with_chatgpt":"Antwoord met ChatGPT",
         "ask_chatgpt":"Vraag ChatGPT",
-        "loading":"Laden..."
+        "loading":"Laden...",
+        "unsend_description":"Maak de verzending van het laatste bericht ongedaan",
+        "cannot_unsend" : "!Opps, sorry dat je je laatste bericht niet kunt verwijderen omdat het geen deel uitmaakt van het hoofdgesprek"
     },
     "zh-cn": {
         "help_description":"显示帮助信息",
@@ -458,7 +479,9 @@
         "try_again":"请稍后再试",
         "answer_with_chatgpt":"使用ChatGPT回答",
         "ask_chatgpt":"询问ChatGPT",
-        "loading":"载入中..."
+        "loading":"载入中...",
+        "unsend_description":"取消发送最新消息",
+        "cannot_unsend" : "!Opps，抱歉你不能删除你的最后一条消息，因为它不是主要对话的一部分"
     },
     "zh-tw": {
         "help_description":"顯示幫助訊息",
@@ -500,7 +523,9 @@
         "try_again":"請稍後重試",
         "answer_with_chatgpt":"使用 ChatGPT 回答",
         "ask_chatgpt":"詢問 ChatGPT",
-        "loading":"載入中…"
+        "loading":"載入中…",
+        "unsend_description":"取消發送最後一條消息",
+        "cannot_unsend" : "!Opps，抱歉你不能刪除你的最後一條消息，因為它不是主要對話的一部分"
     },
     "vi": {
         "help_description":"Hiển thị trợ giúp",
@@ -542,7 +567,9 @@
         "try_again":"Vui lòng thử lại sau một lúc",
         "answer_with_chatgpt":"Trả lời với ChatGPT",
         "ask_chatgpt":"Hỏi ChatGPT",
-        "loading":"Đang tải..."
+        "loading":"Đang tải...",
+        "unsend_description":"Hủy gửi tin nhắn mới nhất",
+        "cannot_unsend" : "!Rất tiếc, bạn không thể xóa tin nhắn cuối cùng của mình vì nó không phải là một phần của cuộc trò chuyện chính"
     },
     "fa": {
         "help_description":"نمایش پیغام راهنما",
@@ -584,7 +611,9 @@
         "try_again":"لطفا بعد از مدتی دوباره امتحان کنید",
         "answer_with_chatgpt":"با ChatGPT پاسخ دهید",
         "ask_chatgpt":"از ChatGPT بپرسید",
-        "loading":"در حال بارگذاری..."
+        "loading":"در حال بارگذاری...",
+        "unsend_description":"لغو ارسال آخرین پیام",
+        "cannot_unsend" : "!Opps، متأسفیم که نمی توانید آخرین پیام خود را حذف کنید زیرا بخشی از مکالمه اصلی نیست"
     },
     "uk": {
         "help_description":"Показати повідомлення допомоги",
@@ -626,6 +655,8 @@
         "try_again":"Будь ласка, спробуйте знову через деякий час",
         "answer_with_chatgpt":"Відповідь за допомогою ChatGPT",
         "ask_chatgpt":"Запитати ChatGPT",
-        "loading":"Завантаження..."
+        "loading":"Завантаження...",
+        "unsend_description":"Скасувати надсилання останнього повідомлення",
+        "cannot_unsend" : "!На жаль, ви не можете видалити своє останнє повідомлення, оскільки воно не є частиною основної розмови"
     }
 }
