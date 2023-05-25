@@ -64,8 +64,10 @@ class ChatGPTTelegramBot:
         """
         Shows the help menu.
         """
-        commands = self.group_commands if is_group_chat(update) else self.commands
-        commands_description = [f'/{command.command} - {command.description}' for command in commands]
+        commands = self.group_commands if is_group_chat(
+            update) else self.commands
+        commands_description = [
+            f'/{command.command} - {command.description}' for command in commands]
         bot_language = self.config['bot_language']
         help_text = (
             localized_text('help_text', bot_language)[0] +
@@ -105,8 +107,10 @@ class ChatGPTTelegramBot:
         current_cost = self.usage[user_id].get_current_cost()
 
         chat_id = update.effective_chat.id
-        chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
-        remaining_budget = get_remaining_budget(self.config, self.usage, update)
+        chat_messages, chat_token_length = self.openai.get_conversation_stats(
+            chat_id)
+        remaining_budget = get_remaining_budget(
+            self.config, self.usage, update)
         bot_language = self.config['bot_language']
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
@@ -166,7 +170,8 @@ class ChatGPTTelegramBot:
                             f' does not have anything to resend')
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=localized_text('resend_failed', self.config['bot_language'])
+                text=localized_text(
+                    'resend_failed', self.config['bot_language'])
             )
             return
 
@@ -203,7 +208,7 @@ class ChatGPTTelegramBot:
         """
         Unsend the last message sent by the bot
         """
-        if not await self.is_allowed(update, context):
+        if not await is_allowed(self.config, update, context):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to unsend the message')
             await self.send_disallowed_message(update, context)
@@ -267,7 +272,7 @@ class ChatGPTTelegramBot:
 
             await context.bot.send_message(chat_id=chat_id, text=localized_text('reset_done', self.config['bot_language']))
         else:
-            await context.bot.send_message(chat_id=chat_id, text="!Opps, sorry you can't delete your last message because it not part of the main conversation")
+            await context.bot.send_message(chat_id=chat_id, text=localized_text('cannot_unsend', self.config['bot_language']))
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -281,10 +286,12 @@ class ChatGPTTelegramBot:
         if image_query == '':
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=localized_text('image_no_prompt', self.config['bot_language'])
+                text=localized_text('image_no_prompt',
+                                    self.config['bot_language'])
             )
             return
 
+        chat_id = update.effective_chat.id
         """
         Store this bot command id
         """
@@ -305,7 +312,8 @@ class ChatGPTTelegramBot:
             try:
                 image_url, image_size = await self.openai.generate_image(prompt=image_query)
                 await update.effective_message.reply_photo(
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    reply_to_message_id=get_reply_to_message_id(
+                        self.config, update),
                     photo=image_url
                 )
                 # add image request to users usage tracker
@@ -321,7 +329,8 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await update.effective_message.reply_text(
                     message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    reply_to_message_id=get_reply_to_message_id(
+                        self.config, update),
                     text=f"{localized_text('image_fail', self.config['bot_language'])}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
@@ -346,7 +355,6 @@ class ChatGPTTelegramBot:
         Store this user audio id
         """
         if filename:
-
             if chat_id not in self.bot_commands:
                 self.bot_commands[chat_id] = []
 
@@ -365,7 +373,8 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await update.effective_message.reply_text(
                     message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    reply_to_message_id=get_reply_to_message_id(
+                        self.config, update),
                     text=(
                         f"{localized_text('media_download_fail', bot_language)[0]}: "
                         f"{str(e)}. {localized_text('media_download_fail', bot_language)[1]}"
@@ -384,7 +393,8 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await update.effective_message.reply_text(
                     message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    reply_to_message_id=get_reply_to_message_id(
+                        self.config, update),
                     text=localized_text('media_type_fail', bot_language)
                 )
                 if os.path.exists(filename):
@@ -421,7 +431,8 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await update.effective_message.reply_text(
                             message_thread_id=get_thread_id(update),
-                            reply_to_message_id=get_reply_to_message_id(self.config, update) if index == 0 else None,
+                            reply_to_message_id=get_reply_to_message_id(
+                                self.config, update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
                         )
@@ -429,7 +440,8 @@ class ChatGPTTelegramBot:
                     # Get the response of the transcript
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
 
-                    self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
+                    self.usage[user_id].add_chat_tokens(
+                        total_tokens, self.config['token_price'])
                     if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
                         self.usage["guests"].add_chat_tokens(
                             total_tokens, self.config['token_price'])
@@ -444,7 +456,8 @@ class ChatGPTTelegramBot:
                     for index, transcript_chunk in enumerate(chunks):
                         await update.effective_message.reply_text(
                             message_thread_id=get_thread_id(update),
-                            reply_to_message_id=get_reply_to_message_id(self.config, update) if index == 0 else None,
+                            reply_to_message_id=get_reply_to_message_id(
+                                self.config, update) if index == 0 else None,
                             text=transcript_chunk,
                             parse_mode=constants.ParseMode.MARKDOWN
                         )
@@ -453,7 +466,8 @@ class ChatGPTTelegramBot:
                 logging.exception(e)
                 await update.effective_message.reply_text(
                     message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    reply_to_message_id=get_reply_to_message_id(
+                        self.config, update),
                     text=f"{localized_text('transcribe_fail', bot_language)}: {str(e)}",
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
@@ -549,7 +563,8 @@ class ChatGPTTelegramBot:
                                                                  message_id=sent_message.message_id)
                             sent_message = await update.effective_message.reply_text(
                                 message_thread_id=get_thread_id(update),
-                                reply_to_message_id=get_reply_to_message_id(self.config, update),
+                                reply_to_message_id=get_reply_to_message_id(
+                                    self.config, update),
                                 text=content
                             )
                         except:
@@ -613,13 +628,15 @@ class ChatGPTTelegramBot:
 
                 await wrap_with_indicator(update, context, _reply, constants.ChatAction.TYPING)
 
-            add_chat_request_to_usage_tracker(self.usage, self.config, user_id, total_tokens)
+            add_chat_request_to_usage_tracker(
+                self.usage, self.config, user_id, total_tokens)
 
         except Exception as e:
             logging.exception(e)
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                reply_to_message_id=get_reply_to_message_id(self.config, update),
+                reply_to_message_id=get_reply_to_message_id(
+                    self.config, update),
                 text=f"{localized_text('chat_fail', self.config['bot_language'])} {str(e)}",
                 parse_mode=constants.ParseMode.MARKDOWN
             )
@@ -781,13 +798,15 @@ class ChatGPTTelegramBot:
                     await wrap_with_indicator(update, context, _send_inline_query_response,
                                               constants.ChatAction.TYPING, is_inline=True)
 
-                add_chat_request_to_usage_tracker(self.usage, self.config, user_id, total_tokens)
+                add_chat_request_to_usage_tracker(
+                    self.usage, self.config, user_id, total_tokens)
 
         except Exception as e:
             logging.error(
                 f'Failed to respond to an inline query via button callback: {e}')
             logging.exception(e)
-            localized_answer = localized_text('chat_fail', self.config['bot_language'])
+            localized_answer = localized_text(
+                'chat_fail', self.config['bot_language'])
             await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
                                           text=f"{query}\n\n_{answer_tr}:_\n{localized_answer} {str(e)}",
                                           is_inline=True)
@@ -805,11 +824,13 @@ class ChatGPTTelegramBot:
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
 
         if not await is_allowed(self.config, update, context, is_inline=is_inline):
-            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
+            logging.warning(
+                f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(update, context, is_inline)
             return False
         if not is_within_budget(self.config, self.usage, update, is_inline=is_inline):
-            logging.warning(f'User {name} (id: {user_id}) reached their usage limit')
+            logging.warning(
+                f'User {name} (id: {user_id}) reached their usage limit')
             await self.send_budget_reached_message(update, context, is_inline)
             return False
 
