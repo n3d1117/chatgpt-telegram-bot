@@ -175,6 +175,9 @@ class UsageTracker:
             json.dump(self.usage, outfile)
 
     def add_current_costs(self, request_cost):
+        """
+        Add current cost to all_time, day and month cost and update last_update date.
+        """
         today = date.today()
         last_update = date.fromisoformat(self.usage["current_cost"]["last_update"])
 
