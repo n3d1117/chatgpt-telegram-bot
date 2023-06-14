@@ -1,3 +1,6 @@
+> **Note**
+> Support for functions (aka plugins) is being added! Check out [this discussion](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/345) for more info and contribute!
+
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.8-orange.svg)](https://openai.com/)
