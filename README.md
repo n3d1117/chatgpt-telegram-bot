@@ -100,10 +100,10 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`, `tr`, `it`, `fi`, `es`, `id`, `nl`, `zh-cn`, `zh-tw`, `vi`, `fa`, `pt-br`, `uk`.  [Contribute with additional translations](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219) | `en`                                |
 
 #### Functions
-| Parameter                          | Description                                                                                                                                                                                                                                                           | Default value                       |
-|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
-| `ENABLE_FUNCTIONS`                 | Whether to use functions (aka plugins). You can read more about functions [here](https://openai.com/blog/function-calling-and-other-api-updates)                                                                                                                      | `true` (if available for the model) |
-| `FUNCTIONS_MAX_CONSECUTIVE_CALLS`  | Maximum number of back-to-back function calls to be made by the model before displaying a user-facing message                                                                                                                                                         | `10`                                |
+| Parameter                          | Description                                                                                                                                      | Default value                       |
+|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `ENABLE_FUNCTIONS`                 | Whether to use functions (aka plugins). You can read more about functions [here](https://openai.com/blog/function-calling-and-other-api-updates) | `true` (if available for the model) |
+| `FUNCTIONS_MAX_CONSECUTIVE_CALLS`  | Maximum number of back-to-back function calls to be made by the model in a single response before displaying a user-facing message               | `10`                                |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
