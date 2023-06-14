@@ -14,6 +14,8 @@ from calendar import monthrange
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
+from bot.functions import get_functions_specs, call_function
+
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
 GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613")
@@ -37,6 +39,19 @@ def default_max_tokens(model: str) -> int:
         return base * 4
     elif model in GPT_4_32K_MODELS:
         return base * 8
+
+
+def are_functions_available(model: str) -> bool:
+    """
+    Whether the given model supports functions
+    """
+    # Deprecated models
+    if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314"):
+        return False
+    # Stable models will be updated to support functions on June 27, 2023
+    if model in ("gpt-3.5-turbo", "gpt-4", "gpt-4-32k"):
+        return datetime.date.today() > datetime.date(2023, 6, 27)
+    return True
 
 
 # Load translations
@@ -98,6 +113,8 @@ class OpenAIHelper:
         :return: The answer from the model and the number of tokens used
         """
         response = await self.__common_get_chat_response(chat_id, query)
+        if self.config['enable_functions']:
+            response = await self.__handle_function_call(chat_id, response)
         answer = ''
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
@@ -129,13 +146,15 @@ class OpenAIHelper:
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
+        if self.config['enable_functions']:
+            response = await self.__handle_function_call(chat_id, response, stream=True)
 
         answer = ''
         async for item in response:
             if 'choices' not in item or len(item.choices) == 0:
                 continue
             delta = item.choices[0].delta
-            if 'content' in delta:
+            if 'content' in delta and delta.content is not None:
                 answer += delta.content
                 yield answer, 'not_finished'
         answer = answer.strip()
@@ -186,16 +205,22 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
-            return await openai.ChatCompletion.acreate(
-                model=self.config['model'],
-                messages=self.conversations[chat_id],
-                temperature=self.config['temperature'],
-                n=self.config['n_choices'],
-                max_tokens=self.config['max_tokens'],
-                presence_penalty=self.config['presence_penalty'],
-                frequency_penalty=self.config['frequency_penalty'],
-                stream=stream
-            )
+            common_args = {
+                'model': self.config['model'],
+                'messages': self.conversations[chat_id],
+                'temperature': self.config['temperature'],
+                'n': self.config['n_choices'],
+                'max_tokens': self.config['max_tokens'],
+                'presence_penalty': self.config['presence_penalty'],
+                'frequency_penalty': self.config['frequency_penalty'],
+                'stream': stream
+            }
+
+            if self.config['enable_functions']:
+                common_args['functions'] = get_functions_specs()
+                common_args['function_call'] = 'auto'
+
+            return await openai.ChatCompletion.acreate(**common_args)
 
         except openai.error.RateLimitError as e:
             raise e
@@ -205,6 +230,50 @@ class OpenAIHelper:
 
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+
+    async def __handle_function_call(self, chat_id, response, stream=False, times=0):
+        function_name = ''
+        arguments = ''
+        if stream:
+            async for item in response:
+                if 'choices' in item and len(item.choices) > 0:
+                    first_choice = item.choices[0]
+                    if 'delta' in first_choice \
+                            and 'function_call' in first_choice.delta:
+                        if 'name' in first_choice.delta.function_call:
+                            function_name += first_choice.delta.function_call.name
+                        if 'arguments' in first_choice.delta.function_call:
+                            arguments += str(first_choice.delta.function_call.arguments)
+                    elif 'finish_reason' in first_choice and first_choice.finish_reason == 'function_call':
+                        break
+                    else:
+                        return response
+                else:
+                    return response
+        else:
+            if 'choices' in response and len(response.choices) > 0:
+                first_choice = response.choices[0]
+                if 'function_call' in first_choice.message:
+                    if 'name' in first_choice.message.function_call:
+                        function_name += first_choice.message.function_call.name
+                    if 'arguments' in first_choice.message.function_call:
+                        arguments += str(first_choice.message.function_call.arguments)
+                else:
+                    return response
+            else:
+                return response
+
+        logging.info(f'Calling function {function_name}...')
+        function_response = await call_function(function_name, arguments)
+        self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
+        response = await openai.ChatCompletion.acreate(
+            model=self.config['model'],
+            messages=self.conversations[chat_id],
+            functions=get_functions_specs(),
+            function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
+            stream=stream
+        )
+        return await self.__handle_function_call(chat_id, response, stream, times+1)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
         """
@@ -263,6 +332,12 @@ class OpenAIHelper:
         now = datetime.datetime.now()
         max_age_minutes = self.config['max_conversation_age_minutes']
         return last_updated < now - datetime.timedelta(minutes=max_age_minutes)
+
+    def __add_function_call_to_history(self, chat_id, function_name, content):
+        """
+        Adds a function call to the conversation history
+        """
+        self.conversations[chat_id].append({"role": "function", "name": function_name, "content": content})
 
     def __add_to_history(self, chat_id, role, content):
         """

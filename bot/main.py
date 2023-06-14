@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from openai_helper import OpenAIHelper, default_max_tokens
+from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
 
 
@@ -27,6 +27,7 @@ def main():
 
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
     openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
@@ -41,14 +42,17 @@ def main():
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
         'model': model,
+        'enable_functions': os.environ.get('ENABLE_FUNCTIONS', str(functions_available)).lower() == 'true',
+        'functions_max_consecutive_calls': int(os.environ.get('FUNCTIONS_MAX_CONSECUTIVE_CALLS', 10)),
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
     }
 
-    # log deprecation warning for old budget variable names
-    # old variables are caught in the telegram_config definition for now
-    # remove support for old budget names at some point in the future
+    if openai_config['enable_functions'] and not functions_available:
+        logging.error(f'ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. '
+                        f'Please set ENABLE_FUNCTIONS to false or use a model that supports it.')
+        exit(1)
     if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
         logging.warning('The environment variable MONTHLY_USER_BUDGETS is deprecated. '
                         'Please use USER_BUDGETS with BUDGET_PERIOD instead.')
