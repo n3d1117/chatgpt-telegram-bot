@@ -1,5 +1,5 @@
 python-dotenv~=1.0.0
 pydub~=0.25.1
-tiktoken==0.3.3
-openai==0.27.4
+tiktoken==0.4.0
+openai==0.27.8
 python-telegram-bot==20.2
