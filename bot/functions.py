@@ -18,6 +18,6 @@ async def call_function(function_name, arguments):
     """
     if function_name == "get_current_weather":
         arguments = json.loads(arguments)
-        return await get_current_weather(arguments["location"], arguments["unit"])
+        return await get_current_weather(arguments["latitude"], arguments["longitude"], arguments["unit"])
 
     raise Exception(f"Function {function_name} not found")

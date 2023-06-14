@@ -5,4 +5,3 @@ openai==0.27.8
 python-telegram-bot==20.3
 requests~=2.31.0
 tenacity==8.2.2
-geopy~=2.3.0

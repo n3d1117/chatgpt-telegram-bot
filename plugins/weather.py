@@ -1,7 +1,6 @@
 import json
 
 import requests
-from geopy import Nominatim
 
 
 def weather_function_spec():
@@ -11,9 +10,13 @@ def weather_function_spec():
         "parameters": {
             "type": "object",
             "properties": {
-                "location": {
+                "latitude": {
                     "type": "string",
-                    "description": "The exact city and state, e.g. San Francisco, CA"
+                    "description": "Latitude of the location"
+                },
+                "longitude": {
+                    "type": "string",
+                    "description": "Longitude of the location"
                 },
                 "unit": {
                     "type": "string",
@@ -21,24 +24,23 @@ def weather_function_spec():
                     "description": "The temperature unit to use. Infer this from the provided location.",
                 },
             },
-            "required": ["location", "unit"],
+            "required": ["latitude", "longitude", "unit"],
         }
     }
 
 
-async def get_current_weather(location, unit):
+async def get_current_weather(latitude, longitude, unit):
     """
     Get the current weather in a given location using the Open Meteo API
     Source: https://open-meteo.com/en/docs
-    :param location: The location to get the weather for, in natural language
+    :param latitude: The latitude of the location to get the weather for
+    :param longitude: The longitude of the location to get the weather for
     :param unit: The unit to use for the temperature (`celsius` or `fahrenheit`)
     :return: The JSON response to be fed back to the model
     """
-    geolocator = Nominatim(user_agent="chatgpt-telegram-bot")
-    geoloc = geolocator.geocode(location)
     request = requests.get(f'https://api.open-meteo.com/v1/forecast'
-                           f'?latitude={geoloc.latitude}'
-                           f'&longitude={geoloc.longitude}'
+                           f'?latitude={latitude}'
+                           f'&longitude={longitude}'
                            f'&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_mean,'
                            f'&forecast_days=7'
                            f'&timezone=auto'
