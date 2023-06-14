@@ -12,6 +12,8 @@ import json
 from datetime import date
 from calendar import monthrange
 
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
 GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613")
@@ -145,6 +147,12 @@ class OpenAIHelper:
 
         yield answer, tokens_used
 
+    @retry(
+        reraise=True,
+        retry=retry_if_exception_type(openai.error.RateLimitError),
+        wait=wait_fixed(20),
+        stop=stop_after_attempt(3)
+    )
     async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
         """
         Request a response from the GPT model.
@@ -190,7 +198,7 @@ class OpenAIHelper:
             )
 
         except openai.error.RateLimitError as e:
-            raise Exception(f"⚠️ _{localized_text('openai_rate_limit', bot_language)}._ ⚠️\n{str(e)}") from e
+            raise e
 
         except openai.error.InvalidRequestError as e:
             raise Exception(f"⚠️ _{localized_text('openai_invalid', bot_language)}._ ⚠️\n{str(e)}") from e

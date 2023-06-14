@@ -16,6 +16,7 @@ def main():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # Check if the required environment variables are set
     required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
