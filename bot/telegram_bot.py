@@ -589,7 +589,6 @@ class ChatGPTTelegramBot:
                     stream_response = self.openai.get_chat_response_stream(chat_id=user_id, query=query)
                     i = 0
                     prev = ''
-                    sent_message = None
                     backoff = 0
                     async for content, tokens in stream_response:
                         if len(content.strip()) == 0:
@@ -600,11 +599,10 @@ class ChatGPTTelegramBot:
 
                         if i == 0:
                             try:
-                                if sent_message is not None:
-                                    await edit_message_with_retry(context, chat_id=None,
-                                                                  message_id=inline_message_id,
-                                                                  text=f'{query}\n\n{answer_tr}:\n{content}',
-                                                                  is_inline=True)
+                                await edit_message_with_retry(context, chat_id=None,
+                                                              message_id=inline_message_id,
+                                                              text=f'{query}\n\n{answer_tr}:\n{content}',
+                                                              is_inline=True)
                             except:
                                 continue
 
