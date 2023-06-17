@@ -436,7 +436,8 @@ class ChatGPTTelegramBot:
                                 sent_message = await update.effective_message.reply_text(
                                     message_thread_id=get_thread_id(update),
                                     reply_to_message_id=get_reply_to_message_id(self.config, update),
-                                    text=content
+                                    text=content,
+                                    disable_web_page_preview=True
                                 )
                             except:
                                 continue
