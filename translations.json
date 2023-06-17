@@ -12,7 +12,7 @@
         "stats_conversation":["Current conversation", "chat messages in history", "chat tokens in history"],
         "usage_today":"Usage today",
         "usage_month":"Usage this month",
-        "stats_tokens":"chat tokens used",
+        "stats_tokens":"tokens",
         "stats_images":"images generated",
         "stats_transcribe":["minutes and", "seconds transcribed"],
         "stats_total":"💰 For a total amount of $",

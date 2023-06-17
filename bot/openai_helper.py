@@ -14,7 +14,7 @@ from calendar import monthrange
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-from functions import get_functions_specs, call_function
+from bot.functions import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
@@ -84,14 +84,16 @@ class OpenAIHelper:
     ChatGPT helper class.
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, plugin_manager: PluginManager):
         """
         Initializes the OpenAI helper class with the given configuration.
         :param config: A dictionary containing the GPT configuration
+        :param plugin_manager: The plugin manager
         """
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
+        self.plugin_manager = plugin_manager
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
@@ -112,9 +114,10 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
         """
+        plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query)
         if self.config['enable_functions']:
-            response = await self.__handle_function_call(chat_id, response)
+            response, plugins_used = await self.__handle_function_call(chat_id, response)
         answer = ''
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
@@ -130,11 +133,17 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=answer)
 
         bot_language = self.config['bot_language']
+        show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
         if self.config['show_usage']:
             answer += "\n\n---\n" \
                       f"💰 {str(response.usage['total_tokens'])} {localized_text('stats_tokens', bot_language)}" \
                       f" ({str(response.usage['prompt_tokens'])} {localized_text('prompt', bot_language)}," \
                       f" {str(response.usage['completion_tokens'])} {localized_text('completion', bot_language)})"
+            if show_plugins_used:
+                answer += f"\n🔌 {', '.join(plugin_names)}"
+        elif show_plugins_used:
+            answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
         return answer, response.usage['total_tokens']
 
@@ -145,9 +154,10 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
+        plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
         if self.config['enable_functions']:
-            response = await self.__handle_function_call(chat_id, response, stream=True)
+            response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
 
         answer = ''
         async for item in response:
@@ -161,8 +171,14 @@ class OpenAIHelper:
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
+        show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
         if self.config['show_usage']:
             answer += f"\n\n---\n💰 {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
+            if show_plugins_used:
+                answer += f"\n🔌 {', '.join(plugin_names)}"
+        elif show_plugins_used:
+            answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
         yield answer, tokens_used
 
@@ -217,8 +233,10 @@ class OpenAIHelper:
             }
 
             if self.config['enable_functions']:
-                common_args['functions'] = get_functions_specs()
-                common_args['function_call'] = 'auto'
+                functions = self.plugin_manager.get_functions_specs()
+                if len(functions) > 0:
+                    common_args['functions'] = self.plugin_manager.get_functions_specs()
+                    common_args['function_call'] = 'auto'
 
             return await openai.ChatCompletion.acreate(**common_args)
 
@@ -231,7 +249,7 @@ class OpenAIHelper:
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
-    async def __handle_function_call(self, chat_id, response, stream=False, times=0):
+    async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
         arguments = ''
         if stream:
@@ -247,9 +265,9 @@ class OpenAIHelper:
                     elif 'finish_reason' in first_choice and first_choice.finish_reason == 'function_call':
                         break
                     else:
-                        return response
+                        return response, plugins_used
                 else:
-                    return response
+                    return response, plugins_used
         else:
             if 'choices' in response and len(response.choices) > 0:
                 first_choice = response.choices[0]
@@ -259,21 +277,24 @@ class OpenAIHelper:
                     if 'arguments' in first_choice.message.function_call:
                         arguments += str(first_choice.message.function_call.arguments)
                 else:
-                    return response
+                    return response, plugins_used
             else:
-                return response
+                return response, plugins_used
 
-        logging.info(f'Calling function {function_name}...')
-        function_response = await call_function(function_name, arguments)
+        logging.info(f'Calling function {function_name} with arguments {arguments}')
+        function_response = await self.plugin_manager.call_function(function_name, arguments)
+        logging.info(f'Got response {function_response}')
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
         response = await openai.ChatCompletion.acreate(
             model=self.config['model'],
             messages=self.conversations[chat_id],
-            functions=get_functions_specs(),
+            functions=self.plugin_manager.get_functions_specs(),
             function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
             stream=stream
         )
-        return await self.__handle_function_call(chat_id, response, stream, times+1)
+        if function_name not in plugins_used:
+            plugins_used += (function_name,)
+        return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
         """

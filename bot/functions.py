@@ -1,23 +1,48 @@
 import json
 
-from plugins.weather import weather_function_spec, get_current_weather
+from bot.plugins.crypto import CryptoPlugin
+from bot.plugins.weather import WeatherPlugin
+from bot.plugins.web_search import WebSearchPlugin
+from bot.plugins.wolfram_alpha import WolframAlphaPlugin
 
 
-def get_functions_specs():
+class PluginManager:
     """
-    Return the list of function specs that can be called by the model
+    A class to manage the plugins and call the correct functions
     """
-    return [
-        weather_function_spec(),
-    ]
+    def __init__(self, config):
+        enabled_plugins = config.get('plugins', [])
+        plugins = [
+            WolframAlphaPlugin() if 'wolfram' in enabled_plugins else None,
+            WeatherPlugin() if 'weather' in enabled_plugins else None,
+            CryptoPlugin() if 'crypto' in enabled_plugins else None,
+            WebSearchPlugin() if 'web_search' in enabled_plugins else None,
+        ]
+        self.plugins = [plugin for plugin in plugins if plugin is not None]
 
+    def get_functions_specs(self):
+        """
+        Return the list of function specs that can be called by the model
+        """
+        return [plugin.get_spec() for plugin in self.plugins]
 
-async def call_function(function_name, arguments):
-    """
-    Call a function based on the name and parameters provided
-    """
-    if function_name == "get_current_weather":
-        arguments = json.loads(arguments)
-        return await get_current_weather(arguments["latitude"], arguments["longitude"], arguments["unit"])
+    async def call_function(self, function_name, arguments):
+        """
+        Call a function based on the name and parameters provided
+        """
+        plugin = self.__get_plugin_by_function_name(function_name)
+        if not plugin:
+            return json.dumps({'error': f'Function {function_name} not found'})
+        return json.dumps(await plugin.execute(**json.loads(arguments)))
 
-    raise Exception(f"Function {function_name} not found")
+    def get_plugin_source_name(self, function_name) -> str:
+        """
+        Return the source name of the plugin
+        """
+        plugin = self.__get_plugin_by_function_name(function_name)
+        if not plugin:
+            return ''
+        return plugin.get_source_name()
+
+    def __get_plugin_by_function_name(self, function_name):
+        return next((plugin for plugin in self.plugins if plugin.get_spec().get('name') == function_name), None)

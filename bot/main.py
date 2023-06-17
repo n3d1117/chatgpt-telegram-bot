@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
+from bot.functions import PluginManager
 from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
 
@@ -47,6 +48,7 @@ def main():
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
+        'show_plugins_used': os.environ.get('SHOW_PLUGINS_USED', 'false').lower() == 'true',
     }
 
     if openai_config['enable_functions'] and not functions_available:
@@ -82,8 +84,13 @@ def main():
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
     }
 
+    plugin_config = {
+        'plugins': os.environ.get('PLUGINS', '').split(',')
+    }
+
     # Setup and run ChatGPT and Telegram bot
-    openai_helper = OpenAIHelper(config=openai_config)
+    plugin_manager = PluginManager(config=plugin_config)
+    openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
     telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 
