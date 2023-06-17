@@ -107,9 +107,9 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 |-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
 | `ENABLE_FUNCTIONS`                | Whether to use functions (aka plugins). You can read more about functions [here](https://openai.com/blog/function-calling-and-other-api-updates) | `true` (if available for the model) |
 | `FUNCTIONS_MAX_CONSECUTIVE_CALLS` | Maximum number of back-to-back function calls to be made by the model in a single response before displaying a user-facing message               | `10`                                |
-| `PLUGINS`                         | List of plugins to enable (`wolfram`, `weather`, `crypto`, `web_search`), e.g: PLUGINS=wolfram,weather                                           | `-`                                 |
+| `PLUGINS`                         | List of plugins to enable (`wolfram`, `weather`, `crypto`, `web_search`), e.g: `PLUGINS=wolfram,weather                                          | `-`                                 |
 | `SHOW_PLUGINS_USED`               | Whether to show which plugins were used for a response                                                                                           | `false`                             |
-| `WOLFRAM_APP_ID`                  | Wolfram Alpha APP ID (required for the `wolfram` plugin, you can get one [here](https://products.wolframalpha.com/simple-api/documentation)      | `false`                             |
+| `WOLFRAM_APP_ID`                  | Wolfram Alpha APP ID (required for the `wolfram` plugin, you can get one [here](https://products.wolframalpha.com/simple-api/documentation))     | `false`                             |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
