@@ -390,10 +390,6 @@ class ChatGPTTelegramBot:
             if self.config['stream']:
                 async def _reply():
                     nonlocal total_tokens
-                    await update.effective_message.reply_chat_action(
-                        action=constants.ChatAction.TYPING,
-                        message_thread_id=get_thread_id(update)
-                    )
 
                     stream_response = self.openai.get_chat_response_stream(chat_id=chat_id, query=prompt)
                     i = 0
