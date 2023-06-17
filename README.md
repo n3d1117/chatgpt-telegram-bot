@@ -33,11 +33,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 - [x] (NEW!) Support *new models* [announced on June 13, 2023](https://openai.com/blog/function-calling-and-other-api-updates)
 - [x] (NEW!) Support *functions* (plugins) to extend the bot's functionality with 3rd party services
-  - Currently available functions:
-    - Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))
-    - Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)
-    - WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com)) - requires a WolframAlpha API key
-    - Web search (powered by [DuckDuckGo](https://duckduckgo.com))
+  - See [here](#available-plugins) for a list of available plugins
 
 ## Additional features - help needed!
 If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
@@ -107,9 +103,17 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 |-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
 | `ENABLE_FUNCTIONS`                | Whether to use functions (aka plugins). You can read more about functions [here](https://openai.com/blog/function-calling-and-other-api-updates) | `true` (if available for the model) |
 | `FUNCTIONS_MAX_CONSECUTIVE_CALLS` | Maximum number of back-to-back function calls to be made by the model in a single response before displaying a user-facing message               | `10`                                |
-| `PLUGINS`                         | List of plugins to enable (`wolfram`, `weather`, `crypto`, `web_search`), e.g: `PLUGINS=wolfram,weather                                          | `-`                                 |
+| `PLUGINS`                         | List of plugins to enable (see below for a full list), e.g: `PLUGINS=wolfram,weather`                                                            | `-`                                 |
 | `SHOW_PLUGINS_USED`               | Whether to show which plugins were used for a response                                                                                           | `false`                             |
 | `WOLFRAM_APP_ID`                  | Wolfram Alpha APP ID (required for the `wolfram` plugin, you can get one [here](https://products.wolframalpha.com/simple-api/documentation))     | `false`                             |
+
+#### Available plugins
+| Name         | Description                                                                                                         | Requires API key |
+|--------------|---------------------------------------------------------------------------------------------------------------------|------------------|
+| `weather`    | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                 | `-`              |
+| `wolfram`    | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                      | `WOLFRAM_APP_ID` |
+| `web_search` | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                        | `-`              |
+| `crypto`     | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr) | `-`              |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
