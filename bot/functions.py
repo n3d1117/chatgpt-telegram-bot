@@ -1,9 +1,9 @@
 import json
 
-from bot.plugins.crypto import CryptoPlugin
-from bot.plugins.weather import WeatherPlugin
-from bot.plugins.web_search import WebSearchPlugin
-from bot.plugins.wolfram_alpha import WolframAlphaPlugin
+from plugins.crypto import CryptoPlugin
+from plugins.weather import WeatherPlugin
+from plugins.web_search import WebSearchPlugin
+from plugins.wolfram_alpha import WolframAlphaPlugin
 
 
 class PluginManager:

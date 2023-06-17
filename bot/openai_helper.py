@@ -14,7 +14,7 @@ from calendar import monthrange
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-from bot.functions import PluginManager
+from functions import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")

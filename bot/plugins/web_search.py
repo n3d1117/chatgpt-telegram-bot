@@ -3,7 +3,7 @@ from typing import Dict
 
 from duckduckgo_search import DDGS
 
-from bot.plugins.plugin import Plugin
+from .plugin import Plugin
 
 
 class WebSearchPlugin(Plugin):
