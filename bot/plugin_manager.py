@@ -1,5 +1,7 @@
 import json
 
+from plugins.python import PythonPlugin
+from plugins.spotify import SpotifyPlugin
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
 from plugins.web_search import WebSearchPlugin
@@ -12,19 +14,20 @@ class PluginManager:
     """
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
-        plugins = [
-            WolframAlphaPlugin() if 'wolfram' in enabled_plugins else None,
-            WeatherPlugin() if 'weather' in enabled_plugins else None,
-            CryptoPlugin() if 'crypto' in enabled_plugins else None,
-            WebSearchPlugin() if 'web_search' in enabled_plugins else None,
-        ]
-        self.plugins = [plugin for plugin in plugins if plugin is not None]
+        plugin_mapping = {
+            'wolfram': WolframAlphaPlugin(),
+            'weather': WeatherPlugin(),
+            'crypto': CryptoPlugin(),
+            'web_search': WebSearchPlugin(),
+            'spotify': SpotifyPlugin(),
+        }
+        self.plugins = [plugin_mapping[plugin] for plugin in enabled_plugins]
 
     def get_functions_specs(self):
         """
         Return the list of function specs that can be called by the model
         """
-        return [plugin.get_spec() for plugin in self.plugins]
+        return [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
 
     async def call_function(self, function_name, arguments):
         """
@@ -45,4 +48,5 @@ class PluginManager:
         return plugin.get_source_name()
 
     def __get_plugin_by_function_name(self, function_name):
-        return next((plugin for plugin in self.plugins if plugin.get_spec().get('name') == function_name), None)
+        return next((plugin for plugin in self.plugins
+                     if function_name in map(lambda spec: spec.get('name'), plugin.get_spec())), None)

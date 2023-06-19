@@ -19,8 +19,8 @@ class WolframAlphaPlugin(Plugin):
     def get_source_name(self) -> str:
         return "WolframAlpha"
 
-    def get_spec(self) -> Dict:
-        return {
+    def get_spec(self) -> [Dict]:
+        return [{
             "name": "answer_with_wolfram_alpha",
             "description": "Get an answer to a question using Wolfram Alpha. Input should the the query in English.",
             "parameters": {
@@ -30,9 +30,9 @@ class WolframAlphaPlugin(Plugin):
                 },
                 "required": ["query"]
             }
-        }
+        }]
 
-    async def execute(self, **kwargs) -> Dict:
+    async def execute(self, function_name, **kwargs) -> Dict:
         client = wolframalpha.Client(self.app_id)
         res = client.query(kwargs['query'])
         try:

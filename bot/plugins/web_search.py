@@ -14,8 +14,8 @@ class WebSearchPlugin(Plugin):
     def get_source_name(self) -> str:
         return "DuckDuckGo"
 
-    def get_spec(self) -> Dict:
-        return {
+    def get_spec(self) -> [Dict]:
+        return [{
             "name": "web_search",
             "description": "Execute a web search for the given query and return a list of results",
             "parameters": {
@@ -28,9 +28,9 @@ class WebSearchPlugin(Plugin):
                 },
                 "required": ["query"],
             },
-        }
+        }]
 
-    async def execute(self, **kwargs) -> Dict:
+    async def execute(self, function_name, **kwargs) -> Dict:
         with DDGS() as ddgs:
             ddgs_gen = ddgs.text(
                 kwargs['query'],

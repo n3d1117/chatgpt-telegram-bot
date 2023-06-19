@@ -106,14 +106,18 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `PLUGINS`                         | List of plugins to enable (see below for a full list), e.g: `PLUGINS=wolfram,weather`                                                            | `-`                                 |
 | `SHOW_PLUGINS_USED`               | Whether to show which plugins were used for a response                                                                                           | `false`                             |
 | `WOLFRAM_APP_ID`                  | Wolfram Alpha APP ID (required for the `wolfram` plugin, you can get one [here](https://products.wolframalpha.com/simple-api/documentation))     | `-`                                 |
+| `SPOTIFY_CLIENT_ID`               | Spotify app Client ID (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))          | `-`                                 |
+| `SPOTIFY_CLIENT_SECRET`           | Spotify app Client Secret (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))      | `-`                                 |
+| `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))       | `-`                                 |
 
 #### Available plugins
-| Name         | Description                                                                                                         | Required API key |
-|--------------|---------------------------------------------------------------------------------------------------------------------|------------------|
-| `weather`    | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                 | `-`              |
-| `wolfram`    | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                      | `WOLFRAM_APP_ID` |
-| `web_search` | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                        | `-`              |
-| `crypto`     | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr) | `-`              |
+| Name         | Description                                                                                                                         | Required API key(s)                                                  |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| `weather`    | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                 | `-`                                                                  |
+| `wolfram`    | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                      | `WOLFRAM_APP_ID`                                                     |
+| `web_search` | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                        | `-`                                                                  |
+| `crypto`     | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                 | `-`                                                                  |
+| `spotify`    | Spotify top tracks/artists and currently playing song (powered by [Spotify](https://spotify.com)). Requires one-time auth approval. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 

@@ -15,15 +15,15 @@ class Plugin(ABC):
         pass
 
     @abstractmethod
-    def get_spec(self) -> Dict:
+    def get_spec(self) -> [Dict]:
         """
-        Function spec in the form of JSON schema as specified in the OpenAI documentation:
+        Function specs in the form of JSON schema as specified in the OpenAI documentation:
         https://platform.openai.com/docs/api-reference/chat/create#chat/create-functions
         """
         pass
 
     @abstractmethod
-    async def execute(self, **kwargs) -> Dict:
+    async def execute(self, function_name, **kwargs) -> Dict:
         """
         Execute the plugin and return a JSON serializable response
         """

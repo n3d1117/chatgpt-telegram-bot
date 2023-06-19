@@ -13,8 +13,8 @@ class CryptoPlugin(Plugin):
     def get_source_name(self) -> str:
         return "CoinCap"
 
-    def get_spec(self) -> Dict:
-        return {
+    def get_spec(self) -> [Dict]:
+        return [{
             "name": "get_crypto_rate",
             "description": "Get the current rate of various crypto currencies",
             "parameters": {
@@ -24,7 +24,7 @@ class CryptoPlugin(Plugin):
                 },
                 "required": ["asset"],
             },
-        }
+        }]
 
-    async def execute(self, **kwargs) -> Dict:
+    async def execute(self, function_name, **kwargs) -> Dict:
         return requests.get(f"https://api.coincap.io/v2/rates/{kwargs['asset']}").json()
