@@ -1,6 +1,5 @@
 import json
 
-from plugins.python import PythonPlugin
 from plugins.spotify import SpotifyPlugin
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
