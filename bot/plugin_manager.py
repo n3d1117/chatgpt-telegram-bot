@@ -35,7 +35,7 @@ class PluginManager:
         plugin = self.__get_plugin_by_function_name(function_name)
         if not plugin:
             return json.dumps({'error': f'Function {function_name} not found'})
-        return json.dumps(await plugin.execute(**json.loads(arguments)))
+        return json.dumps(await plugin.execute(function_name, **json.loads(arguments)))
 
     def get_plugin_source_name(self, function_name) -> str:
         """
