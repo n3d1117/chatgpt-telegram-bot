@@ -136,6 +136,8 @@ class SpotifyPlugin(Plugin):
         Fetch user's currently playing song from Spotify
         """
         currently_playing = self.spotify.current_user_playing_track()
+        if not currently_playing:
+            return {"result": "No song is currently playing"}
         result = {
             'name': currently_playing['item']['name'],
             'artist': currently_playing['item']['artists'][0]['name'],
