@@ -41,7 +41,7 @@ class SpotifyPlugin(Plugin):
         }
         limit_param = {
             "type": "integer",
-            "description": "The number of results to return. Max is 50. Default to 10 if not specified."
+            "description": "The number of results to return. Max is 50. Default to 5 if not specified."
                            "Ignore if action is currently_playing",
         }
         type_param = {
@@ -114,7 +114,7 @@ class SpotifyPlugin(Plugin):
 
     async def execute(self, function_name, **kwargs) -> Dict:
         time_range = kwargs.get('time_range', 'short_term')
-        limit = kwargs.get('limit', 10)
+        limit = kwargs.get('limit', 5)
 
         if function_name == 'spotify_get_currently_playing_song':
             return self.fetch_currently_playing()
@@ -155,6 +155,8 @@ class SpotifyPlugin(Plugin):
         """
         results = []
         top_tracks = self.spotify.current_user_top_tracks(limit=limit, time_range=time_range)
+        if not top_tracks or 'items' not in top_tracks or len(top_tracks['items']) == 0:
+            return {"results": "No top tracks found"}
         for item in top_tracks['items']:
             results.append({
                 'name': item['name'],
@@ -176,6 +178,8 @@ class SpotifyPlugin(Plugin):
         """
         results = []
         top_artists = self.spotify.current_user_top_artists(limit=limit, time_range=time_range)
+        if not top_artists or 'items' not in top_artists or len(top_artists['items']) == 0:
+            return {"results": "No top artists found"}
         for item in top_artists['items']:
             results.append({
                 'name': item['name'],
@@ -190,6 +194,9 @@ class SpotifyPlugin(Plugin):
         """
         results = {}
         search_response = self.spotify.search(q=query, limit=limit, type=search_type)
+        if not search_response:
+            return {"results": "No content found"}
+
         if 'tracks' in search_response:
             results['tracks'] = []
             for item in search_response['tracks']['items']:
@@ -233,15 +240,23 @@ class SpotifyPlugin(Plugin):
         """
         if search_type == 'track':
             search_response = self.spotify.track(content_id)
+            if not search_response:
+                return {"result": "No track found"}
             return {'result': self._get_track(search_response)}
 
         elif search_type == 'artist':
             search_response = self.spotify.artist(content_id)
+            if not search_response:
+                return {"result": "No artisti found"}
             albums_response = self.spotify.artist_albums(artist_id=content_id, limit=3)
+            if not albums_response:
+                albums_response = {"items": []}
             return {'result': self._get_artist(search_response, albums_response)}
 
         elif search_type == 'album':
             search_response = self.spotify.album(content_id)
+            if not search_response:
+                return {"result": "No album found"}
             return {'result': self._get_album(search_response)}
 
         else:
