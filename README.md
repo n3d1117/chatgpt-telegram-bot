@@ -111,13 +111,15 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))       | `-`                                 |
 
 #### Available plugins
-| Name         | Description                                                                                                                         | Required API key(s)                                                  |
-|--------------|-------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| `weather`    | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                 | `-`                                                                  |
-| `wolfram`    | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                      | `WOLFRAM_APP_ID`                                                     |
-| `web_search` | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                        | `-`                                                                  |
-| `crypto`     | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                 | `-`                                                                  |
-| `spotify`    | Spotify top tracks/artists and currently playing song (powered by [Spotify](https://spotify.com)). Requires one-time auth approval. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
+| Name           | Description                                                                                                                                         | Required API key(s)                                                  |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| `weather`      | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                                 | `-`                                                                  |
+| `wolfram`      | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                                      | `WOLFRAM_APP_ID`                                                     |
+| `web_search`   | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                                        | `-`                                                                  |
+| `crypto`       | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                                 | `-`                                                                  |
+| `spotify`      | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
+| `translate`    | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | `-`                                                                  |
+| `image_search` | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | `-`                                                                  |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
