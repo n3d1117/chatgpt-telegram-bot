@@ -37,7 +37,7 @@ class ImageSearchPlugin(Plugin):
                 kwargs['query'],
                 region="wt-wt",
                 safesearch='off',
-                type_image=kwargs['type'],
+                type_image=kwargs.get('type', 'photo'),
             )
             results = list(islice(ddgs_images_gen, 1))
             return {"result": results[0]["image"]}
