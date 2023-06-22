@@ -1,5 +1,7 @@
 import json
 
+from plugins.images import ImageSearchPlugin
+from plugins.translate import TranslatePlugin
 from plugins.spotify import SpotifyPlugin
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
@@ -19,6 +21,8 @@ class PluginManager:
             'crypto': CryptoPlugin(),
             'web_search': WebSearchPlugin(),
             'spotify': SpotifyPlugin(),
+            'translate': TranslatePlugin(),
+            'image_search': ImageSearchPlugin(),
         }
         self.plugins = [plugin_mapping[plugin] for plugin in enabled_plugins]
 
