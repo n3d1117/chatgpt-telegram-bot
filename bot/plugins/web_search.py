@@ -37,7 +37,7 @@ class WebSearchPlugin(Plugin):
                 region='wt-wt',
                 safesearch='off'
             )
-            results = list(islice(ddgs_gen, 8))
+            results = list(islice(ddgs_gen, 3))
 
             if results is None or len(results) == 0:
                 return {"Result": "No good DuckDuckGo Search Result was found"}

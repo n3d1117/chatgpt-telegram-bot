@@ -15,6 +15,13 @@ class WeatherPlugin(Plugin):
         return "OpenMeteo"
 
     def get_spec(self) -> [Dict]:
+        latitude_param = {"type": "string", "description": "Latitude of the location"}
+        longitude_param = {"type": "string", "description": "Longitude of the location"}
+        unit_param = {
+            "type": "string",
+            "enum": ["celsius", "fahrenheit"],
+            "description": "The temperature unit to use. Infer this from the provided location.",
+        }
         return [
             {
                 "name": "get_current_weather",
@@ -22,13 +29,9 @@ class WeatherPlugin(Plugin):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "latitude": {"type": "string", "description": "Latitude of the location"},
-                        "longitude": {"type": "string", "description": "Longitude of the location"},
-                        "unit": {
-                            "type": "string",
-                            "enum": ["celsius", "fahrenheit"],
-                            "description": "The temperature unit to use. Infer this from the provided location.",
-                        },
+                        "latitude": latitude_param,
+                        "longitude": longitude_param,
+                        "unit": unit_param,
                     },
                     "required": ["latitude", "longitude", "unit"],
                 },
@@ -40,13 +43,9 @@ class WeatherPlugin(Plugin):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "latitude": {"type": "string", "description": "Latitude of the location"},
-                        "longitude": {"type": "string", "description": "Longitude of the location"},
-                        "unit": {
-                            "type": "string",
-                            "enum": ["celsius", "fahrenheit"],
-                            "description": "The temperature unit to use. Infer this from the provided location.",
-                        },
+                        "latitude": latitude_param,
+                        "longitude": longitude_param,
+                        "unit": unit_param,
                         "forecast_days": {
                             "type": "integer",
                             "description": "The number of days to forecast, including today. Default is 7. Max 14. "

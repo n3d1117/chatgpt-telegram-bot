@@ -36,13 +36,12 @@ class SpotifyPlugin(Plugin):
             "type": "string",
             "enum": ["short_term", "medium_term", "long_term"],
             "description": "The time range of the data to be returned. Short term is the last 4 weeks, "
-                           "medium term is last 6 months, long term is last several years. "
-                           "Ignore if action is currently_playing",
+                           "medium term is last 6 months, long term is last several years. Default to "
+                           "short_term if not specified."
         }
         limit_param = {
             "type": "integer",
-            "description": "The number of results to return. Max is 50. Default to 5 if not specified."
-                           "Ignore if action is currently_playing",
+            "description": "The number of results to return. Max is 50. Default to 5 if not specified.",
         }
         type_param = {
             "type": "string",
@@ -60,7 +59,7 @@ class SpotifyPlugin(Plugin):
             },
             {
                 "name": "spotify_get_users_top_artists",
-                "description": "Get the user's top artists",
+                "description": "Get the user's top listened artists",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -71,7 +70,7 @@ class SpotifyPlugin(Plugin):
             },
             {
                 "name": "spotify_get_users_top_tracks",
-                "description": "Get the user's top tracks",
+                "description": "Get the user's top listened tracks",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -262,7 +261,8 @@ class SpotifyPlugin(Plugin):
         else:
             return {'error': 'Invalid search type. Must be track, artist or album'}
 
-    def _get_artist(self, response, albums):
+    @staticmethod
+    def _get_artist(response, albums):
         return {
             'name': response['name'],
             'url': response['external_urls']['spotify'],
@@ -281,7 +281,8 @@ class SpotifyPlugin(Plugin):
             ],
         }
 
-    def _get_track(self, response):
+    @staticmethod
+    def _get_track(response):
         return {
             'name': response['name'],
             'artist': response['artists'][0]['name'],
@@ -295,7 +296,8 @@ class SpotifyPlugin(Plugin):
             'explicit': response['explicit'],
         }
 
-    def _get_album(self, response):
+    @staticmethod
+    def _get_album(response):
         return {
             'name': response['name'],
             'artist': response['artists'][0]['name'],
