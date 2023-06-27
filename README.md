@@ -109,6 +109,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `SPOTIFY_CLIENT_ID`               | Spotify app Client ID (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))          | `-`                                 |
 | `SPOTIFY_CLIENT_SECRET`           | Spotify app Client Secret (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))      | `-`                                 |
 | `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))       | `-`                                 |
+| `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                        | `-`                                 |
 
 #### Available plugins
 | Name           | Description                                                                                                                                         | Required API key(s)                                                  |
@@ -119,6 +120,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `crypto`       | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                                 | `-`                                                                  |
 | `spotify`      | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
 | `translate`    | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | `-`                                                                  |
+| `deepl`        | Translate text to any language (powered by [DeepL](https://deepl.com))                                                                              | `DEEPL_API_KEY`                                                      |
 | `image_search` | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | `-`                                                                  |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
