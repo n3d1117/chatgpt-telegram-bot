@@ -5,7 +5,7 @@ from duckduckgo_search import DDGS
 from .plugin import Plugin
 
 
-class TranslatePlugin(Plugin):
+class DDGTranslatePlugin(Plugin):
     """
     A plugin to translate a given text from a language to another, using DuckDuckGo
     """

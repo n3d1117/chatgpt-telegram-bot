@@ -112,16 +112,16 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `WORLDTIME_DEFAULT_TIMEZONE`      | Default timezone to use, i.e. `Europe/Rome` (required only for the `worldtimeapi` plugin, you can get TZ Identifiers from [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) | -                                   |
 
 #### Available plugins
-| Name           | Description                                                                                                                                         | Required environment variable(s)                                     |
-|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| `weather`      | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                                 | -                                                                    |
-| `wolfram`      | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                                      | `WOLFRAM_APP_ID`                                                     |
-| `web_search`   | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                                        | -                                                                    |
-| `crypto`       | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                                 | -                                                                    |
-| `spotify`      | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
-| `translate`    | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | -                                                                    |
-| `image_search` | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | -                                                                    |
-| `worldtimeapi` | Get latest world time (powered by [WorldTimeAPI](https://worldtimeapi.org/))                                                                        | `WORLDTIME_DEFAULT_TIMEZONE`                                         |
+| Name               | Description                                                                                                                                         | Required environment variable(s)                                     |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| `weather`          | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                                 | -                                                                    |
+| `wolfram`          | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                                      | `WOLFRAM_APP_ID`                                                     |
+| `ddg_web_search`   | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                                        | -                                                                    |
+| `ddg_translate`    | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | -                                                                    |
+| `ddg_image_search` | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | -                                                                    |
+| `crypto`           | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                                 | -                                                                    |
+| `spotify`          | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
+| `worldtimeapi`     | Get latest world time (powered by [WorldTimeAPI](https://worldtimeapi.org/))                                                                        | `WORLDTIME_DEFAULT_TIMEZONE`                                         |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 

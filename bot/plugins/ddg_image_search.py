@@ -6,7 +6,7 @@ from duckduckgo_search import DDGS
 from .plugin import Plugin
 
 
-class ImageSearchPlugin(Plugin):
+class DDGImageSearchPlugin(Plugin):
     """
     A plugin to search images and GIFs for a given query, using DuckDuckGo
     """
@@ -24,7 +24,7 @@ class ImageSearchPlugin(Plugin):
                     "type": {
                         "type": "string",
                         "enum": ["photo", "gif"],
-                        "description": "The type of image to search for. Default to photo if not specified",
+                        "description": "The type of image to search for. Default to `photo` if not specified",
                     }
                 },
                 "required": ["query", "type"],

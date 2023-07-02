@@ -6,7 +6,7 @@ from duckduckgo_search import DDGS
 from .plugin import Plugin
 
 
-class WebSearchPlugin(Plugin):
+class DDGWebSearchPlugin(Plugin):
     """
     A plugin to search the web for a given query, using DuckDuckGo
     """
