@@ -13,9 +13,9 @@ class DeeplTranslatePlugin(Plugin):
 
     def __init__(self):
             deepl_api_key = os.getenv('DEEPL_API_KEY')
-            deepl_api_pro = os.getenv('DEEPL_API_PRO', 'false').lower() == 'true'
+            deepl_api_pro = os.getenv('DEEPL_API_PRO').lower() == 'true'
             if not deepl_api_key or not deepl_api_pro:
-                raise ValueError('DEEPL_API_KEY and DEEPL_API_PLAN environment variable must be set to use DeepL Plugin')
+                raise ValueError('DEEPL_API_KEY and DEEPL_API_PRO environment variable must be set to use DeepL Plugin')
             self.api_key = deepl_api_key
             self.api_pro = deepl_api_pro
 
