@@ -13,9 +13,11 @@ class DeeplTranslatePlugin(Plugin):
 
     def __init__(self):
             deepl_api_key = os.getenv('DEEPL_API_KEY')
-            if not deepl_api_key:
-                raise ValueError('DEEPL_API_KEY environment variable must be set to use DeeplPlugin')
+            deepl_api_pro = os.getenv('DEEPL_API_PRO', 'false').lower() == 'true'
+            if not deepl_api_key or not deepl_api_pro:
+                raise ValueError('DEEPL_API_KEY and DEEPL_API_PLAN environment variable must be set to use DeepL Plugin')
             self.api_key = deepl_api_key
+            self.api_pro = deepl_api_pro
 
     def get_source_name(self) -> str:
         return "DeepL Translate"
@@ -35,13 +37,20 @@ class DeeplTranslatePlugin(Plugin):
         }]
 
     async def execute(self, function_name, **kwargs) -> Dict:
-        translator = requests.get(
-            "https://api.deepl.com/v2/translate",
-            params={ 
-                "auth_key": self.api_key, 
-                "target_lang": kwargs['to_language'], 
-                "text": kwargs['text'], 
-            }, 
-        ) 
-        translated_text = translator.json()["translations"][0]["text"]
-        return translated_text
+        if self.api_pro:
+            url = "https://api.deepl.com/v2/translate"
+        else:
+            url = "https://api-free.deepl.com/v2/translate"
+             
+        headers = {
+            "Authorization": f"DeepL-Auth-Key {self.api_key}",
+            "User-Agent": "chatgpt-telegram-bot/0.2.7",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        data = {
+            "text": kwargs['text'],
+            "target_lang": kwargs['to_language']
+        }
+
+        return requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]
