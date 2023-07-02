@@ -16,15 +16,15 @@ class PluginManager:
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
         plugin_mapping = {
-            'wolfram': WolframAlphaPlugin(),
-            'weather': WeatherPlugin(),
-            'crypto': CryptoPlugin(),
-            'web_search': WebSearchPlugin(),
-            'spotify': SpotifyPlugin(),
-            'translate': TranslatePlugin(),
-            'image_search': ImageSearchPlugin(),
+            'wolfram': WolframAlphaPlugin,
+            'weather': WeatherPlugin,
+            'crypto': CryptoPlugin,
+            'web_search': WebSearchPlugin,
+            'spotify': SpotifyPlugin,
+            'translate': TranslatePlugin,
+            'image_search': ImageSearchPlugin,
         }
-        self.plugins = [plugin_mapping[plugin] for plugin in enabled_plugins]
+        self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
     def get_functions_specs(self):
         """
