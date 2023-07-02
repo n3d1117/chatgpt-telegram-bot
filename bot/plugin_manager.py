@@ -7,7 +7,7 @@ from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
 from plugins.web_search import WebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
-
+from plugins.worldtimeapi import WorldTimeApiPlugin
 
 class PluginManager:
     """
@@ -23,6 +23,7 @@ class PluginManager:
             'spotify': SpotifyPlugin,
             'translate': TranslatePlugin,
             'image_search': ImageSearchPlugin,
+            'worldtimeapi': WorldTimeApiPlugin,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 

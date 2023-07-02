@@ -109,6 +109,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `SPOTIFY_CLIENT_ID`               | Spotify app Client ID (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))          | `-`                                 |
 | `SPOTIFY_CLIENT_SECRET`           | Spotify app Client Secret (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))      | `-`                                 |
 | `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))       | `-`                                 |
+| `WORLDTIME_DEFAULT_TIMEZONE`      | Default timezone to use (required for the `worldtimeapi` plugin, you can get TZ Identifiers from [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones))       | `-`                                 |
 
 #### Available plugins
 | Name           | Description                                                                                                                                         | Required API key(s)                                                  |
@@ -120,6 +121,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `spotify`      | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` |
 | `translate`    | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | `-`                                                                  |
 | `image_search` | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | `-`                                                                  |
+| `worldtimeapi` | Get latest world time (powered by [WorldTimeAPI](https://worldtimeapi.org/))                                                                        | `-`                                                                  |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 
