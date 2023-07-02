@@ -21,7 +21,7 @@ class WorldTimeApiPlugin(Plugin):
     def get_spec(self) -> [Dict]:
         return [{
             "name": "worldtimeapi",
-            "description": "Get the current time from a given timezone. use " + self.plugin_tz + " if not specified. include 12hr format in the response.",
+            "description": f"Get the current time from a given timezone. include 12hr format in the response. use {self.plugin_tz} if timezone not specified.",
             "parameters": {
                 "type": "object",
                 "properties": {
