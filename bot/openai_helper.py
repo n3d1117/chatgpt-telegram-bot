@@ -179,7 +179,7 @@ class OpenAIHelper:
                 try:
                     summary = await self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
-                    self.reset_chat_history(chat_id)
+                    self.reset_chat_history(chat_id, self.conversations[chat_id][0]['content'])
                     self.__add_to_history(chat_id, role="assistant", content=summary)
                     self.__add_to_history(chat_id, role="user", content=query)
                 except Exception as e:
