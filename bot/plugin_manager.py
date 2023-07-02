@@ -9,10 +9,12 @@ from plugins.web_search import WebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
 
+
 class PluginManager:
     """
     A class to manage the plugins and call the correct functions
     """
+
     def __init__(self, config):
         enabled_plugins = config.get('plugins', [])
         plugin_mapping = {
