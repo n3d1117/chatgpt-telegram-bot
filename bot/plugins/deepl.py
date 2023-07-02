@@ -13,11 +13,9 @@ class DeeplTranslatePlugin(Plugin):
 
     def __init__(self):
             deepl_api_key = os.getenv('DEEPL_API_KEY')
-            deepl_api_pro = os.getenv('DEEPL_API_PRO', 'false').lower() == 'true'
             if not deepl_api_key:
                 raise ValueError('DEEPL_API_KEY environment variable must be set to use DeepL Plugin')
             self.api_key = deepl_api_key
-            self.api_pro = deepl_api_pro
 
     def get_source_name(self) -> str:
         return "DeepL Translate"
@@ -37,10 +35,10 @@ class DeeplTranslatePlugin(Plugin):
         }]
 
     async def execute(self, function_name, **kwargs) -> Dict:
-        if self.api_pro:
-            url = "https://api.deepl.com/v2/translate"
-        else:
+        if self.api_key.endswith(':fx'):
             url = "https://api-free.deepl.com/v2/translate"
+        else:
+            url = "https://api.deepl.com/v2/translate"
              
         headers = {
             "Authorization": f"DeepL-Auth-Key {self.api_key}",

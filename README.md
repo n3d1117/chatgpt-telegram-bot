@@ -110,7 +110,6 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `SPOTIFY_CLIENT_SECRET`           | Spotify app Client Secret (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))      | `-`                                 |
 | `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))       | `-`                                 |
 | `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                        | `-`                                 |
-| `DEEPL_API_PRO`                   | DeepL API key plan (required for the `deepl` plugin. set 'true' if you have paid api key)                       | `false`                                 |
 
 #### Available plugins
 | Name           | Description                                                                                                                                         | Required API key(s)                                                  |
