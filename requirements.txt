@@ -8,4 +8,3 @@ tenacity==8.2.2
 wolframalpha==5.0.0
 duckduckgo_search==3.8.3
 spotipy==2.23.0
-deepl>=1.15.0

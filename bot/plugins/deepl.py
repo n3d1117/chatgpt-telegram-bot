@@ -1,7 +1,7 @@
 import os
 from typing import Dict
 
-import deepl
+import requests
 
 from .plugin import Plugin
 
@@ -35,6 +35,13 @@ class DeeplTranslatePlugin(Plugin):
         }]
 
     async def execute(self, function_name, **kwargs) -> Dict:
-        translator = deepl.Translator(self.api_key)
-        answer = translator.translate_text(kwargs['text'], target_lang=kwargs['to_language'])
-        return answer.text
+        translator = requests.get(
+            "https://api.deepl.com/v2/translate",
+            params={ 
+                "auth_key": self.api_key, 
+                "target_lang": kwargs['to_language'], 
+                "text": kwargs['text'], 
+            }, 
+        ) 
+        translated_text = translator.json()["translations"][0]["text"]
+        return translated_text
