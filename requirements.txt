@@ -8,3 +8,4 @@ tenacity==8.2.2
 wolframalpha==5.0.0
 duckduckgo_search==3.8.3
 spotipy==2.23.0
+pytube==15.0.0

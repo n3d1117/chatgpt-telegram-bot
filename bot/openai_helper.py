@@ -14,6 +14,7 @@ from calendar import monthrange
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
+from bot.utils import is_direct_result
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
@@ -118,6 +119,9 @@ class OpenAIHelper:
         response = await self.__common_get_chat_response(chat_id, query)
         if self.config['enable_functions']:
             response, plugins_used = await self.__handle_function_call(chat_id, response)
+            if is_direct_result(response):
+                return response, '0'
+
         answer = ''
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
@@ -158,6 +162,9 @@ class OpenAIHelper:
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
         if self.config['enable_functions']:
             response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
+            if is_direct_result(response):
+                yield response, '0'
+                return
 
         answer = ''
         async for item in response:
@@ -283,7 +290,16 @@ class OpenAIHelper:
 
         logging.info(f'Calling function {function_name} with arguments {arguments}')
         function_response = await self.plugin_manager.call_function(function_name, arguments)
-        logging.info(f'Got response {function_response}')
+
+        if function_name not in plugins_used:
+            plugins_used += (function_name,)
+
+        if is_direct_result(function_response):
+            self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name,
+                                                content=json.dumps({'result': 'Done, the content has been sent'
+                                                                              'to the user.'}))
+            return function_response, plugins_used
+
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
         response = await openai.ChatCompletion.acreate(
             model=self.config['model'],
@@ -292,8 +308,6 @@ class OpenAIHelper:
             function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
             stream=stream
         )
-        if function_name not in plugins_used:
-            plugins_used += (function_name,)
         return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:

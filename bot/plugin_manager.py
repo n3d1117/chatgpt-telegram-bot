@@ -1,5 +1,7 @@
 import json
 
+from bot.plugins.dice import DicePlugin
+from bot.plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
 from plugins.ddg_translate import DDGTranslatePlugin
 from plugins.spotify import SpotifyPlugin
@@ -26,6 +28,8 @@ class PluginManager:
             'ddg_image_search': DDGImageSearchPlugin,
             'spotify': SpotifyPlugin,
             'worldtimeapi': WorldTimeApiPlugin,
+            'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
+            'dice': DicePlugin,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 

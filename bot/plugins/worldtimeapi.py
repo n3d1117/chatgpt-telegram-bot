@@ -9,7 +9,6 @@ class WorldTimeApiPlugin(Plugin):
     """
     A plugin to get the current time from a given timezone, using WorldTimeAPI
     """
-
     def __init__(self):
         default_timezone = os.getenv('WORLDTIME_DEFAULT_TIMEZONE')
         if not default_timezone:
