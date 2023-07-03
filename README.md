@@ -111,7 +111,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required only for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))                                                 | -                                   |
 | `WORLDTIME_DEFAULT_TIMEZONE`      | Default timezone to use, i.e. `Europe/Rome` (required only for the `worldtimeapi` plugin, you can get TZ Identifiers from [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) | -                                   |
 | `DUCKDUCKGO_SAFESEARCH`           | DuckDuckGo safe search (`on`, `off` or `moderate`) (optional, applies to `ddg_web_search` and `ddg_image_search`)                                                                               | `moderate`                          |
-| `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                                                                       | `-`                                 |
+| `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                                                                       | -                                   |
 
 #### Available plugins
 | Name                      | Description                                                                                                                                         | Required environment variable(s)                                     |
@@ -126,7 +126,7 @@ Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/di
 | `worldtimeapi`            | Get latest world time (powered by [WorldTimeAPI](https://worldtimeapi.org/))                                                                        | `WORLDTIME_DEFAULT_TIMEZONE`                                         |
 | `dice`                    | Send a dice in the chat!                                                                                                                            | -                                                                    |
 | `youtube_audio_extractor` | Extract audio from YouTube videos                                                                                                                   | -                                                                    |
-| `deepl`                   | Translate text to any language (powered by [DeepL](https://deepl.com))  - by [@LedyBacer](https://github.com/LedyBacer)                             | `DEEPL_API_KEY`                                                      |
+| `deepl_translate`         | Translate text to any language (powered by [DeepL](https://deepl.com)) - by [@LedyBacer](https://github.com/LedyBacer)                              | `DEEPL_API_KEY`                                                      |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
 

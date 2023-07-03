@@ -10,12 +10,11 @@ class DeeplTranslatePlugin(Plugin):
     """
     A plugin to translate a given text from a language to another, using DeepL
     """
-
     def __init__(self):
-            deepl_api_key = os.getenv('DEEPL_API_KEY')
-            if not deepl_api_key:
-                raise ValueError('DEEPL_API_KEY environment variable must be set to use DeepL Plugin')
-            self.api_key = deepl_api_key
+        deepl_api_key = os.getenv('DEEPL_API_KEY')
+        if not deepl_api_key:
+            raise ValueError('DEEPL_API_KEY environment variable must be set to use DeepL Plugin')
+        self.api_key = deepl_api_key
 
     def get_source_name(self) -> str:
         return "DeepL Translate"
@@ -42,13 +41,11 @@ class DeeplTranslatePlugin(Plugin):
              
         headers = {
             "Authorization": f"DeepL-Auth-Key {self.api_key}",
-            "User-Agent": "chatgpt-telegram-bot/0.2.7",
+            "User-Agent": "chatgpt-telegram-bot",
             "Content-Type": "application/x-www-form-urlencoded"
         }
-
         data = {
             "text": kwargs['text'],
             "target_lang": kwargs['to_language']
         }
-
         return requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]

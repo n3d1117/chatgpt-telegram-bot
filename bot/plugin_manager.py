@@ -31,7 +31,7 @@ class PluginManager:
             'worldtimeapi': WorldTimeApiPlugin,
             'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
             'dice': DicePlugin,
-            'deepl': DeeplTranslatePlugin
+            'deepl_translate': DeeplTranslatePlugin
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
