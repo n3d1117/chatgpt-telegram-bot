@@ -9,6 +9,7 @@ from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
 from plugins.ddg_web_search import DDGWebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
+from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
 
 
@@ -30,6 +31,7 @@ class PluginManager:
             'worldtimeapi': WorldTimeApiPlugin,
             'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
             'dice': DicePlugin,
+            'deepl': DeeplTranslatePlugin
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
