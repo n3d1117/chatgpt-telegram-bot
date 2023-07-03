@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 from pytube import YouTube
@@ -40,5 +41,6 @@ class YouTubeAudioExtractorPlugin(Plugin):
                     'value': output
                 }
             }
-        except:
+        except Exception as e:
+            logging.warning(f'Failed to extract audio from YouTube video: {str(e)}')
             return {'result': 'Failed to extract audio'}
