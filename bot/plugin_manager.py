@@ -1,7 +1,7 @@
 import json
 
-from bot.plugins.dice import DicePlugin
-from bot.plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
+from plugins.dice import DicePlugin
+from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
 from plugins.ddg_translate import DDGTranslatePlugin
 from plugins.spotify import SpotifyPlugin
