@@ -16,7 +16,8 @@ from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_admin, is_within_budget, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_direct_result, handle_direct_result, \
+    cleanup_intermediate_files
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -401,6 +402,9 @@ class ChatGPTTelegramBot:
                 stream_chunk = 0
 
                 async for content, tokens in stream_response:
+                    if is_direct_result(content):
+                        return await handle_direct_result(self.config, update, content)
+
                     if len(content.strip()) == 0:
                         continue
 
@@ -471,6 +475,9 @@ class ChatGPTTelegramBot:
                 async def _reply():
                     nonlocal total_tokens
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+                    if is_direct_result(response):
+                        return await handle_direct_result(self.config, update, response)
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
                     chunks = split_into_chunks(response)
@@ -585,12 +592,21 @@ class ChatGPTTelegramBot:
                                                   is_inline=True)
                     return
 
+                unavailable_message = localized_text("function_unavailable_in_inline_mode", bot_language)
                 if self.config['stream']:
                     stream_response = self.openai.get_chat_response_stream(chat_id=user_id, query=query)
                     i = 0
                     prev = ''
                     backoff = 0
                     async for content, tokens in stream_response:
+                        if is_direct_result(content):
+                            cleanup_intermediate_files(content)
+                            await edit_message_with_retry(context, chat_id=None,
+                                                          message_id=inline_message_id,
+                                                          text=f'{query}\n\n_{answer_tr}:_\n{unavailable_message}',
+                                                          is_inline=True)
+                            return
+
                         if len(content.strip()) == 0:
                             continue
 
@@ -647,6 +663,14 @@ class ChatGPTTelegramBot:
 
                         logging.info(f'Generating response for inline query by {name}')
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
+
+                        if is_direct_result(response):
+                            cleanup_intermediate_files(response)
+                            await edit_message_with_retry(context, chat_id=None,
+                                                          message_id=inline_message_id,
+                                                          text=f'{query}\n\n_{answer_tr}:_\n{unavailable_message}',
+                                                          is_inline=True)
+                            return
 
                         text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
 
