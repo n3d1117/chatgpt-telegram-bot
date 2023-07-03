@@ -721,10 +721,11 @@ class ChatGPTTelegramBot:
         """
         Sends the disallowed message to the user.
         """
+        user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+        user_name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+        
         super_admin_id = os.getenv('SUPER_ADMIN_USER_ID')
         if super_admin_id and user_id != super_admin_id:
-            user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-            user_name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
             await _.bot.send_message(chat_id=super_admin_id, text=f'{user_name} wants to use the bot.\nUser ID: {user_id}')
             
         if not is_inline:
