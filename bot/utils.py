@@ -349,15 +349,18 @@ async def handle_direct_result(config, update: Update, response: any):
     if kind == 'photo':
         if format == 'url':
             await update.effective_message.reply_photo(**common_args, photo=value)
-    elif kind == 'gif':
+        elif format == 'path':
+            await update.effective_message.reply_photo(**common_args, photo=open(value, 'rb'))
+    elif kind == 'gif' or kind == 'file':
         if format == 'url':
             await update.effective_message.reply_document(**common_args, document=value)
-    elif kind == 'file':
         if format == 'path':
             await update.effective_message.reply_document(**common_args, document=open(value, 'rb'))
-            cleanup_intermediate_files(response)
     elif kind == 'dice':
         await update.effective_message.reply_dice(**common_args, emoji=value)
+
+    if format == 'path':
+        cleanup_intermediate_files(response)
 
 
 def cleanup_intermediate_files(response: any):
@@ -368,9 +371,9 @@ def cleanup_intermediate_files(response: any):
         response = json.loads(response)
 
     result = response['direct_result']
-    kind = result['kind']
     format = result['format']
     value = result['value']
 
-    if kind == 'file' and format == 'path':
-        os.remove(value)
+    if format == 'path':
+        if os.path.exists(value):
+            os.remove(value)
