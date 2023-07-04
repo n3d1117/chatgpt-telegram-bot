@@ -371,14 +371,9 @@ class ChatGPTTelegramBot:
         if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
 
-            raw_text = update.message.text.lower()
-            prompt_lower = prompt.lower()
-
-            if raw_text.startswith('/chat') or prompt_lower.startswith(trigger_keyword):
-                if not prompt_lower.startswith(trigger_keyword):
-                    prompt = f'{trigger_keyword} {prompt}'
-
-                prompt = prompt[len(trigger_keyword):].strip()
+            if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
+                if prompt.lower().startswith(trigger_keyword.lower()):
+                    prompt = prompt[len(trigger_keyword):].strip()
 
                 if update.message.reply_to_message and \
                         update.message.reply_to_message.text and \
