@@ -74,6 +74,7 @@ class OpenAIHelper:
         Initializes the OpenAI helper class with the given configuration.
         :param config: A dictionary containing the GPT configuration
         """
+        openai.api_base = config['api_base']
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
