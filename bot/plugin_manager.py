@@ -1,5 +1,6 @@
 import json
 
+from bot.plugins.gtts_text_to_speech import GTTSTextToSpeech
 from plugins.dice import DicePlugin
 from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
@@ -31,7 +32,8 @@ class PluginManager:
             'worldtimeapi': WorldTimeApiPlugin,
             'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
             'dice': DicePlugin,
-            'deepl_translate': DeeplTranslatePlugin
+            'deepl_translate': DeeplTranslatePlugin,
+            'gtts_text_to_speech': GTTSTextToSpeech,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 

@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Dict
 
 from pytube import YouTube
@@ -32,7 +33,7 @@ class YouTubeAudioExtractorPlugin(Plugin):
         try:
             video = YouTube(link)
             audio = video.streams.filter(only_audio=True, file_extension='mp4').first()
-            output = video.title + '.mp4'
+            output = re.sub(r'[^\w\-_\. ]', '_', video.title) + '.mp3'
             audio.download(filename=output)
             return {
                 'direct_result': {
