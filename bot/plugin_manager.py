@@ -1,6 +1,6 @@
 import json
 
-from bot.plugins.gtts_text_to_speech import GTTSTextToSpeech
+from plugins.gtts_text_to_speech import GTTSTextToSpeech
 from plugins.dice import DicePlugin
 from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
