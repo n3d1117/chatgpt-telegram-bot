@@ -1,21 +1,18 @@
 from __future__ import annotations
+
 import datetime
+import json
 import logging
 import os
 
-import tiktoken
-
 import openai
+import tiktoken
+from openai.error import RateLimitError, InvalidRequestError
+from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
+                      wait_fixed)
 
-import requests
-import json
-from datetime import date
-from calendar import monthrange
-
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from utils import is_direct_result
 from plugin_manager import PluginManager
+from utils import is_direct_result
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
@@ -32,14 +29,13 @@ def default_max_tokens(model: str) -> int:
     :return: The default number of max tokens
     """
     base = 1200
-    if model in GPT_3_MODELS:
-        return base
-    elif model in GPT_4_MODELS:
+    if model in GPT_4_MODELS:
         return base * 2
-    elif model in GPT_3_16K_MODELS:
+    if model in GPT_3_16K_MODELS:
         return base * 4
-    elif model in GPT_4_32K_MODELS:
+    if model in GPT_4_32K_MODELS:
         return base * 8
+    return base
 
 
 def are_functions_available(model: str) -> bool:
@@ -74,10 +70,10 @@ def localized_text(key, bot_language):
         # Fallback to English if the translation is not available
         if key in translations['en']:
             return translations['en'][key]
-        else:
-            logging.warning(f"No english definition found for key '{key}' in translations.json")
-            # return key as text
-            return key
+
+        # If key is not available in English either, return the key itself
+        logging.warning(f"No english definition found for key '{key}' in translations.json")
+        return key
 
 
 class OpenAIHelper:
@@ -95,8 +91,15 @@ class OpenAIHelper:
         openai.proxy = config['proxy']
         self.config = config
         self.plugin_manager = plugin_manager
-        self.conversations: dict[int: list] = {}  # {chat_id: history}
-        self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
+        self.conversations: dict[int, list] = {}  # {chat_id: history}
+        self.last_updated: dict[int, datetime] = {}  # {chat_id: last_update_timestamp}
+
+    def change_model(self, model: str) -> None:
+        """
+        Changes the model.
+        :param model: The model name
+        """
+        self.config["model"] = model
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
         """
@@ -191,7 +194,7 @@ class OpenAIHelper:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(openai.error.RateLimitError),
+        retry=retry_if_exception_type(RateLimitError),
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
@@ -207,7 +210,7 @@ class OpenAIHelper:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
                 self.reset_chat_history(chat_id)
 
-            self.last_updated[chat_id] = datetime.datetime.now()
+            self.last_updated[chat_id] = datetime.now()
 
             self.__add_to_history(chat_id, role="user", content=query)
 
@@ -247,14 +250,14 @@ class OpenAIHelper:
 
             return await openai.ChatCompletion.acreate(**common_args)
 
-        except openai.error.RateLimitError as e:
-            raise e
+        except RateLimitError as err:
+            raise err
 
-        except openai.error.InvalidRequestError as e:
-            raise Exception(f"⚠️ _{localized_text('openai_invalid', bot_language)}._ ⚠️\n{str(e)}") from e
+        except InvalidRequestError as err:
+            raise Exception(f"⚠️ _{localized_text('openai_invalid', bot_language)}._ ⚠️\n{str(err)}") from err
 
-        except Exception as e:
-            raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+        except Exception as err:
+            raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(err)}") from err
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
@@ -365,9 +368,9 @@ class OpenAIHelper:
         if chat_id not in self.last_updated:
             return False
         last_updated = self.last_updated[chat_id]
-        now = datetime.datetime.now()
+        now = datetime.now()
         max_age_minutes = self.config['max_conversation_age_minutes']
-        return last_updated < now - datetime.timedelta(minutes=max_age_minutes)
+        return last_updated < now - timedelta(minutes=max_age_minutes)
 
     def __add_function_call_to_history(self, chat_id, function_name, content):
         """

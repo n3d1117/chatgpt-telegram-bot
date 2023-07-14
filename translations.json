@@ -40,7 +40,8 @@
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
         "loading":"Loading...",
-        "function_unavailable_in_inline_mode": "This function is unavailable in inline mode"
+        "function_unavailable_in_inline_mode": "This function is unavailable in inline mode",
+        "change_model": "Inspect/change the model used by the bot. To change the model, use /model <model name> (e.g. /model gpt-4)"
     },
     "es": {
         "help_description":"Muestra el mensaje de ayuda",

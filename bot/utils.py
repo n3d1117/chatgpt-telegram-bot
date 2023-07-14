@@ -5,12 +5,17 @@ import itertools
 import json
 import logging
 import os
+from functools import partial
 
 import telegram
 from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
+from telegram.helpers import escape_markdown
 
 from usage_tracker import UsageTracker
+
+# Escape markdown text with version 2
+escape = partial(escape_markdown, version=2)
 
 
 def message_text(message: Message) -> str:
