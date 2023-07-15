@@ -12,6 +12,7 @@ from plugins.ddg_web_search import DDGWebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
 from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
+from plugins.whois import WhoisPlugin
 
 
 class PluginManager:
@@ -34,6 +35,7 @@ class PluginManager:
             'dice': DicePlugin,
             'deepl_translate': DeeplTranslatePlugin,
             'gtts_text_to_speech': GTTSTextToSpeech,
+            'whois': WhoisPlugin,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
