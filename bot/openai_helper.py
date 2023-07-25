@@ -354,5 +354,5 @@ class OpenAIHelper:
         }
         response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
         billing_data = json.loads(response.text)
-        usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
+        usage_month = billing_data['total_usage'] / 100  # convert cent amount to dollars
         return usage_month

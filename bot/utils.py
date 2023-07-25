@@ -1,4 +1,5 @@
 from __future__ import annotations
+from db import Database
 
 import asyncio
 import itertools
@@ -9,7 +10,8 @@ from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
-
+from datetime import datetime
+db = Database()
 
 def message_text(message: Message) -> str:
     """
@@ -145,34 +147,40 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(f'Exception while handling an update: {context.error}')
 
 
-async def is_allowed(config, update: Update, context: CallbackContext, is_inline=False) -> bool:
+async def is_allowed(user_id, is_inline=False) -> bool:
     """
     Checks if the user is allowed to use the bot.
     """
-    if config['allowed_user_ids'] == '*':
-        return True
-
-    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-    if is_admin(config, user_id):
-        return True
-    name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-    allowed_user_ids = config['allowed_user_ids'].split(',')
-    # Check if user is allowed
-    if str(user_id) in allowed_user_ids:
-        return True
-    # Check if it's a group a chat with at least one authorized member
-    if not is_inline and is_group_chat(update):
-        admin_user_ids = config['admin_user_ids'].split(',')
-        for user in itertools.chain(allowed_user_ids, admin_user_ids):
-            if not user.strip():
-                continue
-            if await is_user_in_group(update, context, user):
-                logging.info(f'{user} is a member. Allowing group chat message...')
-                return True
-        logging.info(f'Group chat messages from user {name} '
-                     f'(id: {user_id}) are not allowed')
-    return False
-
+    # if config['allowed_user_ids'] == '*':
+    #     return True
+    
+    # if is_admin(config, user_id):
+    #     return True
+    # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+    # allowed_user_ids = config['allowed_user_ids'].split(',')
+    # # Check if user is allowed
+    # if str(user_id) in allowed_user_ids:
+    #     return True
+    # # Check if it's a group a chat with at least one authorized member
+    # if not is_inline and is_group_chat(update):
+    #     admin_user_ids = config['admin_user_ids'].split(',')
+    #     for user in itertools.chain(allowed_user_ids, admin_user_ids):
+    #         if not user.strip():
+    #             continue
+    #         if await is_user_in_group(update, context, user):
+    #             logging.info(f'{user} is a member. Allowing group chat message...')
+    #             return True
+    #     logging.info(f'Group chat messages from user {name} '
+    #                  f'(id: {user_id}) are not allowed')
+    # return False
+    today = datetime.now()
+    data_exp = db.fetch_one("SELECT date_expiration FROM subscribers WHERE user_id = %s", (str(user_id),))
+    print(data_exp)
+    if(data_exp != None):
+        if(data_exp >= today): return True
+    else:
+        return False
+    
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """
     Checks if the user is the admin of the bot.
@@ -204,22 +212,24 @@ def get_user_budget(config, user_id) -> float | None:
     if is_admin(config, user_id) or config['user_budgets'] == '*':
         return float('inf')
 
-    user_budgets = config['user_budgets'].split(',')
-    if config['allowed_user_ids'] == '*':
-        # same budget for all users, use value in first position of budget list
-        if len(user_budgets) > 1:
-            logging.warning('multiple values for budgets set with unrestricted user list '
-                            'only the first value is used as budget for everyone.')
-        return float(user_budgets[0])
+    # user_budgets = config['user_budgets'].split(',')
+    # if config['allowed_user_ids'] == '*':
+    #     # same budget for all users, use value in first position of budget list
+    #     if len(user_budgets) > 1:
+    #         logging.warning('multiple values for budgets set with unrestricted user list '
+    #                         'only the first value is used as budget for everyone.')
+    #     return float(user_budgets[0])
 
-    allowed_user_ids = config['allowed_user_ids'].split(',')
-    if str(user_id) in allowed_user_ids:
-        user_index = allowed_user_ids.index(str(user_id))
-        if len(user_budgets) <= user_index:
-            logging.warning(f'No budget set for user id: {user_id}. Budget list shorter than user list.')
-            return 0.0
-        return float(user_budgets[user_index])
-    return None
+    # allowed_user_ids = config['allowed_user_ids'].split(',')
+    # if is_allowed():
+        # user_index = allowed_user_ids.index(str(user_id))
+        # if len(user_budgets) <= user_index:
+        #     logging.warning(f'No budget set for user id: {user_id}. Budget list shorter than user list.')
+        #     return 0.0
+        user_budget = db.fetch_one("SELECT price FROM subscribers WHERE user_id = %s", (user_id,))
+        print(user_budget)
+        return float(user_budget)
+    # return None
 
 
 def get_remaining_budget(config, usage, update: Update, is_inline=False) -> float:
@@ -287,8 +297,7 @@ def add_chat_request_to_usage_tracker(usage, config, user_id, used_tokens):
         # add chat request to users usage tracker
         usage[user_id].add_chat_tokens(used_tokens, config['token_price'])
         # add guest chat request to guest usage tracker
-        allowed_user_ids = config['allowed_user_ids'].split(',')
-        if str(user_id) not in allowed_user_ids and 'guests' in usage:
+        if is_allowed(user_id) and 'guests' in usage:
             usage["guests"].add_chat_tokens(used_tokens, config['token_price'])
     except Exception as e:
         logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')

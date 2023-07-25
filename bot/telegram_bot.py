@@ -73,7 +73,8 @@ class ChatGPTTelegramBot:
         """
         Returns token usage statistics for current day and month.
         """
-        if not await is_allowed(self.config, update, context):
+        user_id = str(update.message.from_user.id)
+        if not await is_allowed(user_id):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
@@ -129,11 +130,11 @@ class ChatGPTTelegramBot:
                 f"${remaining_budget:.2f}.\n"
             )
         # add OpenAI account information for admin request
-        if is_admin(self.config, user_id):
-            text_budget += (
-                f"{localized_text('stats_openai', bot_language)}"
-                f"{self.openai.get_billing_current_month():.2f}"
-            )
+        # if is_admin(self.config, user_id):
+        #     text_budget += (
+        #         f"{localized_text('stats_openai', bot_language)}"
+        #         f"{self.openai.get_billing_current_month():.2f}"
+        #     )
 
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
@@ -142,7 +143,8 @@ class ChatGPTTelegramBot:
         """
         Resend the last request
         """
-        if not await is_allowed(self.config, update, context):
+        user_id = str(update.message.from_user.id)
+        if not await is_allowed(user_id):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
@@ -170,7 +172,8 @@ class ChatGPTTelegramBot:
         """
         Resets the conversation.
         """
-        if not await is_allowed(self.config, update, context):
+        user_id = str(update.message.from_user.id)
+        if not await is_allowed(user_id):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
@@ -217,7 +220,7 @@ class ChatGPTTelegramBot:
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
                 # add guest chat request to guest usage tracker
-                if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
+                if not await self.check_allowed_and_within_budget(update, context) and 'guests' in self.usage:
                     self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
             except Exception as e:
@@ -291,8 +294,7 @@ class ChatGPTTelegramBot:
                 transcription_price = self.config['transcription_price']
                 self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
-                allowed_user_ids = self.config['allowed_user_ids'].split(',')
-                if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                if is_allowed(user_id) and 'guests' in self.usage:
                     self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
                 # check if transcript starts with any of the prefixes
@@ -317,7 +319,7 @@ class ChatGPTTelegramBot:
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
 
                     self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-                    if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
+                    if is_allowed(user_id)  and 'guests' in self.usage:
                         self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
@@ -688,7 +690,7 @@ class ChatGPTTelegramBot:
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
 
-        if not await is_allowed(self.config, update, context, is_inline=is_inline):
+        if not await is_allowed(user_id, is_inline=is_inline):
             logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(update, context, is_inline)
             return False
