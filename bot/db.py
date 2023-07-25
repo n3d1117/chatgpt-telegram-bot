@@ -5,7 +5,7 @@ from psycopg2.extras import NamedTupleCursor
 class Database:
     def __init__(self):
         self.connection = psycopg2.connect(
-            "user=user password=pass host=localhost port=5477 dbname=name_db")
+            "user=postgres password=admin host=localhost port=5000 dbname=postgres")
         self.connection.autocommit = True
 
     def fetch_one(self, query, arg=None, factory=None, clean=None):
