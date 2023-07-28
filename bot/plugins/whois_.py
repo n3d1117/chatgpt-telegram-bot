@@ -1,6 +1,8 @@
 from typing import Dict
 from .plugin import Plugin
+
 import whois
+
 
 class WhoisPlugin(Plugin):
     """

@@ -12,7 +12,7 @@ from plugins.ddg_web_search import DDGWebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
 from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
-from plugins.whois import WhoisPlugin
+from plugins.whois_ import WhoisPlugin
 
 
 class PluginManager:
