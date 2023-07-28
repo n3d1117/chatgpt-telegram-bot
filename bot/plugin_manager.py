@@ -12,6 +12,7 @@ from plugins.ddg_web_search import DDGWebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
 from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
+from plugins.whois import WhoisPlugin
 
 
 class PluginManager:
@@ -34,6 +35,7 @@ class PluginManager:
             'dice': DicePlugin,
             'deepl_translate': DeeplTranslatePlugin,
             'gtts_text_to_speech': GTTSTextToSpeech,
+            'whois': WhoisPlugin,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
@@ -50,7 +52,7 @@ class PluginManager:
         plugin = self.__get_plugin_by_function_name(function_name)
         if not plugin:
             return json.dumps({'error': f'Function {function_name} not found'})
-        return json.dumps(await plugin.execute(function_name, **json.loads(arguments)))
+        return json.dumps(await plugin.execute(function_name, **json.loads(arguments)), default=str)
 
     def get_plugin_source_name(self, function_name) -> str:
         """

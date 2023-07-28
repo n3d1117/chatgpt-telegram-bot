@@ -123,6 +123,7 @@ Check out the [official API reference](https://platform.openai.com/docs/api-refe
 | `youtube_audio_extractor` | Extract audio from YouTube videos                                                                                                                   | -                                                                    | `pip install pytube~=15.0.0`           |
 | `deepl_translate`         | Translate text to any language (powered by [DeepL](https://deepl.com)) - by [@LedyBacer](https://github.com/LedyBacer)                              | `DEEPL_API_KEY`                                                      |                                        |
 | `gtts_text_to_speech`     | Text to speech (powered by Google Translate APIs)                                                                                                   | -                                                                    | `pip install gtts~=2.3.2`              |
+| `whois`                   | Query the whois domain database                                                                                                                     | -                                                                    | `pip install whois~=0.9.27`            |
 
 **Note**: some plugins have additional dependencies that are not listed in the `requirements.txt` file. If you plan on using these plugins, you can install them manually using the command above (see the `Dependency` column).
 
