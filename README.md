@@ -22,7 +22,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] (NEW!) Automatic conversation summary to avoid excessive token usage
 - [x] (NEW!) Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
-- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] (NEW!) Get personal token usage statistics via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] (NEW!) Stream support
 - [x] (NEW!) GPT-4 support
