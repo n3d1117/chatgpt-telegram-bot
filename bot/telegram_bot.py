@@ -767,4 +767,11 @@ class ChatGPTTelegramBot:
 
         application.add_error_handler(error_handler)
 
-        application.run_polling()
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=80,
+            webhook_url=self.config['server_url']
+        )
+
+        # polling
+        #application.run_polling()
