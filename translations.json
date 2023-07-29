@@ -8,7 +8,7 @@
         "chat_description":"Chat with the bot!",
         "disallowed":"Sorry, you are not allowed to use this bot. You can check out the source code at https://github.com/n3d1117/chatgpt-telegram-bot",
         "budget_limit":"Sorry, you have reached your usage limit.",
-        "help_text":["I'm a ChatGPT bot, talk to me!", "Send me a voice message or file and I'll transcribe it for you", "Open source at https://github.com/n3d1117/chatgpt-telegram-bot"],
+        "help_text":["Mr. Inginer is here", "Send a voice message or file and I'll transcribe it for you", ""],
         "stats_conversation":["Current conversation", "chat messages in history", "chat tokens in history"],
         "usage_today":"Usage today",
         "usage_month":"Usage this month",
