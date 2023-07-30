@@ -15,7 +15,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
 from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
-    edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_admin, is_within_budget, \
+    edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
@@ -45,7 +45,8 @@ class ChatGPTTelegramBot:
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
         )] + self.commands
-        self.disallowed_message = localized_text('disallowed', bot_language)
+        self.disallowed_message_trial = localized_text('disallowed_trial', bot_language)
+        self.disallowed_message_not_trial = localized_text('disallowed_not_trial', bot_language)
         self.budget_limit_message = localized_text('budget_limit', bot_language)
         self.usage = {}
         self.last_message = {}
@@ -74,7 +75,7 @@ class ChatGPTTelegramBot:
         Returns token usage statistics for current day and month.
         """
         user_id = str(update.message.from_user.id)
-        if not await is_allowed(user_id):
+        if not await is_allowed_and_trial(user_id) or not await is_allowed_and_not_trial:
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
@@ -144,7 +145,7 @@ class ChatGPTTelegramBot:
         Resend the last request
         """
         user_id = str(update.message.from_user.id)
-        if not await is_allowed(user_id):
+        if not await (user_id):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
@@ -173,10 +174,9 @@ class ChatGPTTelegramBot:
         Resets the conversation.
         """
         user_id = str(update.message.from_user.id)
-        if not await is_allowed(user_id):
+        if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to reset the conversation')
-            await self.send_disallowed_message(update, context)
             return
 
         logging.info(f'Resetting the conversation for user {update.message.from_user.name} '
@@ -194,9 +194,8 @@ class ChatGPTTelegramBot:
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not self.config['enable_image_generation'] \
-                or not await self.check_allowed_and_within_budget(update, context):
-            return
+        if not await self.check_allowed(update, context):
+            return 
 
         image_query = message_text(update.message)
         if image_query == '':
@@ -220,8 +219,6 @@ class ChatGPTTelegramBot:
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
                 # add guest chat request to guest usage tracker
-                if not await self.check_allowed_and_within_budget(update, context) and 'guests' in self.usage:
-                    self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
             except Exception as e:
                 logging.exception(e)
@@ -238,7 +235,7 @@ class ChatGPTTelegramBot:
         """
         Transcribe audio messages.
         """
-        if not self.config['enable_transcription'] or not await self.check_allowed_and_within_budget(update, context):
+        if not self.config['enable_transcription'] or not await self.check_allowed(update, context):
             return
 
         if is_group_chat(update) and self.config['ignore_group_transcriptions']:
@@ -360,7 +357,7 @@ class ChatGPTTelegramBot:
         if update.edited_message or not update.message or update.message.via_bot:
             return
 
-        if not await self.check_allowed_and_within_budget(update, context):
+        if not await self.check_allowed(update, context):
             return
 
         logging.info(
@@ -523,7 +520,7 @@ class ChatGPTTelegramBot:
         query = update.inline_query.query
         if len(query) < 3:
             return
-        if not await self.check_allowed_and_within_budget(update, context, is_inline=True):
+        if not await self.check_allowed(update, context, is_inline=True):
             return
 
         callback_data_suffix = "gpt:"
@@ -678,7 +675,7 @@ class ChatGPTTelegramBot:
                                           text=f"{query}\n\n_{answer_tr}:_\n{localized_answer} {str(e)}",
                                           is_inline=True)
 
-    async def check_allowed_and_within_budget(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+    async def check_allowed(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
         """
         Checks if the user is allowed to use the bot and if they are within their budget
@@ -689,31 +686,30 @@ class ChatGPTTelegramBot:
         """
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-
-        if not await is_allowed(user_id, is_inline=is_inline):
+        if await is_allowed(user_id) == 1:
             logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
-            await self.send_disallowed_message(update, context, is_inline)
+            await self.send_disallowed_message(self.disallowed_message_trial, update, context, is_inline)
             return False
-        if not is_within_budget(self.config, self.usage, update, is_inline=is_inline):
-            logging.warning(f'User {name} (id: {user_id}) reached their usage limit')
-            await self.send_budget_reached_message(update, context, is_inline)
+        elif await is_allowed(user_id) == 2:       
+            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
+            await self.send_disallowed_message(self.disallowed_message_not_trial, update, context, is_inline)
             return False
+        elif await is_allowed(user_id) == True:
+            return True
 
-        return True
-
-    async def send_disallowed_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+    async def send_disallowed_message(self, message, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
         """
         Sends the disallowed message to the user.
         """
         if not is_inline:
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=self.disallowed_message,
+                text=message,
                 disable_web_page_preview=True
             )
         else:
             result_id = str(uuid4())
-            await self.send_inline_query_result(update, result_id, message_content=self.disallowed_message)
+            await self.send_inline_query_result(update, result_id, message_content=message)
 
     async def send_budget_reached_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
         """
