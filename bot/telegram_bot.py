@@ -19,6 +19,7 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
+from total_usage_tracker import TotalUsageTracker
 
 
 class ChatGPTTelegramBot:
@@ -128,13 +129,13 @@ class ChatGPTTelegramBot:
                 f"{localized_text(budget_period, bot_language)}: "
                 f"${remaining_budget:.2f}.\n"
             )
-        # No longer works as of July 21st 2023, as OpenAI has removed the billing API
-        # add OpenAI account information for admin request
-        # if is_admin(self.config, user_id):
-        #     text_budget += (
-        #         f"{localized_text('stats_openai', bot_language)}"
-        #         f"{self.openai.get_billing_current_month():.2f}"
-        #     )
+
+        if is_admin(self.config, user_id):
+            total_tracker = TotalUsageTracker(openai=self.openai)
+            text_budget += (
+                f"{localized_text('stats_openai', bot_language)}"
+                f"{total_tracker.get_month_usage():.2f}"
+            )
 
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)

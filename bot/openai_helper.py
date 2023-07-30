@@ -335,6 +335,22 @@ class OpenAIHelper:
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
+    def get_usage(self, day):
+        """Gets OpenAI API usage for the certain date.
+
+        :return: usage statistics for the day
+        """
+        headers = {
+            "Authorization": f"Bearer {openai.api_key}"
+        }
+        params = {
+            "date": day
+        }
+        response = requests.get("https://api.openai.com/v1/usage", headers=headers, params=params)
+        usage_data = json.loads(response.text)
+
+        return usage_data
+
     # No longer works as of July 21st 2023, as OpenAI has removed the billing API
     # def get_billing_current_month(self):
     #     """Gets billed usage for current month from OpenAI API.
