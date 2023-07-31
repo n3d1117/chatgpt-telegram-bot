@@ -151,34 +151,43 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def is_allowed(user_id) -> bool:
     """
+    Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
+    Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
+    """
+    access_code = is_in_trial(user_id)
+    if access_code == False:
+        return is_allowed_and_not_trial(user_id)
+    elif access_code == True:
+        return is_allowed_and_trial(user_id)
+    
+async def is_allowed_and_trial(user_id) -> bool:
+    """
     Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
+    """
+    today = datetime.now()
+    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    if date_exp is not None and date_exp >= today and is_in_trial:
+        return [True, 1]
+    return [False, 1]
+
+def is_allowed_and_not_trial(user_id) -> bool:
+    """
     Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     """
     today = datetime.now()
     date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-
-    # - проверка на срок истечения подписки
-
-    if await is_in_trial(user_id):
-        if date_exp is not None and date_exp >= today:
-            return True
-        else:
-            return 1
-    else:
-        if date_exp is not None and date_exp >= today: 
-            return True
-        else:
-            return 2 
-
+    if date_exp is not None and date_exp >= today and not is_in_trial(user_id):
+        return [True, 2]
+    return [False, 2]
     
-async def is_in_trial(user_id):
+
+def is_in_trial(user_id):
     request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
     user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
     if user_trial == "N":
         return False
     elif user_trial == "Y":
         return True
-
 
 
 

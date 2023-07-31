@@ -75,7 +75,7 @@ class ChatGPTTelegramBot:
         Returns token usage statistics for current day and month.
         """
         user_id = str(update.message.from_user.id)
-        if not await is_allowed_and_trial(user_id) or not await is_allowed_and_not_trial:
+        if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
@@ -96,7 +96,6 @@ class ChatGPTTelegramBot:
 
         chat_id = update.effective_chat.id
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
-        remaining_budget = get_remaining_budget(self.config, self.usage, update)
         bot_language = self.config['bot_language']
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
@@ -122,14 +121,6 @@ class ChatGPTTelegramBot:
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
         )
         # text_budget filled with conditional content
-        text_budget = "\n\n"
-        budget_period = self.config['budget_period']
-        if remaining_budget < float('inf'):
-            text_budget += (
-                f"{localized_text('stats_budget', bot_language)}"
-                f"{localized_text(budget_period, bot_language)}: "
-                f"${remaining_budget:.2f}.\n"
-            )
         # add OpenAI account information for admin request
         # if is_admin(self.config, user_id):
         #     text_budget += (
@@ -137,7 +128,7 @@ class ChatGPTTelegramBot:
         #         f"{self.openai.get_billing_current_month():.2f}"
         #     )
 
-        usage_text = text_current_conversation + text_today + text_month + text_budget
+        usage_text = text_current_conversation + text_today + text_month
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -290,9 +281,6 @@ class ChatGPTTelegramBot:
 
                 transcription_price = self.config['transcription_price']
                 self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
-
-                if is_allowed(user_id) and 'guests' in self.usage:
-                    self.usage["guests"].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
 
                 # check if transcript starts with any of the prefixes
                 response_to_transcription = any(transcript.lower().startswith(prefix.lower()) if prefix else False
@@ -686,16 +674,17 @@ class ChatGPTTelegramBot:
         """
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-        if await is_allowed(user_id) == 1:
+        access_code = await is_allowed(user_id)
+        print(access_code)
+        if access_code[0] == False and access_code[1] == 1:
             logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(self.disallowed_message_trial, update, context, is_inline)
             return False
-        elif await is_allowed(user_id) == 2:       
+        elif access_code[0] == False and access_code[1] == 2:       
             logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(self.disallowed_message_not_trial, update, context, is_inline)
             return False
-        elif await is_allowed(user_id) == True:
-            return True
+        return True
 
     async def send_disallowed_message(self, message, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
         """
