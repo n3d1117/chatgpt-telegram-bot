@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import psycopg2
 
+from db import Database
 from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
@@ -37,6 +39,7 @@ class ChatGPTTelegramBot:
         bot_language = self.config['bot_language']
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
+            BotCommand(command='start', description=localized_text('start_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
@@ -180,6 +183,26 @@ class ChatGPTTelegramBot:
             message_thread_id=get_thread_id(update),
             text=localized_text('reset_done', self.config['bot_language'])
         )
+
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        print("LOG: catch \start")
+        user = update.effective_user
+        user_id = user.id
+        username = user.username
+        date = update.message.date
+        print(f"LOG: Get Username: {username} UID:{user_id}")
+        print(f"LOG: date: {date}")
+        print(type(date))
+        date_format = date.strftime("%Y-%m-%d %H:%M:%S")
+        greetings_text = f"{username}, привет!"
+
+        db = Database();
+        query = f"INSERT INTO users (user_id, date_creation, user_first_name) VALUES({user_id}, '{date_format}', '{username}');"
+        db.query_update(query, None)
+
+        await update.message.reply_text(greetings_text, disable_web_page_preview=True)
+
+
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -734,7 +757,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
-        application.add_handler(CommandHandler('start', self.help))
+        application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler(

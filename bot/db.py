@@ -5,7 +5,7 @@ from psycopg2.extras import NamedTupleCursor
 class Database:
     def __init__(self):
         self.connection = psycopg2.connect(
-            "user=postgres password=lak555ertry host=localhost port=5432 dbname=chatgptDB")
+            "user=postgres host=localhost port=5432 dbname=bot_db")
         self.connection.autocommit = True
 
     def fetch_one(self, query, arg=None, factory=None, clean=None):
@@ -99,4 +99,5 @@ class Database:
         # В том числе, если в БД данных нет, будет ошибка на этапе fetchone
         print('Данных в бд нет или ошибка: {}'.format(error))
         return None
+
 
