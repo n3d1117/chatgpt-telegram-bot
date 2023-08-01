@@ -154,11 +154,13 @@ async def is_allowed(user_id) -> bool:
     Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
-    access_code = is_in_trial(user_id)
-    if access_code == False:
-        return is_allowed_and_not_trial(user_id)
-    elif access_code == True:
-        return is_allowed_and_trial(user_id)
+    try:
+        access_code = is_in_trial(user_id)
+    except:
+        error_handler()
+    if not access_code:
+        return await is_allowed_and_not_trial(user_id)
+    return await is_allowed_and_trial(user_id)
     
 async def is_allowed_and_trial(user_id) -> bool:
     """
@@ -170,7 +172,7 @@ async def is_allowed_and_trial(user_id) -> bool:
         return [True, 1]
     return [False, 1]
 
-def is_allowed_and_not_trial(user_id) -> bool:
+async def is_allowed_and_not_trial(user_id) -> bool:
     """
     Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     """
@@ -186,8 +188,7 @@ def is_in_trial(user_id):
     user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
     if user_trial == "N":
         return False
-    elif user_trial == "Y":
-        return True
+    return True
 
 
 
