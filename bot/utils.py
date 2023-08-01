@@ -147,40 +147,51 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(f'Exception while handling an update: {context.error}')
 
 
-async def is_allowed(user_id, is_inline=False) -> bool:
+
+
+async def is_allowed(user_id) -> bool:
     """
-    Checks if the user is allowed to use the bot.
+    Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
+    Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
-    # if config['allowed_user_ids'] == '*':
-    #     return True
+    try:
+        access_code = is_in_trial(user_id)
+    except:
+        error_handler()
+    if not access_code:
+        return await is_allowed_and_not_trial(user_id)
+    return await is_allowed_and_trial(user_id)
     
-    # if is_admin(config, user_id):
-    #     return True
-    # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-    # allowed_user_ids = config['allowed_user_ids'].split(',')
-    # # Check if user is allowed
-    # if str(user_id) in allowed_user_ids:
-    #     return True
-    # # Check if it's a group a chat with at least one authorized member
-    # if not is_inline and is_group_chat(update):
-    #     admin_user_ids = config['admin_user_ids'].split(',')
-    #     for user in itertools.chain(allowed_user_ids, admin_user_ids):
-    #         if not user.strip():
-    #             continue
-    #         if await is_user_in_group(update, context, user):
-    #             logging.info(f'{user} is a member. Allowing group chat message...')
-    #             return True
-    #     logging.info(f'Group chat messages from user {name} '
-    #                  f'(id: {user_id}) are not allowed')
-    # return False
+async def is_allowed_and_trial(user_id) -> bool:
+    """
+    Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
+    """
     today = datetime.now()
-    data_exp = db.fetch_one("SELECT date_expiration FROM subscribers WHERE user_id = %s", (str(user_id),))
-    print(data_exp)
-    if(data_exp != None):
-        if(data_exp >= today): return True
-    else:
-        return False
+    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    if date_exp is not None and date_exp >= today and is_in_trial:
+        return [True, 1]
+    return [False, 1]
+
+async def is_allowed_and_not_trial(user_id) -> bool:
+    """
+    Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
+    """
+    today = datetime.now()
+    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    if date_exp is not None and date_exp >= today and not is_in_trial(user_id):
+        return [True, 2]
+    return [False, 2]
     
+
+def is_in_trial(user_id):
+    request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
+    user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
+    if user_trial == "N":
+        return False
+    return True
+
+
+
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """
     Checks if the user is the admin of the bot.
@@ -199,92 +210,6 @@ def is_admin(config, user_id: int, log_no_admin=False) -> bool:
 
     return False
 
-
-def get_user_budget(config, user_id) -> float | None:
-    """
-    Get the user's budget based on their user ID and the bot configuration.
-    :param config: The bot configuration object
-    :param user_id: User id
-    :return: The user's budget as a float, or None if the user is not found in the allowed user list
-    """
-
-    # no budget restrictions for admins and '*'-budget lists
-    if is_admin(config, user_id) or config['user_budgets'] == '*':
-        return float('inf')
-
-    # user_budgets = config['user_budgets'].split(',')
-    # if config['allowed_user_ids'] == '*':
-    #     # same budget for all users, use value in first position of budget list
-    #     if len(user_budgets) > 1:
-    #         logging.warning('multiple values for budgets set with unrestricted user list '
-    #                         'only the first value is used as budget for everyone.')
-    #     return float(user_budgets[0])
-
-    # allowed_user_ids = config['allowed_user_ids'].split(',')
-    # if is_allowed():
-        # user_index = allowed_user_ids.index(str(user_id))
-        # if len(user_budgets) <= user_index:
-        #     logging.warning(f'No budget set for user id: {user_id}. Budget list shorter than user list.')
-        #     return 0.0
-        user_budget = db.fetch_one("SELECT price FROM subscribers WHERE user_id = %s", (user_id,))
-        print(user_budget)
-        return float(user_budget)
-    # return None
-
-
-def get_remaining_budget(config, usage, update: Update, is_inline=False) -> float:
-    """
-    Calculate the remaining budget for a user based on their current usage.
-    :param config: The bot configuration object
-    :param usage: The usage tracker object
-    :param update: Telegram update object
-    :param is_inline: Boolean flag for inline queries
-    :return: The remaining budget for the user as a float
-    """
-    # Mapping of budget period to cost period
-    budget_cost_map = {
-        "monthly": "cost_month",
-        "daily": "cost_today",
-        "all-time": "cost_all_time"
-    }
-
-    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-    name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-    if user_id not in usage:
-        usage[user_id] = UsageTracker(user_id, name)
-
-    # Get budget for users
-    user_budget = get_user_budget(config, user_id)
-    budget_period = config['budget_period']
-    if user_budget is not None:
-        cost = usage[user_id].get_current_cost()[budget_cost_map[budget_period]]
-        return user_budget - cost
-
-    # Get budget for guests
-    if 'guests' not in usage:
-        usage['guests'] = UsageTracker('guests', 'all guest users in group chats')
-    cost = usage['guests'].get_current_cost()[budget_cost_map[budget_period]]
-    return config['guest_budget'] - cost
-
-
-def is_within_budget(config, usage, update: Update, is_inline=False) -> bool:
-    """
-    Checks if the user reached their usage limit.
-    Initializes UsageTracker for user and guest when needed.
-    :param config: The bot configuration object
-    :param usage: The usage tracker object
-    :param update: Telegram update object
-    :param is_inline: Boolean flag for inline queries
-    :return: Boolean indicating if the user has a positive budget
-    """
-    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-    name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-    if user_id not in usage:
-        usage[user_id] = UsageTracker(user_id, name)
-    remaining_budget = get_remaining_budget(config, usage, update, is_inline=is_inline)
-    return remaining_budget > 0
-
-
 def add_chat_request_to_usage_tracker(usage, config, user_id, used_tokens):
     """
     Add chat request to usage tracker
@@ -297,8 +222,6 @@ def add_chat_request_to_usage_tracker(usage, config, user_id, used_tokens):
         # add chat request to users usage tracker
         usage[user_id].add_chat_tokens(used_tokens, config['token_price'])
         # add guest chat request to guest usage tracker
-        if is_allowed(user_id) and 'guests' in usage:
-            usage["guests"].add_chat_tokens(used_tokens, config['token_price'])
     except Exception as e:
         logging.warning(f'Failed to add tokens to usage_logs: {str(e)}')
         pass
