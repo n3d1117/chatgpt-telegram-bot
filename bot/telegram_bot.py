@@ -40,13 +40,17 @@ class ChatGPTTelegramBot:
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
-            BotCommand(command='resend', description=localized_text('resend_description', bot_language))
+            BotCommand(command='resend', description=localized_text('resend_description', bot_language)),
+            BotCommand(command='trial', description=localized_text('trial_description', bot_language))
         ]
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
         )] + self.commands
         self.disallowed_message_trial = localized_text('disallowed_trial', bot_language)
         self.disallowed_message_not_trial = localized_text('disallowed_not_trial', bot_language)
+        self.already_used_trial = localized_text('already_used_trial', bot_language)
+        self.not_used_trial = localized_text('not_used_trial', bot_language)
+        self.rules_of_using = localized_text('rules_of_using', bot_language)
         self.budget_limit_message = localized_text('budget_limit', bot_language)
         self.usage = {}
         self.last_message = {}
@@ -131,12 +135,22 @@ class ChatGPTTelegramBot:
         usage_text = text_current_conversation + text_today + text_month
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
+
+    async def trial(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Offering and activating the trial subscription
+        """
+        logging.info(f'Offering trial for user {update.message.from_user.name} (id: {update.message.from_user.id})') 
+        activate_btn = InlineKeyboardButton('Получить бесплатный доступ', callback_data='activate_trial')
+        reply_markup = InlineKeyboardMarkup().add(activate_btn)
+        
+
+
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resend the last request
         """
-        user_id = str(update.message.from_user.id)
-        if not await (user_id):
+        if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
@@ -737,6 +751,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('trial', self.trial))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
         )
