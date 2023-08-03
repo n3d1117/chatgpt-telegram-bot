@@ -2,12 +2,6 @@ import os.path
 import pathlib
 import json
 from datetime import date
-from db import Database
-
-
-db = Database()
-query = "SELECT user_id FROM users"
-print(db.fetch_one(query))
 
 def year_month(date_str):
     # extract string of year-month from date, eg: '2023-03'
