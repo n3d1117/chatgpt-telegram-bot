@@ -10,8 +10,7 @@ from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
-from datetime import datetime
-db = Database()
+import datetime
 
 def message_text(message: Message) -> str:
     """
@@ -149,48 +148,64 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 
-async def is_allowed(user_id) -> bool:
+async def is_allowed(db, user_id) -> bool:
     """
     Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
-    try:
-        access_code = is_in_trial(user_id)
-    except:
-        error_handler()
+    access_code = await is_in_trial(db, user_id)
     if not access_code:
-        return await is_allowed_and_not_trial(user_id)
-    return await is_allowed_and_trial(user_id)
+        return await is_allowed_and_not_trial(db, user_id)
+    return await is_allowed_and_trial(db, user_id)
     
-async def is_allowed_and_trial(user_id) -> bool:
+async def is_allowed_and_trial(db, user_id) -> bool:
     """
     Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
-    today = datetime.now()
+    today = datetime.datetime.now()
     date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
     if date_exp is not None and date_exp >= today and is_in_trial:
         return [True, 1]
     return [False, 1]
 
-async def is_allowed_and_not_trial(user_id) -> bool:
+async def is_allowed_and_not_trial(db, user_id) -> bool:
     """
     Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     """
-    today = datetime.now()
+    today = datetime.datetime.now()
     date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
     if date_exp is not None and date_exp >= today and not is_in_trial(user_id):
         return [True, 2]
     return [False, 2]
     
 
-def is_in_trial(user_id):
+async def is_in_trial(db, user_id):
     request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
-    user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
+    user_trial = db.fetch_one(request_on_user, (str(user_id), ))
     if user_trial == "N":
         return False
     return True
 
+def frequency_check(config, usage, last_message_time, update: Update, is_inline=False) -> bool:
+    """
+    checking the frequency of sending messages by the user
+    :param config: The bot configuration object
+    :param usage: The usage tracker object
+    :param update: Telegram update object
+    :param is_inline: Boolean flag for inline queries
+    :return: If the user did not send a message earlier than time_delay
+    """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+    name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+    if user_id not in usage:
+        usage[user_id] = UsageTracker(user_id, name)
+    time_delay = config['time_delay']
 
+    if user_id not in last_message_time:
+        return True
+    elif last_message_time[user_id] + datetime.timedelta(seconds=time_delay) < datetime.datetime.now():
+        return True
+    return False
 
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """

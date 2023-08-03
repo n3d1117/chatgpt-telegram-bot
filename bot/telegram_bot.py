@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import os
 import psycopg2
@@ -18,7 +19,7 @@ from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, frequency_check
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -28,12 +29,13 @@ class ChatGPTTelegramBot:
     Class representing a ChatGPT Telegram Bot.
     """
 
-    def __init__(self, config: dict, openai: OpenAIHelper):
+    def __init__(self, db, config: dict, openai: OpenAIHelper):
         """
         Initializes the bot with the given configuration and GPT bot object.
         :param config: A dictionary containing the bot configuration
         :param openai: OpenAIHelper object
         """
+        self.db = db
         self.config = config
         self.openai = openai
         bot_language = self.config['bot_language']
@@ -50,10 +52,15 @@ class ChatGPTTelegramBot:
         )] + self.commands
         self.disallowed_message_trial = localized_text('disallowed_trial', bot_language)
         self.disallowed_message_not_trial = localized_text('disallowed_not_trial', bot_language)
+        self.frequency_message = localized_text('frequency_error', bot_language)
         self.budget_limit_message = localized_text('budget_limit', bot_language)
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
+        self.last_message_time = {}
+
+    async def prompt_wrapper(self, update, context):
+        await self.prompt(self.db, update, context)
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -73,12 +80,12 @@ class ChatGPTTelegramBot:
         )
         await update.message.reply_text(help_text, disable_web_page_preview=True)
 
-    async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def stats(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Returns token usage statistics for current day and month.
         """
         user_id = str(update.message.from_user.id)
-        if not await self.check_allowed(update, context):
+        if not await self.check_allowed(db, update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
@@ -134,7 +141,7 @@ class ChatGPTTelegramBot:
         usage_text = text_current_conversation + text_today + text_month
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
-    async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def resend(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resend the last request
         """
@@ -161,14 +168,14 @@ class ChatGPTTelegramBot:
         with update.message._unfrozen() as message:
             message.text = self.last_message.pop(chat_id)
 
-        await self.prompt(update=update, context=context)
+        await self.prompt(db, update=update, context=context)
 
-    async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reset(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resets the conversation.
         """
         user_id = str(update.message.from_user.id)
-        if not await self.check_allowed(update, context):
+        if not await self.check_allowed(db, update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to reset the conversation')
             return
@@ -184,7 +191,8 @@ class ChatGPTTelegramBot:
             text=localized_text('reset_done', self.config['bot_language'])
         )
 
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def start(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("LOG: catch \start")
         user = update.effective_user
         user_id = user.id
@@ -204,11 +212,11 @@ class ChatGPTTelegramBot:
 
 
 
-    async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def image(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Generates an image for the given prompt using DALL·E APIs
         """
-        if not await self.check_allowed(update, context):
+        if not await self.check_allowed(db, update, context):
             return 
 
         image_query = message_text(update.message)
@@ -245,11 +253,11 @@ class ChatGPTTelegramBot:
 
         await wrap_with_indicator(update, context, _generate, constants.ChatAction.UPLOAD_PHOTO)
 
-    async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def transcribe(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Transcribe audio messages.
         """
-        if not self.config['enable_transcription'] or not await self.check_allowed(update, context):
+        if not self.config['enable_transcription'] or not await self.check_allowed(db, update, context):
             return
 
         if is_group_chat(update) and self.config['ignore_group_transcriptions']:
@@ -327,7 +335,7 @@ class ChatGPTTelegramBot:
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
 
                     self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-                    if is_allowed(user_id)  and 'guests' in self.usage:
+                    if is_allowed(db, user_id)  and 'guests' in self.usage:
                         self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
@@ -361,21 +369,24 @@ class ChatGPTTelegramBot:
 
         await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
-    async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def prompt(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         React to incoming messages and respond accordingly.
         """
         if update.edited_message or not update.message or update.message.via_bot:
             return
 
-        if not await self.check_allowed(update, context):
+        if not await self.check_allowed(db, update, context):
             return
+
+        self.config['image_prices']
 
         logging.info(
             f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
+
         self.last_message[chat_id] = prompt
 
         if is_group_chat(update):
@@ -524,14 +535,14 @@ class ChatGPTTelegramBot:
                 parse_mode=constants.ParseMode.MARKDOWN
             )
 
-    async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def inline_query(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Handle the inline query. This is run when you type: @botusername <query>
         """
         query = update.inline_query.query
         if len(query) < 3:
             return
-        if not await self.check_allowed(update, context, is_inline=True):
+        if not await self.check_allowed(db, update, context, is_inline=True):
             return
 
         callback_data_suffix = "gpt:"
@@ -686,7 +697,7 @@ class ChatGPTTelegramBot:
                                           text=f"{query}\n\n_{answer_tr}:_\n{localized_answer} {str(e)}",
                                           is_inline=True)
 
-    async def check_allowed(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+    async def check_allowed(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
         """
         Checks if the user is allowed to use the bot and if they are within their budget
@@ -697,7 +708,12 @@ class ChatGPTTelegramBot:
         """
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-        access_code = await is_allowed(user_id)
+        access_code = await is_allowed(db, user_id)
+        if not frequency_check(self.config, self.usage, self.last_message_time, update, is_inline=is_inline):
+            logging.warning(f'User {name} (id: {user_id}) violated the frequency of sending messages')
+            await self.send_frequency_error_message(update, context, is_inline)
+            return False
+        self.last_message_time[user_id] = datetime.datetime.now()
         if access_code[0] == False and access_code[1] == 1:
             logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(self.disallowed_message_trial, update, context, is_inline)
@@ -735,6 +751,19 @@ class ChatGPTTelegramBot:
             result_id = str(uuid4())
             await self.send_inline_query_result(update, result_id, message_content=self.budget_limit_message)
 
+    async def send_frequency_error_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+        """
+        Sends the frequency error message to the user.
+        """
+        if not is_inline:
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text=self.frequency_message
+            )
+        else:
+            result_id = str(uuid4())
+            await self.send_inline_query_result(update, result_id, message_content=self.frequency_message)
+
     async def post_init(self, application: Application) -> None:
         """
         Post initialization hook for the bot.
@@ -761,13 +790,15 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler(
-            'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
-        )
+            'chat',
+            self.prompt_wrapper,
+            filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP
+        ))
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
             filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
             self.transcribe))
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt_wrapper))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))

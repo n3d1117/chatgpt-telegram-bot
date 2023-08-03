@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from openai_helper import OpenAIHelper, default_max_tokens
 from telegram_bot import ChatGPTTelegramBot
+from db import Database
 
 
 def main():
@@ -75,11 +76,21 @@ def main():
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES', "0.016,0.018,0.02").split(",")],
         'transcription_price': float(os.environ.get('TRANSCRIPTION_PRICE', 0.006)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'ru'),
+        'time_delay': int(os.environ.get('TIME_DELAY', 60)),
+    }
+
+    db_config = {
+        'user_db': os.environ['USER_DB'],
+        'password_db': os.environ['PASSWORD_DB'],
+        'host_db': os.environ['HOST_DB'],
+        'port_db': os.environ['PORT_DB'],
+        'name_db': os.environ['NAME_DB'],
     }
 
     # Setup and run ChatGPT and Telegram bot
     openai_helper = OpenAIHelper(config=openai_config)
-    telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
+    db = Database(config=db_config)
+    telegram_bot = ChatGPTTelegramBot(db, config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 
 
