@@ -192,7 +192,8 @@ class ChatGPTTelegramBot:
         )
 
 
-    async def start(self, db, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        db = self.db
         print("LOG: catch \start")
         user = update.effective_user
         user_id = user.id
@@ -200,11 +201,9 @@ class ChatGPTTelegramBot:
         date = update.message.date
         print(f"LOG: Get Username: {username} UID:{user_id}")
         print(f"LOG: date: {date}")
-        print(type(date))
         date_format = date.strftime("%Y-%m-%d %H:%M:%S")
         greetings_text = f"{username}, привет!"
 
-        db = Database();
         query = f"INSERT INTO users (user_id, date_creation, user_first_name) VALUES({user_id}, '{date_format}', '{username}');"
         db.query_update(query, None)
 
