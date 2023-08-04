@@ -54,4 +54,7 @@ class WebshotPlugin(Plugin):
             else:
                 return {'result': 'Unable to screenshot website'}
         except:
+            if 'image_file_path' in locals():
+                os.remove(image_file_path)
+                
             return {'result': 'Unable to screenshot website'}
