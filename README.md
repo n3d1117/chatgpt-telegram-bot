@@ -1,6 +1,3 @@
-> **Note**
-> Support for functions (aka plugins) is being added! Check out [this discussion](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/345) for more info and contribute!
-
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
 [![openai-version](https://img.shields.io/badge/openai-0.27.8-orange.svg)](https://openai.com/)
@@ -10,7 +7,12 @@
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/), [DALL·E](https://openai.com/product/dall-e-2) and [Whisper](https://openai.com/research/whisper) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
+
+### Demo
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
+
+### Plugins
+![plugins](https://github.com/n3d1117/chatgpt-telegram-bot/assets/11541888/83d5e0cd-e09a-463d-a292-722f919e929f)
 
 ## Features
 - [x] Support markdown in answers
@@ -33,7 +35,7 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
 - [x] (NEW!) Support *new models* [announced on June 13, 2023](https://openai.com/blog/function-calling-and-other-api-updates)
 - [x] (NEW!) Support *functions* (plugins) to extend the bot's functionality with 3rd party services
-  - See [here](#available-plugins) for a list of available plugins
+  - Weather, Spotify, Web search, text-to-speech and more. See [here](#available-plugins) for a list of available plugins
 
 ## Additional features - help needed!
 If you'd like to help, check out the [issues](https://github.com/n3d1117/chatgpt-telegram-bot/issues) section and contribute!  
