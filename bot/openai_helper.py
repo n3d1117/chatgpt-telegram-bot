@@ -445,24 +445,25 @@ class OpenAIHelper:
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
-    def get_billing_current_month(self):
-        """Gets billed usage for current month from OpenAI API.
-
-        :return: dollar amount of usage this month
-        """
-        headers = {
-            "Authorization": f"Bearer {openai.api_key}"
-        }
-        # calculate first and last day of current month
-        today = date.today()
-        first_day = date(today.year, today.month, 1)
-        _, last_day_of_month = monthrange(today.year, today.month)
-        last_day = date(today.year, today.month, last_day_of_month)
-        params = {
-            "start_date": first_day,
-            "end_date": last_day
-        }
-        response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
-        billing_data = json.loads(response.text)
-        usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
-        return usage_month
+    # No longer works as of July 21st 2023, as OpenAI has removed the billing API
+    # def get_billing_current_month(self):
+    #     """Gets billed usage for current month from OpenAI API.
+    #
+    #     :return: dollar amount of usage this month
+    #     """
+    #     headers = {
+    #         "Authorization": f"Bearer {openai.api_key}"
+    #     }
+    #     # calculate first and last day of current month
+    #     today = date.today()
+    #     first_day = date(today.year, today.month, 1)
+    #     _, last_day_of_month = monthrange(today.year, today.month)
+    #     last_day = date(today.year, today.month, last_day_of_month)
+    #     params = {
+    #         "start_date": first_day,
+    #         "end_date": last_day
+    #     }
+    #     response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
+    #     billing_data = json.loads(response.text)
+    #     usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
+    #     return usage_month

@@ -129,12 +129,13 @@ class ChatGPTTelegramBot:
                 f"{localized_text(budget_period, bot_language)}: "
                 f"${remaining_budget:.2f}.\n"
             )
+        # No longer works as of July 21st 2023, as OpenAI has removed the billing API
         # add OpenAI account information for admin request
-        if is_admin(self.config, user_id):
-            text_budget += (
-                f"{localized_text('stats_openai', bot_language)}"
-                f"{self.openai.get_billing_current_month():.2f}"
-            )
+        # if is_admin(self.config, user_id):
+        #     text_budget += (
+        #         f"{localized_text('stats_openai', bot_language)}"
+        #         f"{self.openai.get_billing_current_month():.2f}"
+        #     )
 
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
@@ -371,8 +372,10 @@ class ChatGPTTelegramBot:
 
         if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
-            if prompt.lower().startswith(trigger_keyword.lower()):
-                prompt = prompt[len(trigger_keyword):].strip()
+
+            if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
+                if prompt.lower().startswith(trigger_keyword.lower()):
+                    prompt = prompt[len(trigger_keyword):].strip()
 
                 if update.message.reply_to_message and \
                         update.message.reply_to_message.text and \
