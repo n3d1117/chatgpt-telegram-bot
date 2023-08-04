@@ -126,7 +126,7 @@ Check out the [official API reference](https://platform.openai.com/docs/api-refe
 | `deepl_translate`         | Translate text to any language (powered by [DeepL](https://deepl.com)) - by [@LedyBacer](https://github.com/LedyBacer)                              | `DEEPL_API_KEY`                                                      |                                        |
 | `gtts_text_to_speech`     | Text to speech (powered by Google Translate APIs)                                                                                                   | -                                                                    | `pip install gtts~=2.3.2`              |
 | `whois`                   | Query the whois domain database - by [@jnaskali](https://github.com/jnaskali)                                                                       | -                                                                    | `pip install whois~=0.9.27`            |
-| `webshot`                   | Screenshot of a website from a given url or domain name by [@noriellecruz](https://github.com/noriellecruz)                                                                      | -                                                                    |           |
+| `webshot`                   | Screenshot a website from a given url or domain name by [@noriellecruz](https://github.com/noriellecruz)                                                                      | -                                                                    |           |
 
 **Note**: some plugins have additional dependencies that are not listed in the `requirements.txt` file. If you plan on using these plugins, you can install them manually using the command above (see the `Dependency` column).
 
