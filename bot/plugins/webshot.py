@@ -22,4 +22,10 @@ class WebshotPlugin(Plugin):
         }]
 
     async def execute(self, function_name, **kwargs) -> Dict:
-        return {'result': f'https://image.thum.io/get/maxAge/12/width/720/{kwargs["url"]}'}
+        return {
+            'direct_result': {
+                'kind': 'photo',
+                'format': 'url',
+                'value': f'https://image.thum.io/get/maxAge/12/width/720/{kwargs["url"]}'
+            }
+        }
