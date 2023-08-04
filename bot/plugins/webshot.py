@@ -29,6 +29,11 @@ class WebshotPlugin(Plugin):
     async def execute(self, function_name, **kwargs) -> Dict:
         try:
             image_url = f'https://image.thum.io/get/maxAge/12/width/720/{kwargs["url"]}'
+            
+            # preload url first
+            requests.get(image_url)
+
+            # download the actual image
             response = requests.get(image_url, timeout=30)
 
             if response.status_code == 200:
