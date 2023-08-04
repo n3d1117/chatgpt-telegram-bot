@@ -13,6 +13,7 @@ from plugins.wolfram_alpha import WolframAlphaPlugin
 from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
 from plugins.whois_ import WhoisPlugin
+from plugins.webshot import WebshotPlugin
 
 
 class PluginManager:
@@ -36,6 +37,7 @@ class PluginManager:
             'deepl_translate': DeeplTranslatePlugin,
             'gtts_text_to_speech': GTTSTextToSpeech,
             'whois': WhoisPlugin,
+            'webshot': WebshotPlugin,
         }
         self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
