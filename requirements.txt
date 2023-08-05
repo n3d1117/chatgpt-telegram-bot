@@ -5,3 +5,9 @@ openai==0.27.8
 python-telegram-bot==20.3
 requests~=2.31.0
 tenacity==8.2.2
+wolframalpha~=5.0.0
+duckduckgo_search~=3.8.3
+spotipy~=2.23.0
+pytube~=15.0.0
+gtts~=2.3.2
+whois~=0.9.27
