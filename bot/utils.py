@@ -155,7 +155,7 @@ async def is_allowed(user_id) -> bool:
     Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
     try:
-        access_code = is_in_trial(user_id)
+        access_code = await is_in_trial(user_id)
     except:
         error_handler()
     if not access_code:
@@ -168,7 +168,7 @@ async def is_allowed_and_trial(user_id) -> bool:
     """
     today = datetime.now()
     date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-    if date_exp is not None and date_exp >= today and is_in_trial:
+    if date_exp is not None and date_exp >= today and await is_in_trial(user_id):
         return [True, 1]
     return [False, 1]
 
@@ -178,12 +178,12 @@ async def is_allowed_and_not_trial(user_id) -> bool:
     """
     today = datetime.now()
     date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-    if date_exp is not None and date_exp >= today and not is_in_trial(user_id):
+    if date_exp is not None and date_exp >= today and not await is_in_trial(user_id):
         return [True, 2]
     return [False, 2]
     
 
-def is_in_trial(user_id):
+async def is_in_trial(user_id):
     request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
     user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
     if user_trial == "N":

@@ -16,7 +16,7 @@ from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -52,6 +52,7 @@ class ChatGPTTelegramBot:
         self.not_used_trial = localized_text('not_used_trial', bot_language)
         self.rules_of_using = localized_text('rules_of_using', bot_language)
         self.budget_limit_message = localized_text('budget_limit', bot_language)
+        self.success_activate_trial = localized_text('success_activate_trial', bot_language)
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
@@ -140,10 +141,20 @@ class ChatGPTTelegramBot:
         """
         Offering and activating the trial subscription
         """
-        logging.info(f'Offering trial for user {update.message.from_user.name} (id: {update.message.from_user.id})') 
-        activate_btn = InlineKeyboardButton('Получить бесплатный доступ', callback_data='activate_trial')
-        reply_markup = InlineKeyboardMarkup().add(activate_btn)
-        
+        logging.info(f'Offering trial for user {update.message.from_user.name} (id: {update.message.from_user.id})')
+        if await is_in_trial(update.message.from_user.id):
+            await update.message.reply_text(self.already_used_trial)
+        else: 
+            activate_btn = [
+                [InlineKeyboardButton('Получить бесплатный доступ', callback_data='activate_trial')]
+            ]
+            reply_markup = InlineKeyboardMarkup(activate_btn)
+            await update.message.reply_text(self.not_used_trial, reply_markup=reply_markup)
+            await update.message.reply_text(self.rules_of_using)
+    async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.callback_query
+        await query.answer(self.success_activate_trial)
+
 
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -752,6 +763,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler('trial', self.trial))
+        application.add_handler(CallbackQueryHandler(self.button))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
         )
