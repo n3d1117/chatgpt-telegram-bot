@@ -10,7 +10,7 @@ from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
-from datetime import datetime
+from datetime import datetime, timedelta
 db = Database()
 
 def message_text(message: Message) -> str:
@@ -147,7 +147,53 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(f'Exception while handling an update: {context.error}')
 
 
+async def get_date_expiration(user_id):
+    """Получаем дату окончания подписки, если она вообще есть"""
+    try: date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    except: error_handler()
+    if date_exp is not None:
+        return date_exp
+    return None
 
+async def get_trial_access(user_id):
+    trial_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 2 WHERE user_id = %s"
+    
+    if await get_date_expiration(user_id) is not None:
+        date_exp = await set_date_expiration(3, await get_date_expiration(user_id))
+    else: 
+        date_exp = await set_date_expiration(3, datetime.now())
+    
+    try: check_res = db.query_update(trial_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got trial access for 3 days" % user_id)
+    except: error_handler()
+
+    if check_res != None:
+        print(check_res)
+        return True
+    return False
+
+async def get_subscribe_access(user_id):
+    subscription_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 1 WHERE user_id = %s"
+    
+    if await get_date_expiration(user_id) is not None:
+        date_exp = await set_date_expiration(31, await get_date_expiration(user_id))
+    else: 
+        date_exp = await set_date_expiration(31, datetime.now())
+
+    try: check_res = db.query_update(subscription_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got subscription access for 30 days" % user_id)
+    
+    except: error_handler()
+    if check_res != None:
+        return True
+    return False
+
+async def set_date_expiration(days, temp_date_exp):
+    today = datetime.now()
+    if(temp_date_exp >= today):
+        dp = today + timedelta(days=days)
+    else:
+        dp = temp_date_exp + timedelta(days=days)
+
+    return str(datetime(dp.year, dp.month, dp.day))
 
 async def is_allowed(user_id) -> bool:
     """
@@ -167,7 +213,7 @@ async def is_allowed_and_trial(user_id) -> bool:
     Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
     """
     today = datetime.now()
-    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    date_exp = await get_date_expiration(user_id)
     if date_exp is not None and date_exp >= today and await is_in_trial(user_id):
         return [True, 1]
     return [False, 1]
@@ -177,16 +223,18 @@ async def is_allowed_and_not_trial(user_id) -> bool:
     Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
     """
     today = datetime.now()
-    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    date_exp = await get_date_expiration(user_id)
     if date_exp is not None and date_exp >= today and not await is_in_trial(user_id):
         return [True, 2]
     return [False, 2]
     
 
 async def is_in_trial(user_id):
-    request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
+    """ Проверяем статус пробной подписки(была активирована или нет) """
+    request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s and subscription_id = 2"
     user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
-    if user_trial == "N":
+    print(user_trial)
+    if user_trial is not None and user_trial == "N":
         return False
     return True
 

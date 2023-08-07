@@ -5,18 +5,19 @@ import logging
 import os
 
 from uuid import uuid4
-from telegram import BotCommandScopeAllGroupChats, Update, constants
+from telegram import BotCommandScopeAllGroupChats, Update, constants, LabeledPrice
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
-    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext
+    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext, PreCheckoutQueryHandler
 
 from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial, get_trial_access, \
+    get_date_expiration, get_subscribe_access
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -35,13 +36,15 @@ class ChatGPTTelegramBot:
         self.config = config
         self.openai = openai
         bot_language = self.config['bot_language']
+        self.subscribe_description = localized_text('subscribe_description', bot_language)
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
             BotCommand(command='resend', description=localized_text('resend_description', bot_language)),
-            BotCommand(command='trial', description=localized_text('trial_description', bot_language))
+            BotCommand(command='trial', description=localized_text('trial_description', bot_language)),
+            BotCommand(command='subscribe', description=self.subscribe_description)
         ]
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
@@ -53,6 +56,8 @@ class ChatGPTTelegramBot:
         self.rules_of_using = localized_text('rules_of_using', bot_language)
         self.budget_limit_message = localized_text('budget_limit', bot_language)
         self.success_activate_trial = localized_text('success_activate_trial', bot_language)
+        self.subscribe_offer = localized_text('subscribe_offer', bot_language)
+        self.success_activate_subscribtion = localized_text('success_activate_subscribtion', bot_language)
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
@@ -83,7 +88,6 @@ class ChatGPTTelegramBot:
         if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                             f'is not allowed to request their usage statistics')
-            await self.send_disallowed_message(update, context)
             return
 
         logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
@@ -137,6 +141,7 @@ class ChatGPTTelegramBot:
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
 
+
     async def trial(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Offering and activating the trial subscription
@@ -151,10 +156,80 @@ class ChatGPTTelegramBot:
             reply_markup = InlineKeyboardMarkup(activate_btn)
             await update.message.reply_text(self.not_used_trial, reply_markup=reply_markup)
             await update.message.reply_text(self.rules_of_using)
-    async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        query = update.callback_query
-        await query.answer(self.success_activate_trial)
 
+    async def subscribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Offering and activating the full subscription
+        """
+        logging.info(f'Offering subscribe for user {update.message.from_user.name} (id: {update.message.from_user.id})')
+        activate_btn = [
+            [InlineKeyboardButton('Оплатить', callback_data='subscribe_access')]
+        ]
+        reply_markup = InlineKeyboardMarkup(activate_btn)
+        await update.message.reply_text(self.subscribe_offer, reply_markup=reply_markup)
+        await update.message.reply_text(self.rules_of_using)
+
+    async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        if query.data == "activate_trial":
+            if await get_trial_access(query.from_user.id):
+                date_exp = await get_date_expiration(query.from_user.id)
+                await update.effective_message.reply_text(
+                    message_thread_id=get_thread_id(update),
+                    text = self.success_activate_trial % str(date_exp))
+                
+        elif query.data == "subscribe_access":
+            chat_id = query.from_user.id
+            title = "SympaBot Pro: Безлимитный доступ"
+            description = self.subscribe_description
+            payload = "Custom-Payload"
+            currency = "RUB"
+            price = 20000
+            prices = [LabeledPrice("Test", price)]
+            payment_provider = self.config['payment_provider']
+            await context.bot.send_invoice(
+                chat_id=chat_id, 
+                title=title, 
+                description=description, 
+                payload=payload,
+                provider_token=payment_provider, 
+                currency=currency, 
+                start_parameter="start", 
+                prices=prices,
+                need_email=True,
+                send_email_to_provider=True,
+                provider_data={
+                    "receipt":{
+                        "items":[
+                            {
+                                "description": "SympaBot Pro",
+                                "quantity":"1.00",
+                                "amount":{
+                                    "value": "200.00",
+                                    "currency": "RUB"
+                                },
+                                "vat_code": 1
+                            }
+                        ]
+                    }
+                }
+            )
+
+    async def precheckout_subscription_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.pre_checkout_query
+        if query.invoice_payload == "Custom-Payload":
+            await context.bot.answer_pre_checkout_query(query.id, ok=True)
+        else:
+            await context.bot.answer_pre_checkout_query(ok=False, error_message="Something went wrong...")
+
+    async def successful_payment_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        
+        if await get_subscribe_access(update.effective_chat.id):
+            date_exp = await get_date_expiration(update.effective_chat.id)
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text = self.success_activate_subscribtion % str(date_exp))     
+                
 
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -164,7 +239,6 @@ class ChatGPTTelegramBot:
         if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
                             f' is not allowed to resend the message')
-            await self.send_disallowed_message(update, context)
             return
 
         chat_id = update.effective_chat.id
@@ -763,9 +837,14 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
         application.add_handler(CommandHandler('trial', self.trial))
-        application.add_handler(CallbackQueryHandler(self.button))
+        application.add_handler(CommandHandler('subscribe', self.subscribe))
+        application.add_handler(CallbackQueryHandler(self.inline_query_handler))
+        application.add_handler(PreCheckoutQueryHandler(self.precheckout_subscription_callback))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
+        )
+        application.add_handler(
+            MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_callback)
         )
         application.add_handler(MessageHandler(
             filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
