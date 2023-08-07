@@ -27,22 +27,6 @@ def message_text(message: Message) -> str:
     return message_txt if len(message_txt) > 0 else ''
 
 
-async def is_user_in_group(update: Update, context: CallbackContext, user_id: int) -> bool:
-    """
-    Checks if user_id is a member of the group
-    """
-    try:
-        chat_member = await context.bot.get_chat_member(update.message.chat_id, user_id)
-        return chat_member.status in [ChatMember.OWNER, ChatMember.ADMINISTRATOR, ChatMember.MEMBER]
-    except telegram.error.BadRequest as e:
-        if str(e) == "User not found":
-            return False
-        else:
-            raise e
-    except Exception as e:
-        raise e
-
-
 def get_thread_id(update: Update) -> int | None:
     """
     Gets the message thread id for the update, if any
@@ -146,42 +130,31 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(f'Exception while handling an update: {context.error}')
 
 
-
-
-async def is_allowed(db, user_id) -> bool:
+async def is_allowed(db, update: Update, context: CallbackContext, is_inline=False) -> bool:
     """
-    Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
-    Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
+    Date Expiration Check
     """
-    access_code = await is_in_trial(db, user_id)
-    if not access_code:
-        return await is_allowed_and_not_trial(db, user_id)
-    return await is_allowed_and_trial(db, user_id)
-    
-async def is_allowed_and_trial(db, user_id) -> bool:
-    """
-    Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
-    """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
     today = datetime.datetime.now()
-    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-    if date_exp is not None and date_exp >= today and is_in_trial:
-        return [True, 1]
-    return [False, 1]
+    try:
+        date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    except Exception as e:
+        logging.error(f'Database error while performing extraction {e}')
+    if date_exp is not None and date_exp >= today:
+        return True
+    return False
 
-async def is_allowed_and_not_trial(db, user_id) -> bool:
-    """
-    Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
-    """
-    today = datetime.datetime.now()
-    date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-    if date_exp is not None and date_exp >= today and not is_in_trial(user_id):
-        return [True, 2]
-    return [False, 2]
-    
+async def is_in_trial(db, update: Update, context: CallbackContext, is_inline=False):
 
-async def is_in_trial(db, user_id):
+    """
+    Trial Flag Check
+    """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
     request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
-    user_trial = db.fetch_one(request_on_user, (str(user_id), ))
+    try:
+        user_trial = db.fetch_one(request_on_user, (str(user_id),))
+    except Exception as e:
+        logging.error(f'Database error while performing extraction {e}')
     if user_trial == "N":
         return False
     return True
@@ -252,3 +225,6 @@ def get_reply_to_message_id(config, update: Update):
     if config['enable_quoting'] or is_group_chat(update):
         return update.message.message_id
     return None
+
+
+
