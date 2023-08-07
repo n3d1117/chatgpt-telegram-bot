@@ -62,6 +62,36 @@ class ChatGPTTelegramBot:
     async def prompt_wrapper(self, update, context):
         await self.prompt(update, context)
 
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        db = self.db
+        print("LOG: catch \start")
+        user = update.effective_user
+        user_id = user.id
+        username = user.username
+        first_name = user.first_name
+        last_name = user.last_name
+        date = update.message.date
+        print(f"LOG: Get Username: {username} UID:{user_id}")
+        print(f"LOG: date: {date}")
+        date_format = date.strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            query = f"SELECT * FROM users WHERE user_id = {user_id}"
+            user_exist = db.fetch_one(query)
+        except:
+            logging.info(f'{username} tries to re-register')
+        if user_exist == user_id:
+            await self.help(update, context)
+            print("Users already in base")
+            return;
+        else:
+            print("Try add user");
+
+        query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
+        db.query_update(query, (user_id, date_format, first_name, last_name,))
+
+        greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
+        await update.message.reply_text(greetings_text, disable_web_page_preview=True)
+
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Shows the help menu.
@@ -168,8 +198,8 @@ class ChatGPTTelegramBot:
             bot_language = self.config['bot_language']
             try:
                 db = self.db
-                insert_query = "INSERT INTO feedback (user_id, feedback_message) VALUES(%s, %s);"
-                db.query_update(insert_query, (str(user_id), feedback_message))
+                insert_query = "INSERT INTO feedback (user_id, feedback_message, feedback_date) VALUES(%s, %s, %s);"
+                db.query_update(insert_query, (str(user_id), feedback_message, datetime.datetime.now()))
                 response = localized_text('feedback_response', bot_language)
                 await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
             except Exception as e:
@@ -182,23 +212,6 @@ class ChatGPTTelegramBot:
         await update.message.reply_text(localized_text('cancel_state', bot_language))
         return ConversationHandler.END
 
-
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        print("LOG: catch \start")
-        db = self.db
-        user = update.effective_user
-        user_id = user.id
-        username = user.username
-        date = update.message.date
-        print(f"LOG: Get Username: {username} UID:{user_id}")
-        print(f"LOG: date: {date}")
-        date_format = date.strftime("%Y-%m-%d %H:%M:%S")
-        greetings_text = f"{username}, привет!"
-
-        query = f"INSERT INTO users (user_id, date_creation, user_first_name) VALUES({user_id}, '{date_format}', '{username}');"
-        db.query_update(query, None)
-
-        await update.message.reply_text(greetings_text, disable_web_page_preview=True)
 
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
