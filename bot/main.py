@@ -59,6 +59,7 @@ def main():
 
     telegram_config = {
         'token': os.environ['TELEGRAM_BOT_TOKEN'],
+        'payment_provider': os.environ['PAYMENT_PROVIDER'],
         'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
         'enable_image_generation': os.environ.get('ENABLE_IMAGE_GENERATION', 'true').lower() == 'true',

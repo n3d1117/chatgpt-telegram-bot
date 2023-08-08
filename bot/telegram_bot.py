@@ -8,18 +8,17 @@ import psycopg2
 
 from db import Database
 from uuid import uuid4
-from telegram import BotCommandScopeAllGroupChats, Update, constants
+from telegram import BotCommandScopeAllGroupChats, Update, constants, LabeledPrice
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
-    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext, ConversationHandler
-
+    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext, ConversationHandler, PreCheckoutQueryHandler
 from pydub import AudioSegment
-
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, frequency_check, is_in_trial, censor_check
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial, get_trial_access, \
+    get_date_expiration, get_subscribe_access, frequency_check, censor_check
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -41,18 +40,29 @@ class ChatGPTTelegramBot:
         self.config = config
         self.openai = openai
         bot_language = self.config['bot_language']
+        self.subscribe_description = localized_text('subscribe_description', bot_language)
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
+            BotCommand(command='trial', description=localized_text('trial_description', bot_language)),
+            BotCommand(command='subscribe', description=self.subscribe_description),
             BotCommand(command='feedback', description=localized_text('feedback_description', bot_language)),
             BotCommand(command='terms', description=localized_text('terms_description', bot_language))
+
         ]
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
         )] + self.commands
         self.disallowed_message_trial = localized_text('disallowed_trial', bot_language)
         self.disallowed_message_not_trial = localized_text('disallowed_not_trial', bot_language)
+        self.already_used_trial = localized_text('already_used_trial', bot_language)
+        self.not_used_trial = localized_text('not_used_trial', bot_language)
+        self.rules_of_using = localized_text('rules_of_using', bot_language)
+        self.budget_limit_message = localized_text('budget_limit', bot_language)
+        self.success_activate_trial = localized_text('success_activate_trial', bot_language)
+        self.subscribe_offer = localized_text('subscribe_offer', bot_language)
+        self.success_activate_subscribtion = localized_text('success_activate_subscribtion', bot_language)
         self.frequency_message = localized_text('frequency_error', bot_language)
         self.censor_message = localized_text('censor_error', bot_language)
         self.usage = {}
@@ -128,9 +138,9 @@ class ChatGPTTelegramBot:
             return
         if not await self.check_allowed(update, context):
             return
-
         logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                      f'requested their usage statistics')
+
         try:
             query = "SELECT date_start, date_expiration FROM users WHERE user_id = %s"
             list_date = db.fetch_all(query, (user_id,))
@@ -140,21 +150,108 @@ class ChatGPTTelegramBot:
             stats_sub_text = (
                     localized_text('stats_sub', bot_language)[0] +
                     '\n\n' +
-                    localized_text('stats_sub', bot_language)[1] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute) + '\n' +
-                    localized_text('stats_sub', bot_language)[2] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(end_date.day, end_date.month, end_date.year, end_date.hour, end_date.minute) + '\n' +
-                    localized_text('stats_sub', bot_language)[3].format(rest_time.days, rest_time.seconds // 3600, rest_time.seconds % 3600 // 60) +
+                    localized_text('stats_sub', bot_language)[1] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(
+                start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[2] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(
+                end_date.day, end_date.month, end_date.year, end_date.hour, end_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[3].format(rest_time.days, rest_time.seconds // 3600,
+                                                                        rest_time.seconds % 3600 // 60) +
                     '\n\n' +
                     localized_text('stats_sub', bot_language)[4]
             )
             await update.message.reply_text(stats_sub_text, parse_mode=constants.ParseMode.MARKDOWN)
         except Exception as e:
             logging.exception(e)
+
+
+    async def trial(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Offering and activating the trial subscription
+        """
+        logging.info(f'Offering trial for user {update.message.from_user.name} (id: {update.message.from_user.id})')
+        if await is_in_trial(update.message.from_user.id):
+            await update.message.reply_text(self.already_used_trial)
+        else: 
+            activate_btn = [
+                [InlineKeyboardButton('Получить бесплатный доступ', callback_data='activate_trial')]
+            ]
+            reply_markup = InlineKeyboardMarkup(activate_btn)
+            await update.message.reply_text(self.not_used_trial, reply_markup=reply_markup)
+            await update.message.reply_text(self.rules_of_using)
+
+    async def subscribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Offering and activating the full subscription
+        """
+        logging.info(f'Offering subscribe for user {update.message.from_user.name} (id: {update.message.from_user.id})')
+        activate_btn = [
+            [InlineKeyboardButton('Оплатить', callback_data='subscribe_access')]
+        ]
+        reply_markup = InlineKeyboardMarkup(activate_btn)
+        await update.message.reply_text(self.subscribe_offer, reply_markup=reply_markup)
+        await update.message.reply_text(self.rules_of_using)
+
+    async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        db = self.db
+        query = update.callback_query
+        if query.data == "activate_trial":
+            if await get_trial_access(query.from_user.id, db):
+                date_exp = await get_date_expiration(query.from_user.id, db)
+                await update.effective_message.reply_text(
+                    message_thread_id=get_thread_id(update),
+                    text = self.success_activate_trial % str(date_exp))
+                
+        elif query.data == "subscribe_access":
+            chat_id = query.from_user.id
+            title = "SympaBot Pro: Безлимитный доступ"
+            description = self.subscribe_description
+            payload = "Custom-Payload"
+            currency = "RUB"
+            price = 20000
+            prices = [LabeledPrice("Test", price)]
+            payment_provider = self.config['payment_provider']
+            await context.bot.send_invoice(
+                chat_id=chat_id, 
+                title=title, 
+                description=description, 
+                payload=payload,
+                provider_token=payment_provider, 
+                currency=currency, 
+                start_parameter="start", 
+                prices=prices,
+                need_email=True,
+                send_email_to_provider=True,
+                provider_data={
+                    "receipt":{
+                        "items":[
+                            {
+                                "description": "SympaBot Pro",
+                                "quantity":"1.00",
+                                "amount":{
+                                    "value": "200.00",
+                                    "currency": "RUB"
+                                },
+                                "vat_code": 1
+                            }
+                        ]
+                    }
+                }
+            )
+
+    async def precheckout_subscription_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.pre_checkout_query
+        if query.invoice_payload == "Custom-Payload":
+            await context.bot.answer_pre_checkout_query(query.id, ok=True)
+        else:
+            await context.bot.answer_pre_checkout_query(ok=False, error_message="Something went wrong...")
+
+    async def successful_payment_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        db = self.db
+        if await get_subscribe_access(update.effective_chat.id, db):
+            date_exp = await get_date_expiration(update.effective_chat.id, db)
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                reply_to_message_id=get_reply_to_message_id(self.config, update),
-                text=f"{localized_text('chat_fail', self.config['bot_language'])} {str(e)}",
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
+                text = self.success_activate_subscribtion % str(date_exp))     
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -699,12 +796,21 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('terms', self.terms))
+        application.add_handler(CommandHandler('trial', self.trial))
+        application.add_handler(CommandHandler('subscribe', self.subscribe))
+        application.add_handler(CallbackQueryHandler(self.inline_query_handler))
+        application.add_handler(PreCheckoutQueryHandler(self.precheckout_subscription_callback))
         application.add_handler(CommandHandler(
-            'chat',
-            self.prompt_wrapper,
-            filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP
-        ))
-        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt_wrapper))
+            'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
+        )
+        application.add_handler(
+            MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_callback)
+        )
+        application.add_handler(MessageHandler(
+            filters.AUDIO | filters.VOICE | filters.Document.AUDIO |
+            filters.VIDEO | filters.VIDEO_NOTE | filters.Document.VIDEO,
+            self.transcribe))
+        application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.prompt))
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))
