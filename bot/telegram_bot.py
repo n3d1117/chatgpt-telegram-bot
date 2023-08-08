@@ -19,7 +19,7 @@ from pydub import AudioSegment
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, frequency_check, is_in_trial
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, frequency_check, is_in_trial, censor_check
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -54,10 +54,14 @@ class ChatGPTTelegramBot:
         self.disallowed_message_trial = localized_text('disallowed_trial', bot_language)
         self.disallowed_message_not_trial = localized_text('disallowed_not_trial', bot_language)
         self.frequency_message = localized_text('frequency_error', bot_language)
+        self.censor_message = localized_text('censor_error', bot_language)
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
         self.last_message_time = {}
+        query = "SELECT LOWER(word) FROM ban_words;"
+        ban_bd = db.fetch_all(query, None)
+        self.banned_words = [i[0] for i in ban_bd]
 
     async def prompt_wrapper(self, update, context):
         await self.prompt(update, context)
@@ -127,22 +131,30 @@ class ChatGPTTelegramBot:
 
         logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
                      f'requested their usage statistics')
-        query = "SELECT date_start, date_expiration FROM users WHERE user_id = %s"
-        list_date = db.fetch_all(query, (user_id,))
-        start_date = list_date[0][0]
-        end_date = list_date[0][1]
-        rest_time = list_date[0][1] - datetime.datetime.now()
-        stats_sub_text = (
-                localized_text('stats_sub', bot_language)[0] +
-                '\n\n' +
-                localized_text('stats_sub', bot_language)[1] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute) + '\n' +
-                localized_text('stats_sub', bot_language)[2] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(end_date.day, end_date.month, end_date.year, end_date.hour, end_date.minute) + '\n' +
-                localized_text('stats_sub', bot_language)[3].format(rest_time.days, rest_time.seconds // 3600, rest_time.seconds % 3600 // 60) +
-                '\n\n' +
-                localized_text('stats_sub', bot_language)[4]
-        )
-        await update.message.reply_text(stats_sub_text, parse_mode=constants.ParseMode.MARKDOWN)
-
+        try:
+            query = "SELECT date_start, date_expiration FROM users WHERE user_id = %s"
+            list_date = db.fetch_all(query, (user_id,))
+            start_date = list_date[0][0]
+            end_date = list_date[0][1]
+            rest_time = list_date[0][1] - datetime.datetime.now()
+            stats_sub_text = (
+                    localized_text('stats_sub', bot_language)[0] +
+                    '\n\n' +
+                    localized_text('stats_sub', bot_language)[1] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[2] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(end_date.day, end_date.month, end_date.year, end_date.hour, end_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[3].format(rest_time.days, rest_time.seconds // 3600, rest_time.seconds % 3600 // 60) +
+                    '\n\n' +
+                    localized_text('stats_sub', bot_language)[4]
+            )
+            await update.message.reply_text(stats_sub_text, parse_mode=constants.ParseMode.MARKDOWN)
+        except Exception as e:
+            logging.exception(e)
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                reply_to_message_id=get_reply_to_message_id(self.config, update),
+                text=f"{localized_text('chat_fail', self.config['bot_language'])} {str(e)}",
+                parse_mode=constants.ParseMode.MARKDOWN
+            )
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -222,9 +234,11 @@ class ChatGPTTelegramBot:
             return
         if not await self.check_time_delay(update, context):
             return
+        if not await self.message_censor(update, context):
+            return
         if not await self.check_allowed(update, context):
             return
-        self.config['image_prices']
+
 
         logging.info(
             f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
@@ -342,7 +356,11 @@ class ChatGPTTelegramBot:
             else:
                 async def _reply():
                     nonlocal total_tokens
-                    response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+                    response, total_tokens, responce_for_check = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+                    # Send response to censor
+                    if not await self.message_censor(update, context, responce_for_check):
+                        return
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
                     chunks = split_into_chunks(response)
@@ -529,10 +547,15 @@ class ChatGPTTelegramBot:
                         logging.info(f'Generating response for inline query by {name}')
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
+                        if await self.message_censor(update, context, response):
+                            print('Helllo2')
+                            return
+
                         text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
 
                         # We only want to send the first 4096 characters. No chunking allowed in inline mode.
                         text_content = text_content[:4096]
+                        # print(response)
 
                         # Edit the original message with the generated content
                         await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
@@ -576,14 +599,30 @@ class ChatGPTTelegramBot:
     async def check_time_delay(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                             is_inline=False) -> bool:
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-        print('name', 'check_time_delay')
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
         if not frequency_check(self.config, self.usage, self.last_message_time, update, is_inline=is_inline):
             logging.warning(f'User {name} (id: {user_id}) violated the frequency of sending messages')
             await self.send_frequency_error_message(update, context, is_inline)
             return False
-        print('done', 'check_time_delay')
         self.last_message_time[user_id] = datetime.datetime.now()
+        return True
+
+    async def message_censor(self, update: Update, context: ContextTypes.DEFAULT_TYPE, *args,
+                            is_inline=False) -> bool:
+        db = self.db
+        print('message_censor entry')
+        # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+        # user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+        print(args)
+        if args:
+            message = args[0].lower()
+        else:
+            message = message_text(update.message).lower()
+        print(message)
+        if censor_check(db, self.banned_words, self.config, self.usage, update, message, is_inline=is_inline):
+            logging.warning(f'User message has been censored') # {name} (id: {user_id})
+            await self.send_censor_message(update, context, is_inline)
+            return False
         return True
 
     async def send_disallowed_message(self, message, update: Update, context: ContextTypes.DEFAULT_TYPE, is_inline=False):
@@ -613,6 +652,19 @@ class ChatGPTTelegramBot:
         else:
             result_id = str(uuid4())
             await self.send_inline_query_result(update, result_id, message_content=self.frequency_message)
+
+    async def send_censor_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+        """
+        Sends the frequency error message to the user.
+        """
+        if not is_inline:
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text=self.censor_message
+            )
+        else:
+            result_id = str(uuid4())
+            await self.send_inline_query_result(update, result_id, message_content=self.censor_message)
 
     async def post_init(self, application: Application) -> None:
         """

@@ -11,6 +11,7 @@ from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
 import datetime
+import Levenshtein
 
 def message_text(message: Message) -> str:
     """
@@ -178,6 +179,26 @@ def frequency_check(config, usage, last_message_time, update: Update, is_inline=
         return True
     elif last_message_time[user_id] + datetime.timedelta(seconds=time_delay) < datetime.datetime.now():
         return True
+    return False
+
+
+def censor_check(db, banned_words, config, usage, update: Update, message, is_inline=False) -> bool:
+    """
+    checking the censor for messages by the user and Open AI
+    :param config: The bot configuration object
+    :param usage: The usage tracker object
+    :param update: Telegram update object
+    :param is_inline: Boolean flag for inline queries
+    :return: True if the message contains banned words, otherwise False
+    """
+    words = message.split()  # Splitting the message into words
+    # query = "SELECT word FROM ban_words WHERE LOWER(word) = ANY(%s);"
+    # result = db.fetch_all(query, (words,))
+    # return len(result) > 0  # Return True if any banned words are found, otherwise False
+    for banned_word in banned_words:
+        for word in words:
+            if Levenshtein.distance(word, banned_word) <= 1:
+                return True
     return False
 
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
