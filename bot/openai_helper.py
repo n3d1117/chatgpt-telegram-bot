@@ -6,6 +6,8 @@ import os
 import tiktoken
 
 import openai
+import litellm 
+from litellm import acompletion
 
 import requests
 import json
@@ -245,7 +247,7 @@ class OpenAIHelper:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
                     common_args['function_call'] = 'auto'
 
-            return await openai.ChatCompletion.acreate(**common_args)
+            return await acompletion(**common_args)
 
         except openai.error.RateLimitError as e:
             raise e
@@ -301,7 +303,7 @@ class OpenAIHelper:
             return function_response, plugins_used
 
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
-        response = await openai.ChatCompletion.acreate(
+        response = await acompletion(
             model=self.config['model'],
             messages=self.conversations[chat_id],
             functions=self.plugin_manager.get_functions_specs(),
@@ -393,7 +395,7 @@ class OpenAIHelper:
             {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
             {"role": "user", "content": str(conversation)}
         ]
-        response = await openai.ChatCompletion.acreate(
+        response = await acompletion(
             model=self.config['model'],
             messages=messages,
             temperature=0.4
