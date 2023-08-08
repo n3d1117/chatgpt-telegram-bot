@@ -10,8 +10,11 @@ from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
+
 from datetime import datetime, timedelta
-db = Database()
+import datetime
+import Levenshtein
+
 
 def message_text(message: Message) -> str:
     """
@@ -26,22 +29,6 @@ def message_text(message: Message) -> str:
         message_txt = message_txt.replace(text, '').strip()
 
     return message_txt if len(message_txt) > 0 else ''
-
-
-async def is_user_in_group(update: Update, context: CallbackContext, user_id: int) -> bool:
-    """
-    Checks if user_id is a member of the group
-    """
-    try:
-        chat_member = await context.bot.get_chat_member(update.message.chat_id, user_id)
-        return chat_member.status in [ChatMember.OWNER, ChatMember.ADMINISTRATOR, ChatMember.MEMBER]
-    except telegram.error.BadRequest as e:
-        if str(e) == "User not found":
-            return False
-        else:
-            raise e
-    except Exception as e:
-        raise e
 
 
 def get_thread_id(update: Update) -> int | None:
@@ -147,7 +134,7 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.error(f'Exception while handling an update: {context.error}')
 
 
-async def get_date_expiration(user_id):
+async def get_date_expiration(user_id, db):
     """Получаем дату окончания подписки, если она вообще есть"""
     try: date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
     except: error_handler()
@@ -155,7 +142,7 @@ async def get_date_expiration(user_id):
         return date_exp
     return None
 
-async def get_trial_access(user_id):
+async def get_trial_access(user_id, db):
     trial_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 2 WHERE user_id = %s"
     
     if await get_date_expiration(user_id) is not None:
@@ -171,7 +158,7 @@ async def get_trial_access(user_id):
         return True
     return False
 
-async def get_subscribe_access(user_id):
+async def get_subscribe_access(user_id, db):
     subscription_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 1 WHERE user_id = %s"
     
     if await get_date_expiration(user_id) is not None:
@@ -195,11 +182,12 @@ async def set_date_expiration(days, temp_date_exp):
 
     return str(datetime(dp.year, dp.month, dp.day))
 
-async def is_allowed(user_id) -> bool:
+async def is_allowed(db, update: Update, context: CallbackContext, is_inline=False) -> bool:
     """
-    Первый случай если у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
-    Второй случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
+
     """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+    today = datetime.datetime.now()
     try:
         access_code = await is_in_trial(user_id)
     except:
@@ -229,16 +217,62 @@ async def is_allowed_and_not_trial(user_id) -> bool:
     return [False, 2]
     
 
-async def is_in_trial(user_id):
-    """ Проверяем статус пробной подписки(была активирована или нет) """
-    request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s and subscription_id = 2"
-    user_trial = db.fetch_one(request_on_user, (str(user_id), )) 
-    print(user_trial)
-    if user_trial is not None and user_trial == "N":
+async def is_in_trial(db, update: Update, context: CallbackContext, is_inline=False):
+    """
+    Trial Flag Check
+    """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+    request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
+    try:
+        user_trial = db.fetch_one(request_on_user, (str(user_id),))
+    except Exception as e:
+        logging.error(f'Database error while performing extraction {e}')
+    if user_trial == "N":
         return False
     return True
 
 
+
+def frequency_check(config, usage, last_message_time, update: Update, is_inline=False) -> bool:
+    """
+    checking the frequency of sending messages by the user
+    :param config: The bot configuration object
+    :param usage: The usage tracker object
+    :param update: Telegram update object
+    :param is_inline: Boolean flag for inline queries
+    :return: If the user did not send a message earlier than time_delay
+    """
+    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+    name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+    if user_id not in usage:
+        usage[user_id] = UsageTracker(user_id, name)
+    time_delay = config['time_delay']
+
+    if user_id not in last_message_time:
+        return True
+    elif last_message_time[user_id] + datetime.timedelta(seconds=time_delay) < datetime.datetime.now():
+        return True
+    return False
+
+
+def censor_check(db, banned_words, config, usage, update: Update, message, is_inline=False) -> bool:
+    """
+    checking the censor for messages by the user and Open AI
+    :param config: The bot configuration object
+    :param usage: The usage tracker object
+    :param update: Telegram update object
+    :param is_inline: Boolean flag for inline queries
+    :return: True if the message contains banned words, otherwise False
+    """
+    words = message.split()  # Splitting the message into words
+    # query = "SELECT word FROM ban_words WHERE LOWER(word) = ANY(%s);"
+    # result = db.fetch_all(query, (words,))
+    # return len(result) > 0  # Return True if any banned words are found, otherwise False
+    for banned_word in banned_words:
+        for word in words:
+            if Levenshtein.distance(word, banned_word) <= 1:
+                return True
+    return False
 
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """
@@ -285,3 +319,6 @@ def get_reply_to_message_id(config, update: Update):
     if config['enable_quoting'] or is_group_chat(update):
         return update.message.message_id
     return None
+
+
+

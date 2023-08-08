@@ -3,9 +3,18 @@ from psycopg2.extras import NamedTupleCursor
 
 
 class Database:
-    def __init__(self):
+    def __init__(self, config: dict):
+        """
+        Initializes the Database class.
+        :param config: A dictionary containing the connection to database
+        """
+        user_db = config['user_db']
+        password_db = config['password_db']
+        host_db = config['host_db']
+        port_db = config['port_db']
+        name_db = config['name_db']
         self.connection = psycopg2.connect(
-            "user=postgres password=lak555ertry host=localhost port=5432 dbname=chatgptDB")
+            f"user={user_db} password={password_db} host={host_db} port={port_db} dbname={name_db}")
         self.connection.autocommit = True
 
     def fetch_one(self, query, arg=None, factory=None, clean=None):
@@ -99,4 +108,5 @@ class Database:
         # В том числе, если в БД данных нет, будет ошибка на этапе fetchone
         print('Данных в бд нет или ошибка: {}'.format(error))
         return None
+
 

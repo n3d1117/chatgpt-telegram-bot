@@ -1,38 +1,42 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 import os
+import psycopg2
 
+from db import Database
 from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants, LabeledPrice
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
 from telegram.error import RetryAfter, TimedOut
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
-    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext, PreCheckoutQueryHandler
-
+    filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext, ConversationHandler, PreCheckoutQueryHandler
 from pydub import AudioSegment
-
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial, get_trial_access, \
-    get_date_expiration, get_subscribe_access
+    get_date_expiration, get_subscribe_access, frequency_check, censor_check
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
+
+FEEDBACK = 1
 
 class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
     """
 
-    def __init__(self, config: dict, openai: OpenAIHelper):
+    def __init__(self, db, config: dict, openai: OpenAIHelper):
         """
         Initializes the bot with the given configuration and GPT bot object.
         :param config: A dictionary containing the bot configuration
         :param openai: OpenAIHelper object
         """
+        self.db = db
         self.config = config
         self.openai = openai
         bot_language = self.config['bot_language']
@@ -40,11 +44,12 @@ class ChatGPTTelegramBot:
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
-            BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
-            BotCommand(command='resend', description=localized_text('resend_description', bot_language)),
             BotCommand(command='trial', description=localized_text('trial_description', bot_language)),
-            BotCommand(command='subscribe', description=self.subscribe_description)
+            BotCommand(command='subscribe', description=self.subscribe_description),
+            BotCommand(command='feedback', description=localized_text('feedback_description', bot_language)),
+            BotCommand(command='terms', description=localized_text('terms_description', bot_language))
+
         ]
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
@@ -58,9 +63,48 @@ class ChatGPTTelegramBot:
         self.success_activate_trial = localized_text('success_activate_trial', bot_language)
         self.subscribe_offer = localized_text('subscribe_offer', bot_language)
         self.success_activate_subscribtion = localized_text('success_activate_subscribtion', bot_language)
+        self.frequency_message = localized_text('frequency_error', bot_language)
+        self.censor_message = localized_text('censor_error', bot_language)
         self.usage = {}
         self.last_message = {}
         self.inline_queries_cache = {}
+        self.last_message_time = {}
+        query = "SELECT LOWER(word) FROM ban_words;"
+        ban_bd = db.fetch_all(query, None)
+        self.banned_words = [i[0] for i in ban_bd]
+
+    async def prompt_wrapper(self, update, context):
+        await self.prompt(update, context)
+
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        db = self.db
+        print("LOG: catch \start")
+        user = update.effective_user
+        user_id = user.id
+        username = user.username
+        first_name = user.first_name
+        last_name = user.last_name
+        date = update.message.date
+        print(f"LOG: Get Username: {username} UID:{user_id}")
+        print(f"LOG: date: {date}")
+        date_format = date.strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            query = f"SELECT * FROM users WHERE user_id = {user_id}"
+            user_exist = db.fetch_one(query)
+        except:
+            logging.info(f'{username} tries to re-register')
+        if user_exist == user_id:
+            await self.help(update, context)
+            print("Users already in base")
+            return;
+        else:
+            print("Try add user");
+
+        query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
+        db.query_update(query, (user_id, date_format, first_name, last_name,))
+
+        greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
+        await update.message.reply_text(greetings_text, disable_web_page_preview=True)
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -84,62 +128,40 @@ class ChatGPTTelegramBot:
         """
         Returns token usage statistics for current day and month.
         """
-        user_id = str(update.message.from_user.id)
-        if not await self.check_allowed(update, context):
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                            f'is not allowed to request their usage statistics')
-            return
-
-        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                     f'requested their usage statistics')
-
+        logging.info(f'User {update.message.from_user.name} catch \stats command ')
         user_id = update.message.from_user.id
         if user_id not in self.usage:
             self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
-
-        tokens_today, tokens_month = self.usage[user_id].get_current_token_usage()
-        images_today, images_month = self.usage[user_id].get_current_image_count()
-        (transcribe_minutes_today, transcribe_seconds_today, transcribe_minutes_month,
-         transcribe_seconds_month) = self.usage[user_id].get_current_transcription_duration()
-        current_cost = self.usage[user_id].get_current_cost()
-
-        chat_id = update.effective_chat.id
-        chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
         bot_language = self.config['bot_language']
-        text_current_conversation = (
-            f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
-            f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}\n"
-            f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
-            f"----------------------------\n"
-        )
-        text_today = (
-            f"*{localized_text('usage_today', bot_language)}:*\n"
-            f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_today} {localized_text('stats_images', bot_language)}\n"
-            f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
-            f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
-            f"----------------------------\n"
-        )
-        text_month = (
-            f"*{localized_text('usage_month', bot_language)}:*\n"
-            f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_month} {localized_text('stats_images', bot_language)}\n"
-            f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
-            f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
-            f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
-        )
-        # text_budget filled with conditional content
-        # add OpenAI account information for admin request
-        # if is_admin(self.config, user_id):
-        #     text_budget += (
-        #         f"{localized_text('stats_openai', bot_language)}"
-        #         f"{self.openai.get_billing_current_month():.2f}"
-        #     )
+        db = self.db
+        if not await self.check_time_delay(update, context):
+            return
+        if not await self.check_allowed(update, context):
+            return
+        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                     f'requested their usage statistics')
 
-        usage_text = text_current_conversation + text_today + text_month
-        await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
-
+        try:
+            query = "SELECT date_start, date_expiration FROM users WHERE user_id = %s"
+            list_date = db.fetch_all(query, (user_id,))
+            start_date = list_date[0][0]
+            end_date = list_date[0][1]
+            rest_time = list_date[0][1] - datetime.datetime.now()
+            stats_sub_text = (
+                    localized_text('stats_sub', bot_language)[0] +
+                    '\n\n' +
+                    localized_text('stats_sub', bot_language)[1] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(
+                start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[2] + "{:02d}.{:02d}.{:02d}  {:02d}:{:02d}".format(
+                end_date.day, end_date.month, end_date.year, end_date.hour, end_date.minute) + '\n' +
+                    localized_text('stats_sub', bot_language)[3].format(rest_time.days, rest_time.seconds // 3600,
+                                                                        rest_time.seconds % 3600 // 60) +
+                    '\n\n' +
+                    localized_text('stats_sub', bot_language)[4]
+            )
+            await update.message.reply_text(stats_sub_text, parse_mode=constants.ParseMode.MARKDOWN)
+        except Exception as e:
+            logging.exception(e)
 
 
     async def trial(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -170,10 +192,11 @@ class ChatGPTTelegramBot:
         await update.message.reply_text(self.rules_of_using)
 
     async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        db = self.db
         query = update.callback_query
         if query.data == "activate_trial":
-            if await get_trial_access(query.from_user.id):
-                date_exp = await get_date_expiration(query.from_user.id)
+            if await get_trial_access(query.from_user.id, db):
+                date_exp = await get_date_expiration(query.from_user.id, db)
                 await update.effective_message.reply_text(
                     message_thread_id=get_thread_id(update),
                     text = self.success_activate_trial % str(date_exp))
@@ -223,46 +246,19 @@ class ChatGPTTelegramBot:
             await context.bot.answer_pre_checkout_query(ok=False, error_message="Something went wrong...")
 
     async def successful_payment_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        
-        if await get_subscribe_access(update.effective_chat.id):
-            date_exp = await get_date_expiration(update.effective_chat.id)
+        db = self.db
+        if await get_subscribe_access(update.effective_chat.id, db):
+            date_exp = await get_date_expiration(update.effective_chat.id, db)
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
                 text = self.success_activate_subscribtion % str(date_exp))     
-                
-
-
-    async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        Resend the last request
-        """
-        if not await self.check_allowed(update, context):
-            logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
-                            f' is not allowed to resend the message')
-            return
-
-        chat_id = update.effective_chat.id
-        if chat_id not in self.last_message:
-            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
-                            f' does not have anything to resend')
-            await update.effective_message.reply_text(
-                message_thread_id=get_thread_id(update),
-                text=localized_text('resend_failed', self.config['bot_language'])
-            )
-            return
-
-        # Update message text, clear self.last_message and send the request to prompt
-        logging.info(f'Resending the last prompt from user: {update.message.from_user.name} '
-                     f'(id: {update.message.from_user.id})')
-        with update.message._unfrozen() as message:
-            message.text = self.last_message.pop(chat_id)
-
-        await self.prompt(update=update, context=context)
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Resets the conversation.
         """
+        logging.info(f'User {update.message.from_user.name} catch \ reset command ')
+        db = self.db
         user_id = str(update.message.from_user.id)
         if not await self.check_allowed(update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
@@ -280,162 +276,52 @@ class ChatGPTTelegramBot:
             text=localized_text('reset_done', self.config['bot_language'])
         )
 
-    async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        Generates an image for the given prompt using DALL·E APIs
-        """
-        if not await self.check_allowed(update, context):
-            return 
-
-        image_query = message_text(update.message)
-        if image_query == '':
-            await update.effective_message.reply_text(
-                message_thread_id=get_thread_id(update),
-                text=localized_text('image_no_prompt', self.config['bot_language'])
-            )
+    async def terms(self, update: Update, context: CallbackContext):
+        """Send a message with the inline keyboard button that leads to the FEEDBACK state."""
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+        bot_language = self.config['bot_language']
+        if not await self.check_time_delay(update, context):
             return
+        await update.message.reply_text(localized_text('terms_message', bot_language))
 
-        logging.info(f'New image generation request received from user {update.message.from_user.name} '
-                     f'(id: {update.message.from_user.id})')
-
-        async def _generate():
-            try:
-                image_url, image_size = await self.openai.generate_image(prompt=image_query)
-                await update.effective_message.reply_photo(
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    photo=image_url
-                )
-                # add image request to users usage tracker
-                user_id = update.message.from_user.id
-                self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
-                # add guest chat request to guest usage tracker
-
-            except Exception as e:
-                logging.exception(e)
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    text=f"{localized_text('image_fail', self.config['bot_language'])}: {str(e)}",
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
-
-        await wrap_with_indicator(update, context, _generate, constants.ChatAction.UPLOAD_PHOTO)
-
-    async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """
-        Transcribe audio messages.
-        """
-        if not self.config['enable_transcription'] or not await self.check_allowed(update, context):
+    async def feedback(self, update: Update, context: CallbackContext):
+        """Send a message with the inline keyboard button that leads to the FEEDBACK state."""
+        logging.info(f'User {update.message.from_user.name} catch \ feedback command ')
+        user_id = update.message.from_user.id
+        if user_id not in self.usage:
+            self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+        bot_language = self.config['bot_language']
+        if not await self.check_time_delay(update, context):
             return
+        await update.message.reply_text(localized_text('feedback_message', bot_language))
+        return FEEDBACK
 
-        if is_group_chat(update) and self.config['ignore_group_transcriptions']:
-            logging.info(f'Transcription coming from group chat, ignoring...')
-            return
-
-        chat_id = update.effective_chat.id
-        filename = update.message.effective_attachment.file_unique_id
-
-        async def _execute():
-            filename_mp3 = f'{filename}.mp3'
+    async def feedback_response(self, update: Update, context: CallbackContext):
+        """Handle the user's feedback message."""
+        logging.info('Feedback response function called')
+        if update.message is not None:
+            feedback_message = update.message.text
+            user_id = update.message.from_user.id
             bot_language = self.config['bot_language']
             try:
-                media_file = await context.bot.get_file(update.message.effective_attachment.file_id)
-                await media_file.download_to_drive(filename)
+                db = self.db
+                insert_query = "INSERT INTO feedback (user_id, feedback_message, feedback_date) VALUES(%s, %s, %s);"
+                db.query_update(insert_query, (str(user_id), feedback_message, datetime.datetime.now()))
+                response = localized_text('feedback_response', bot_language)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
             except Exception as e:
                 logging.exception(e)
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    text=(
-                        f"{localized_text('media_download_fail', bot_language)[0]}: "
-                        f"{str(e)}. {localized_text('media_download_fail', bot_language)[1]}"
-                    ),
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
-                return
+        return ConversationHandler.END
 
-            try:
-                audio_track = AudioSegment.from_file(filename)
-                audio_track.export(filename_mp3, format="mp3")
-                logging.info(f'New transcribe request received from user {update.message.from_user.name} '
-                             f'(id: {update.message.from_user.id})')
+    async def cancel(self, update: Update, context: CallbackContext):
+        """End the conversation and go back to the regular state."""
+        bot_language = self.config['bot_language']
+        await update.message.reply_text(localized_text('cancel_state', bot_language))
+        return ConversationHandler.END
 
-            except Exception as e:
-                logging.exception(e)
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    text=localized_text('media_type_fail', bot_language)
-                )
-                if os.path.exists(filename):
-                    os.remove(filename)
-                return
 
-            user_id = update.message.from_user.id
-            if user_id not in self.usage:
-                self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
-
-            try:
-                transcript = await self.openai.transcribe(filename_mp3)
-
-                transcription_price = self.config['transcription_price']
-                self.usage[user_id].add_transcription_seconds(audio_track.duration_seconds, transcription_price)
-
-                # check if transcript starts with any of the prefixes
-                response_to_transcription = any(transcript.lower().startswith(prefix.lower()) if prefix else False
-                                                for prefix in self.config['voice_reply_prompts'])
-
-                if self.config['voice_reply_transcript'] and not response_to_transcription:
-
-                    # Split into chunks of 4096 characters (Telegram's message limit)
-                    transcript_output = f"_{localized_text('transcript', bot_language)}:_\n\"{transcript}\""
-                    chunks = split_into_chunks(transcript_output)
-
-                    for index, transcript_chunk in enumerate(chunks):
-                        await update.effective_message.reply_text(
-                            message_thread_id=get_thread_id(update),
-                            reply_to_message_id=get_reply_to_message_id(self.config, update) if index == 0 else None,
-                            text=transcript_chunk,
-                            parse_mode=constants.ParseMode.MARKDOWN
-                        )
-                else:
-                    # Get the response of the transcript
-                    response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=transcript)
-
-                    self.usage[user_id].add_chat_tokens(total_tokens, self.config['token_price'])
-                    if is_allowed(user_id)  and 'guests' in self.usage:
-                        self.usage["guests"].add_chat_tokens(total_tokens, self.config['token_price'])
-
-                    # Split into chunks of 4096 characters (Telegram's message limit)
-                    transcript_output = (
-                        f"_{localized_text('transcript', bot_language)}:_\n\"{transcript}\"\n\n"
-                        f"_{localized_text('answer', bot_language)}:_\n{response}"
-                    )
-                    chunks = split_into_chunks(transcript_output)
-
-                    for index, transcript_chunk in enumerate(chunks):
-                        await update.effective_message.reply_text(
-                            message_thread_id=get_thread_id(update),
-                            reply_to_message_id=get_reply_to_message_id(self.config, update) if index == 0 else None,
-                            text=transcript_chunk,
-                            parse_mode=constants.ParseMode.MARKDOWN
-                        )
-
-            except Exception as e:
-                logging.exception(e)
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    text=f"{localized_text('transcribe_fail', bot_language)}: {str(e)}",
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
-            finally:
-                if os.path.exists(filename_mp3):
-                    os.remove(filename_mp3)
-                if os.path.exists(filename):
-                    os.remove(filename)
-
-        await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -443,15 +329,20 @@ class ChatGPTTelegramBot:
         """
         if update.edited_message or not update.message or update.message.via_bot:
             return
-
+        if not await self.check_time_delay(update, context):
+            return
+        if not await self.message_censor(update, context):
+            return
         if not await self.check_allowed(update, context):
             return
+
 
         logging.info(
             f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
+
         self.last_message[chat_id] = prompt
 
         if is_group_chat(update):
@@ -562,7 +453,11 @@ class ChatGPTTelegramBot:
             else:
                 async def _reply():
                     nonlocal total_tokens
-                    response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+                    response, total_tokens, responce_for_check = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+
+                    # Send response to censor
+                    if not await self.message_censor(update, context, responce_for_check):
+                        return
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
                     chunks = split_into_chunks(response)
@@ -604,6 +499,7 @@ class ChatGPTTelegramBot:
         """
         Handle the inline query. This is run when you type: @botusername <query>
         """
+        db = self.db
         query = update.inline_query.query
         if len(query) < 3:
             return
@@ -621,6 +517,7 @@ class ChatGPTTelegramBot:
         """
         Send inline query result
         """
+        db = self.db
         try:
             reply_markup = None
             bot_language = self.config['bot_language']
@@ -648,6 +545,13 @@ class ChatGPTTelegramBot:
         """
         Handle the callback query from the inline query result
         """
+        logging.info('start handle_callback_inline_query')
+        query = update.callback_query
+        if query.data == 'Feedback':
+            # Skip the callback if it's from the feedback button
+            return
+
+        db = self.db
         callback_data = update.callback_query.data
         user_id = update.callback_query.from_user.id
         inline_message_id = update.callback_query.inline_message_id
@@ -740,10 +644,15 @@ class ChatGPTTelegramBot:
                         logging.info(f'Generating response for inline query by {name}')
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
+                        if await self.message_censor(update, context, response):
+                            print('Helllo2')
+                            return
+
                         text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
 
                         # We only want to send the first 4096 characters. No chunking allowed in inline mode.
                         text_content = text_content[:4096]
+                        # print(response)
 
                         # Edit the original message with the generated content
                         await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
@@ -765,26 +674,55 @@ class ChatGPTTelegramBot:
     async def check_allowed(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
         """
-        Checks if the user is allowed to use the bot and if they are within their budget
+        Checks if the user is allowed to use the bot
         :param update: Telegram update object
         :param context: Telegram context object
         :param is_inline: Boolean flag for inline queries
         :return: Boolean indicating if the user is allowed to use the bot
         """
+        db = self.db
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-        access_code = await is_allowed(user_id)
-        if access_code[0] == False and access_code[1] == 1:
-            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
+        if not await is_allowed(self.db, update, context, is_inline=is_inline) and await is_in_trial(self.db, update, context, is_inline=is_inline):
+            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot with trial')
             await self.send_disallowed_message(self.disallowed_message_trial, update, context, is_inline)
             return False
-        elif access_code[0] == False and access_code[1] == 2:       
-            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
+        elif not await is_allowed(self.db, update, context, is_inline=is_inline) and not await is_in_trial(self.db, update, context, is_inline=is_inline):
+            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot without trial')
             await self.send_disallowed_message(self.disallowed_message_not_trial, update, context, is_inline)
             return False
         return True
 
-    async def send_disallowed_message(self, message, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+    async def check_time_delay(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                            is_inline=False) -> bool:
+        name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+        user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+        if not frequency_check(self.config, self.usage, self.last_message_time, update, is_inline=is_inline):
+            logging.warning(f'User {name} (id: {user_id}) violated the frequency of sending messages')
+            await self.send_frequency_error_message(update, context, is_inline)
+            return False
+        self.last_message_time[user_id] = datetime.datetime.now()
+        return True
+
+    async def message_censor(self, update: Update, context: ContextTypes.DEFAULT_TYPE, *args,
+                            is_inline=False) -> bool:
+        db = self.db
+        print('message_censor entry')
+        # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
+        # user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+        print(args)
+        if args:
+            message = args[0].lower()
+        else:
+            message = message_text(update.message).lower()
+        print(message)
+        if censor_check(db, self.banned_words, self.config, self.usage, update, message, is_inline=is_inline):
+            logging.warning(f'User message has been censored') # {name} (id: {user_id})
+            await self.send_censor_message(update, context, is_inline)
+            return False
+        return True
+
+    async def send_disallowed_message(self, message, update: Update, context: ContextTypes.DEFAULT_TYPE, is_inline=False):
         """
         Sends the disallowed message to the user.
         """
@@ -798,18 +736,32 @@ class ChatGPTTelegramBot:
             result_id = str(uuid4())
             await self.send_inline_query_result(update, result_id, message_content=message)
 
-    async def send_budget_reached_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+
+    async def send_frequency_error_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
         """
-        Sends the budget reached message to the user.
+        Sends the frequency error message to the user.
         """
         if not is_inline:
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=self.budget_limit_message
+                text=self.frequency_message
             )
         else:
             result_id = str(uuid4())
-            await self.send_inline_query_result(update, result_id, message_content=self.budget_limit_message)
+            await self.send_inline_query_result(update, result_id, message_content=self.frequency_message)
+
+    async def send_censor_message(self, update: Update, _: ContextTypes.DEFAULT_TYPE, is_inline=False):
+        """
+        Sends the frequency error message to the user.
+        """
+        if not is_inline:
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text=self.censor_message
+            )
+        else:
+            result_id = str(uuid4())
+            await self.send_inline_query_result(update, result_id, message_content=self.censor_message)
 
     async def post_init(self, application: Application) -> None:
         """
@@ -827,15 +779,23 @@ class ChatGPTTelegramBot:
             .proxy_url(self.config['proxy']) \
             .get_updates_proxy_url(self.config['proxy']) \
             .post_init(self.post_init) \
-            .concurrent_updates(True) \
+            .concurrent_updates(False) \
             .build()
 
+        conv_handler = ConversationHandler(
+            entry_points=[CommandHandler('feedback', self.feedback)],
+            states={
+                FEEDBACK: [MessageHandler(filters.TEXT & (~filters.COMMAND), self.feedback_response)],
+            },
+            fallbacks=[CommandHandler('cancel', self.cancel)],
+        )
+
+        application.add_handler(conv_handler)
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
-        application.add_handler(CommandHandler('image', self.image))
-        application.add_handler(CommandHandler('start', self.help))
+        application.add_handler(CommandHandler('start', self.start))
         application.add_handler(CommandHandler('stats', self.stats))
-        application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('terms', self.terms))
         application.add_handler(CommandHandler('trial', self.trial))
         application.add_handler(CommandHandler('subscribe', self.subscribe))
         application.add_handler(CallbackQueryHandler(self.inline_query_handler))
@@ -859,3 +819,5 @@ class ChatGPTTelegramBot:
         application.add_error_handler(error_handler)
 
         application.run_polling()
+
+

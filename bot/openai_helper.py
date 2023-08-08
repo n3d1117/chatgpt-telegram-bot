@@ -113,13 +113,14 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=answer)
 
         bot_language = self.config['bot_language']
+        answer_for_check = answer
         if self.config['show_usage']:
             answer += "\n\n---\n" \
                       f"💰 {str(response.usage['total_tokens'])} {localized_text('stats_tokens', bot_language)}" \
                       f" ({str(response.usage['prompt_tokens'])} {localized_text('prompt', bot_language)}," \
                       f" {str(response.usage['completion_tokens'])} {localized_text('completion', bot_language)})"
 
-        return answer, response.usage['total_tokens']
+        return answer, response.usage['total_tokens'], answer_for_check
 
     async def get_chat_response_stream(self, chat_id: int, query: str):
         """
