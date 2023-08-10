@@ -12,7 +12,6 @@ from telegram.ext import CallbackContext, ContextTypes
 from usage_tracker import UsageTracker
 
 from datetime import datetime, timedelta
-import datetime
 import Levenshtein
 
 
@@ -145,8 +144,8 @@ async def get_date_expiration(user_id, db):
 async def get_trial_access(user_id, db):
     trial_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 2 WHERE user_id = %s"
     
-    if await get_date_expiration(user_id) is not None:
-        date_exp = await set_date_expiration(3, await get_date_expiration(user_id))
+    if await get_date_expiration(user_id, db) is not None:
+        date_exp = await set_date_expiration(3, await get_date_expiration(user_id, db))
     else: 
         date_exp = await set_date_expiration(3, datetime.now())
     
@@ -161,8 +160,8 @@ async def get_trial_access(user_id, db):
 async def get_subscribe_access(user_id, db):
     subscription_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 1 WHERE user_id = %s"
     
-    if await get_date_expiration(user_id) is not None:
-        date_exp = await set_date_expiration(31, await get_date_expiration(user_id))
+    if await get_date_expiration(user_id, db) is not None:
+        date_exp = await set_date_expiration(31, await get_date_expiration(user_id, db))
     else: 
         date_exp = await set_date_expiration(31, datetime.now())
 
@@ -184,40 +183,20 @@ async def set_date_expiration(days, temp_date_exp):
 
 async def is_allowed(db, update: Update, context: CallbackContext, is_inline=False) -> bool:
     """
-
+    Date Expiration Check
     """
     user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
-    today = datetime.datetime.now()
+    today = datetime.now()
     try:
-        access_code = await is_in_trial(user_id)
-    except:
-        error_handler()
-    if not access_code:
-        return await is_allowed_and_not_trial(user_id)
-    return await is_allowed_and_trial(user_id)
-    
-async def is_allowed_and_trial(user_id) -> bool:
-    """
-    Первый случай если у него уже был пробный период - тогда мы отправляем ему сообщение с просьбой КУПИТЬ подписку.
-    """
-    today = datetime.now()
-    date_exp = await get_date_expiration(user_id)
-    if date_exp is not None and date_exp >= today and await is_in_trial(user_id):
-        return [True, 1]
-    return [False, 1]
-
-async def is_allowed_and_not_trial(user_id) -> bool:
-    """
-    Второй случай у него не было пробного периода - тогда отправялем собщение с просьбой ОФОРМИТЬ пробный период или КУПИТЬ подписку
-    """
-    today = datetime.now()
-    date_exp = await get_date_expiration(user_id)
-    if date_exp is not None and date_exp >= today and not await is_in_trial(user_id):
-        return [True, 2]
-    return [False, 2]
-    
+        date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    except Exception as e:
+        logging.error(f'Database error while performing extraction {e}')
+    if date_exp is not None and date_exp >= today:
+        return True
+    return False
 
 async def is_in_trial(db, update: Update, context: CallbackContext, is_inline=False):
+
     """
     Trial Flag Check
     """
@@ -250,7 +229,7 @@ def frequency_check(config, usage, last_message_time, update: Update, is_inline=
 
     if user_id not in last_message_time:
         return True
-    elif last_message_time[user_id] + datetime.timedelta(seconds=time_delay) < datetime.datetime.now():
+    elif last_message_time[user_id] + timedelta(seconds=time_delay) < datetime.now():
         return True
     return False
 
