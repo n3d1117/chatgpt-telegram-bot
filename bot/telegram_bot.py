@@ -18,7 +18,7 @@ from pydub import AudioSegment
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, \
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_in_trial, get_trial_access, \
-    get_date_expiration, get_subscribe_access, frequency_check, censor_check
+    get_date_expiration, get_subscribe_access, frequency_check, censor_check, get_date_expiration
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
@@ -89,22 +89,20 @@ class ChatGPTTelegramBot:
         print(f"LOG: date: {date}")
         date_format = date.strftime("%Y-%m-%d %H:%M:%S")
         try:
-            query = f"SELECT * FROM users WHERE user_id = {user_id}"
-            user_exist = db.fetch_one(query)
+            query = f"SELECT user_id FROM users"
+            user_exist = db.fetch_all(query, None)
+            if user_id in user_exist:
+                logging.info(f'{username} tries to re-register')
+                await self.help(update, context)
+            else:
+                query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
+                db.query_update(query, (user_id, date_format, first_name, last_name,))
+                greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
+                await update.message.reply_text(greetings_text, disable_web_page_preview=True)
         except:
             logging.info(f'{username} tries to re-register')
-        if user_exist == user_id:
-            await self.help(update, context)
-            print("Users already in base")
-            return;
-        else:
-            print("Try add user");
+            await update.message.reply_text(localized_text('error', self.config['bot_language']))
 
-        query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
-        db.query_update(query, (user_id, date_format, first_name, last_name,))
-
-        greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
-        await update.message.reply_text(greetings_text, disable_web_page_preview=True)
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -174,7 +172,7 @@ class ChatGPTTelegramBot:
             await update.message.reply_text(self.already_used_trial)
         else: 
             activate_btn = [
-                [InlineKeyboardButton('Получить бесплатный доступ', callback_data='activate_trial')]
+                [InlineKeyboardButton(localized_text('trial_button', self.config['bot_language']), callback_data='activate_trial')]
             ]
             reply_markup = InlineKeyboardMarkup(activate_btn)
             await update.message.reply_text(self.not_used_trial, reply_markup=reply_markup)
@@ -185,21 +183,26 @@ class ChatGPTTelegramBot:
         """
         logging.info(f'Offering subscribe for user {update.message.from_user.name} (id: {update.message.from_user.id})')
         activate_btn = [
-            [InlineKeyboardButton('Оплатить', callback_data='subscribe_access')]
+            [InlineKeyboardButton(localized_text('payment_button', self.config['bot_language']), callback_data='subscribe_access')]
         ]
         reply_markup = InlineKeyboardMarkup(activate_btn)
         await update.message.reply_text(self.subscribe_offer, reply_markup=reply_markup)
-        await update.message.reply_text(self.rules_of_using)
+
 
     async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         db = self.db
         query = update.callback_query
         if query.data == "activate_trial":
-            if await get_trial_access(query.from_user.id, db):
-                date_exp = await get_date_expiration(query.from_user.id, db)
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    text = self.success_activate_trial % str(date_exp))
+            if await is_in_trial(db, update, context, is_inline=True):
+                await update.effective_message.reply_text(message_thread_id = get_thread_id(update), text = self.already_used_trial)
+                return
+            if await get_date_expiration(query.from_user.id, db) is not None:
+                await update.effective_message.reply_text(message_thread_id = get_thread_id(update), text = self.already_used_trial)
+                return
+
+            await get_trial_access(query.from_user.id, db)
+            await update.effective_message.reply_text(message_thread_id=get_thread_id(update), text = self.success_activate_trial)
+            return
                 
         elif query.data == "subscribe_access":
             chat_id = query.from_user.id
@@ -345,23 +348,23 @@ class ChatGPTTelegramBot:
 
         self.last_message[chat_id] = prompt
 
-        if is_group_chat(update):
-            trigger_keyword = self.config['group_trigger_keyword']
-
-            if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
-                if prompt.lower().startswith(trigger_keyword.lower()):
-                    prompt = prompt[len(trigger_keyword):].strip()
-
-                if update.message.reply_to_message and \
-                        update.message.reply_to_message.text and \
-                        update.message.reply_to_message.from_user.id != context.bot.id:
-                    prompt = f'"{update.message.reply_to_message.text}" {prompt}'
-            else:
-                if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
-                    logging.info('Message is a reply to the bot, allowing...')
-                else:
-                    logging.warning('Message does not start with trigger keyword, ignoring...')
-                    return
+        # if is_group_chat(update):
+        #     trigger_keyword = self.config['group_trigger_keyword']
+        #
+        #     if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
+        #         if prompt.lower().startswith(trigger_keyword.lower()):
+        #             prompt = prompt[len(trigger_keyword):].strip()
+        #
+        #         if update.message.reply_to_message and \
+        #                 update.message.reply_to_message.text and \
+        #                 update.message.reply_to_message.from_user.id != context.bot.id:
+        #             prompt = f'"{update.message.reply_to_message.text}" {prompt}'
+        #     else:
+        #         if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
+        #             logging.info('Message is a reply to the bot, allowing...')
+        #         else:
+        #             logging.warning('Message does not start with trigger keyword, ignoring...')
+        #             return
 
         try:
             total_tokens = 0
@@ -488,12 +491,8 @@ class ChatGPTTelegramBot:
 
         except Exception as e:
             logging.exception(e)
-            await update.effective_message.reply_text(
-                message_thread_id=get_thread_id(update),
-                reply_to_message_id=get_reply_to_message_id(self.config, update),
-                text=f"{localized_text('chat_fail', self.config['bot_language'])} {str(e)}",
-                parse_mode=constants.ParseMode.MARKDOWN
-            )
+            await edit_message_with_retry(localized_text('chat_fail', self.config['bot_language']), is_inline=True)
+            await edit_message_with_retry(localized_text('try_again', self.config['bot_language']), is_inline=True)
 
     async def inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -645,7 +644,6 @@ class ChatGPTTelegramBot:
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
                         if await self.message_censor(update, context, response):
-                            print('Helllo2')
                             return
 
                         text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
@@ -666,10 +664,8 @@ class ChatGPTTelegramBot:
         except Exception as e:
             logging.error(f'Failed to respond to an inline query via button callback: {e}')
             logging.exception(e)
-            localized_answer = localized_text('chat_fail', self.config['bot_language'])
-            await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
-                                          text=f"{query}\n\n_{answer_tr}:_\n{localized_answer} {str(e)}",
-                                          is_inline=True)
+            await edit_message_with_retry(localized_text('chat_fail', self.config['bot_language']), is_inline=True)
+            await edit_message_with_retry(localized_text('try_again', self.config['bot_language']), is_inline=True)
 
     async def check_allowed(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
@@ -707,7 +703,6 @@ class ChatGPTTelegramBot:
     async def message_censor(self, update: Update, context: ContextTypes.DEFAULT_TYPE, *args,
                             is_inline=False) -> bool:
         db = self.db
-        print('message_censor entry')
         # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         # user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
         print(args)

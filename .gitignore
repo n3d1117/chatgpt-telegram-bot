@@ -2,5 +2,6 @@ __pycache__
 /.idea
 .env
 .DS_Store
-/usage_logs
+bot/usage_logs
 venv
+

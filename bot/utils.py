@@ -135,22 +135,21 @@ async def error_handler(_: object, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def get_date_expiration(user_id, db):
     """Получаем дату окончания подписки, если она вообще есть"""
-    try: date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
-    except: error_handler()
+    try:
+        date_exp = db.fetch_one("SELECT date_expiration FROM users WHERE user_id = %s", (str(user_id),))
+    except:
+        error_handler()
     if date_exp is not None:
         return date_exp
     return None
 
 async def get_trial_access(user_id, db):
     trial_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 2 WHERE user_id = %s"
-    
-    if await get_date_expiration(user_id, db) is not None:
-        date_exp = await set_date_expiration(3, await get_date_expiration(user_id, db))
-    else: 
-        date_exp = await set_date_expiration(3, datetime.now())
-    
-    try: check_res = db.query_update(trial_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got trial access for 3 days" % user_id)
-    except: error_handler()
+    date_exp = await set_date_expiration(3, datetime.now())
+    try:
+        check_res = db.query_update(trial_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got trial access for 3 days" % user_id)
+    except:
+        error_handler()
 
     if check_res != None:
         print(check_res)
@@ -161,13 +160,14 @@ async def get_subscribe_access(user_id, db):
     subscription_access_query = "UPDATE users SET trial_flag = 'Y', date_expiration = %s, date_start = %s, subscription_id = 1 WHERE user_id = %s"
     
     if await get_date_expiration(user_id, db) is not None:
-        date_exp = await set_date_expiration(31, await get_date_expiration(user_id, db))
+        date_exp = await set_date_expiration(30, await get_date_expiration(user_id, db))
     else: 
-        date_exp = await set_date_expiration(31, datetime.now())
+        date_exp = await set_date_expiration(30, datetime.now())
 
-    try: check_res = db.query_update(subscription_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got subscription access for 30 days" % user_id)
-    
-    except: error_handler()
+    try:
+        check_res = db.query_update(subscription_access_query, (date_exp, datetime.now(), str(user_id),), "User %s got subscription access for 30 days" % user_id)
+    except:
+        error_handler()
     if check_res != None:
         return True
     return False
@@ -179,7 +179,7 @@ async def set_date_expiration(days, temp_date_exp):
     else:
         dp = temp_date_exp + timedelta(days=days)
 
-    return str(datetime(dp.year, dp.month, dp.day))
+    return str(datetime(dp.year, dp.month, dp.day, dp.hour, dp.minute))
 
 async def is_allowed(db, update: Update, context: CallbackContext, is_inline=False) -> bool:
     """
@@ -196,11 +196,10 @@ async def is_allowed(db, update: Update, context: CallbackContext, is_inline=Fal
     return False
 
 async def is_in_trial(db, update: Update, context: CallbackContext, is_inline=False):
-
     """
     Trial Flag Check
     """
-    user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
+    user_id = update.callback_query.from_user.id if is_inline else update.message.from_user.id
     request_on_user = "SELECT trial_flag FROM users WHERE user_id = %s"
     try:
         user_trial = db.fetch_one(request_on_user, (str(user_id),))
@@ -244,14 +243,14 @@ def censor_check(db, banned_words, config, usage, update: Update, message, is_in
     :return: True if the message contains banned words, otherwise False
     """
     words = message.split()  # Splitting the message into words
-    # query = "SELECT word FROM ban_words WHERE LOWER(word) = ANY(%s);"
-    # result = db.fetch_all(query, (words,))
-    # return len(result) > 0  # Return True if any banned words are found, otherwise False
-    for banned_word in banned_words:
-        for word in words:
-            if Levenshtein.distance(word, banned_word) <= 1:
-                return True
-    return False
+    query = "SELECT word FROM ban_words WHERE LOWER(word) = ANY(%s);"
+    result = db.fetch_all(query, (words,))
+    return len(result) > 0  # Return True if any banned words are found, otherwise False
+    # for banned_word in banned_words:
+    #     for word in words:
+    #         if Levenshtein.distance(word, banned_word) <= 1:
+    #             return True
+    # return False
 
 def is_admin(config, user_id: int, log_no_admin=False) -> bool:
     """
