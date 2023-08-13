@@ -78,15 +78,14 @@ class ChatGPTTelegramBot:
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         db = self.db
-        print("LOG: catch \start")
+        logging.info("LOG: catch \start")
         user = update.effective_user
         user_id = user.id
         username = user.username
         first_name = user.first_name
         last_name = user.last_name
         date = update.message.date
-        print(f"LOG: Get Username: {username} UID:{user_id}")
-        print(f"LOG: date: {date}")
+        logging.info(f"LOG: Get Username: {username} UID:{user_id}")
         date_format = date.strftime("%Y-%m-%d %H:%M:%S")
         try:
             query = f"SELECT user_id FROM users"
@@ -97,6 +96,10 @@ class ChatGPTTelegramBot:
             else:
                 query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
                 db.query_update(query, (user_id, date_format, first_name, last_name,))
+
+                query = f"CREATE TABLE msgs_{user_id} (id SERIAL PRIMARY KEY, msg TEXT, status integer REFERENCES msg_code(id));"
+                db.query_update(query, None)
+
                 greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
                 await update.message.reply_text(greetings_text, disable_web_page_preview=True)
         except:
@@ -330,15 +333,7 @@ class ChatGPTTelegramBot:
         """
         React to incoming messages and respond accordingly.
         """
-        if update.edited_message or not update.message or update.message.via_bot:
-            return
-        if not await self.check_time_delay(update, context):
-            return
-        if not await self.message_censor(update, context):
-            return
-        if not await self.check_allowed(update, context):
-            return
-
+        db = self.db
 
         logging.info(
             f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
@@ -346,7 +341,27 @@ class ChatGPTTelegramBot:
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
 
+        if update.edited_message or not update.message or update.message.via_bot:
+            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 1);"
+            db.query_update(query, None)
+            return
+        if not await self.check_time_delay(update, context):
+            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 2);"
+            db.query_update(query, None)
+            return
+        if not await self.message_censor(update, context):
+            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 3);"
+            db.query_update(query, None)
+            return
+        if not await self.check_allowed(update, context):
+            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 4);"
+            db.query_update(query, None)
+            return
+
+
         self.last_message[chat_id] = prompt
+        query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 0);"
+        db.query_update(query, None)
 
         # if is_group_chat(update):
         #     trigger_keyword = self.config['group_trigger_keyword']
@@ -460,6 +475,8 @@ class ChatGPTTelegramBot:
 
                     # Send response to censor
                     if not await self.message_censor(update, context, responce_for_check):
+                        query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 5);"
+                        db.query_update(query, None)
                         return
 
                     # Split into chunks of 4096 characters (Telegram's message limit)
@@ -644,6 +661,7 @@ class ChatGPTTelegramBot:
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
                         if await self.message_censor(update, context, response):
+
                             return
 
                         text_content = f'{query}\n\n_{answer_tr}:_\n{response}'
