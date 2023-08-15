@@ -90,6 +90,11 @@ class OpenAIHelper:
             self.reset_chat_history(chat_id)
         return len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id])
 
+    async def get_conversation_id(self, chat_id: int) -> tuple[int, int]:
+        if chat_id not in self.conversations:
+            self.reset_chat_history(chat_id)
+
+
     async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
         """
         Gets a full response from the GPT model.
@@ -97,7 +102,7 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
         """
-        response = await self.__common_get_chat_response(chat_id, query)
+        response, conversation_id = await self.__common_get_chat_response(chat_id, query)
         answer = ''
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
@@ -120,7 +125,7 @@ class OpenAIHelper:
                       f" ({str(response.usage['prompt_tokens'])} {localized_text('prompt', bot_language)}," \
                       f" {str(response.usage['completion_tokens'])} {localized_text('completion', bot_language)})"
 
-        return answer, response.usage['total_tokens'], answer_for_check
+        return answer, response.usage['total_tokens'], answer_for_check, conversation_id
 
     async def get_chat_response_stream(self, chat_id: int, query: str):
         """
@@ -129,7 +134,7 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
-        response = await self.__common_get_chat_response(chat_id, query, stream=True)
+        response, conversation_id = await self.__common_get_chat_response(chat_id, query, stream=True)
 
         answer = ''
         async for item in response:
@@ -187,7 +192,7 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
-            return await openai.ChatCompletion.acreate(
+            openai_response = await openai.ChatCompletion.acreate(
                 model=self.config['model'],
                 messages=self.conversations[chat_id],
                 temperature=self.config['temperature'],
@@ -197,6 +202,7 @@ class OpenAIHelper:
                 frequency_penalty=self.config['frequency_penalty'],
                 stream=stream
             )
+            return openai_response, openai_response['id']
 
         except openai.error.RateLimitError as e:
             raise e

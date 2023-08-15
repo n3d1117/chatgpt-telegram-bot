@@ -152,7 +152,6 @@ async def get_trial_access(user_id, db):
         error_handler()
 
     if check_res != None:
-        print(check_res)
         return True
     return False
 
