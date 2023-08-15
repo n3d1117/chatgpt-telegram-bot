@@ -21,7 +21,7 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
     get_date_expiration, get_subscribe_access, frequency_check, censor_check, get_date_expiration
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
-
+import re
 
 FEEDBACK = 1
 
@@ -48,8 +48,8 @@ class ChatGPTTelegramBot:
             BotCommand(command='trial', description=localized_text('trial_description', bot_language)),
             BotCommand(command='subscribe', description=self.subscribe_description),
             BotCommand(command='feedback', description=localized_text('feedback_description', bot_language)),
-            BotCommand(command='terms', description=localized_text('terms_description', bot_language))
-
+            BotCommand(command='terms', description=localized_text('terms_description', bot_language)),
+            BotCommand(command='test', description='test')
         ]
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
@@ -97,8 +97,6 @@ class ChatGPTTelegramBot:
                 query = f"INSERT INTO users (user_id, date_creation, user_first_name, user_last_name) VALUES(%s, %s, %s, %s);"
                 db.query_update(query, (user_id, date_format, first_name, last_name,))
 
-                query = f"CREATE TABLE msgs_{user_id} (id SERIAL PRIMARY KEY, msg TEXT, status integer REFERENCES msg_code(id));"
-                db.query_update(query, None)
 
                 greetings_text = f"{first_name} " + localized_text("hello_text", self.config['bot_language'])
                 await update.message.reply_text(greetings_text, disable_web_page_preview=True)
@@ -164,6 +162,8 @@ class ChatGPTTelegramBot:
         except Exception as e:
             logging.exception(e)
 
+    async def test(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.openai.get_conversation_id(update.message.from_user.id)
 
     async def trial(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -190,7 +190,6 @@ class ChatGPTTelegramBot:
         ]
         reply_markup = InlineKeyboardMarkup(activate_btn)
         await update.message.reply_text(self.subscribe_offer, reply_markup=reply_markup)
-
 
     async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         db = self.db
@@ -327,8 +326,6 @@ class ChatGPTTelegramBot:
         await update.message.reply_text(localized_text('cancel_state', bot_language))
         return ConversationHandler.END
 
-
-
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         React to incoming messages and respond accordingly.
@@ -342,167 +339,63 @@ class ChatGPTTelegramBot:
         prompt = message_text(update.message)
 
         if update.edited_message or not update.message or update.message.via_bot:
-            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 1);"
-            db.query_update(query, None)
+            query = f"INSERT INTO history_message ( message_from_user, message_date, message_status) VALUES (%s, %s, %s);"
+            db.query_update(query, (prompt, datetime.datetime.now(), 6))
             return
         if not await self.check_time_delay(update, context):
-            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 2);"
-            db.query_update(query, None)
+            query = f"INSERT INTO history_message (message_from_user, message_date, message_status) VALUES (%s, %s, %s);"
+            db.query_update(query, (prompt, datetime.datetime.now(), 2))
             return
         if not await self.message_censor(update, context):
-            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 3);"
-            db.query_update(query, None)
+            query = f"INSERT INTO history_message (message_from_user, message_date, message_status) VALUES (%s, %s, %s);"
+            db.query_update(query, (prompt, datetime.datetime.now(), 4))
             return
         if not await self.check_allowed(update, context):
-            query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 4);"
-            db.query_update(query, None)
+            query = f"INSERT INTO history_message (message_from_user, message_date, message_status) VALUES (%s, %s, %s);"
+            db.query_update(query, ( prompt, datetime.datetime.now(), 3))
             return
 
-
         self.last_message[chat_id] = prompt
-        query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 0);"
-        db.query_update(query, None)
-
-        # if is_group_chat(update):
-        #     trigger_keyword = self.config['group_trigger_keyword']
-        #
-        #     if prompt.lower().startswith(trigger_keyword.lower()) or update.message.text.lower().startswith('/chat'):
-        #         if prompt.lower().startswith(trigger_keyword.lower()):
-        #             prompt = prompt[len(trigger_keyword):].strip()
-        #
-        #         if update.message.reply_to_message and \
-        #                 update.message.reply_to_message.text and \
-        #                 update.message.reply_to_message.from_user.id != context.bot.id:
-        #             prompt = f'"{update.message.reply_to_message.text}" {prompt}'
-        #     else:
-        #         if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
-        #             logging.info('Message is a reply to the bot, allowing...')
-        #         else:
-        #             logging.warning('Message does not start with trigger keyword, ignoring...')
-        #             return
 
         try:
             total_tokens = 0
+            async def _reply():
+                nonlocal total_tokens
+                response, total_tokens, responce_for_check, conversation_id = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+                # Send response to censor
+                if not await self.message_censor(update, context, responce_for_check):
+                    query = f"INSERT INTO history_message (conversation_id, message_from_user, message_from_bot, message_date, message_status) VALUES (%s, %s, %s, %s, %s);"
+                    db.query_update(query, (conversation_id, prompt, response, datetime.datetime.now(), 5))
+                    return
 
-            if self.config['stream']:
-                async def _reply():
-                    nonlocal total_tokens
-                    await update.effective_message.reply_chat_action(
-                        action=constants.ChatAction.TYPING,
-                        message_thread_id=get_thread_id(update)
-                    )
 
-                    stream_response = self.openai.get_chat_response_stream(chat_id=chat_id, query=prompt)
-                    i = 0
-                    prev = ''
-                    sent_message = None
-                    backoff = 0
-                    stream_chunk = 0
+                query = f"INSERT INTO history_message (conversation_id, message_from_user, message_from_bot, message_date, message_status) VALUES (%s, %s, %s, %s, %s);"
+                db.query_update(query, (conversation_id, prompt, response, datetime.datetime.now(), 1))
 
-                    async for content, tokens in stream_response:
-                        if len(content.strip()) == 0:
-                            continue
+                # Split into chunks of 4096 characters (Telegram's message limit)
+                chunks = split_into_chunks(response)
 
-                        stream_chunks = split_into_chunks(content)
-                        if len(stream_chunks) > 1:
-                            content = stream_chunks[-1]
-                            if stream_chunk != len(stream_chunks) - 1:
-                                stream_chunk += 1
-                                try:
-                                    await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                                  stream_chunks[-2])
-                                except:
-                                    pass
-                                try:
-                                    sent_message = await update.effective_message.reply_text(
-                                        message_thread_id=get_thread_id(update),
-                                        text=content if len(content) > 0 else "..."
-                                    )
-                                except:
-                                    pass
-                                continue
-
-                        cutoff = get_stream_cutoff_values(update, content)
-                        cutoff += backoff
-
-                        if i == 0:
-                            try:
-                                if sent_message is not None:
-                                    await context.bot.delete_message(chat_id=sent_message.chat_id,
-                                                                     message_id=sent_message.message_id)
-                                sent_message = await update.effective_message.reply_text(
-                                    message_thread_id=get_thread_id(update),
-                                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                                    text=content
-                                )
-                            except:
-                                continue
-
-                        elif abs(len(content) - len(prev)) > cutoff or tokens != 'not_finished':
-                            prev = content
-
-                            try:
-                                use_markdown = tokens != 'not_finished'
-                                await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                              text=content, markdown=use_markdown)
-
-                            except RetryAfter as e:
-                                backoff += 5
-                                await asyncio.sleep(e.retry_after)
-                                continue
-
-                            except TimedOut:
-                                backoff += 5
-                                await asyncio.sleep(0.5)
-                                continue
-
-                            except Exception:
-                                backoff += 5
-                                continue
-
-                            await asyncio.sleep(0.01)
-
-                        i += 1
-                        if tokens != 'not_finished':
-                            total_tokens = int(tokens)
-
-                await wrap_with_indicator(update, context, _reply, constants.ChatAction.TYPING)
-
-            else:
-                async def _reply():
-                    nonlocal total_tokens
-                    response, total_tokens, responce_for_check = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
-
-                    # Send response to censor
-                    if not await self.message_censor(update, context, responce_for_check):
-                        query = f"INSERT INTO msgs_{user_id} (msg, status) VALUES ('{prompt}', 5);"
-                        db.query_update(query, None)
-                        return
-
-                    # Split into chunks of 4096 characters (Telegram's message limit)
-                    chunks = split_into_chunks(response)
-
-                    for index, chunk in enumerate(chunks):
+                for index, chunk in enumerate(chunks):
+                    try:
+                        await update.effective_message.reply_text(
+                            message_thread_id=get_thread_id(update),
+                            reply_to_message_id=get_reply_to_message_id(self.config,
+                                                                        update) if index == 0 else None,
+                            text=chunk,
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
+                    except Exception:
                         try:
                             await update.effective_message.reply_text(
                                 message_thread_id=get_thread_id(update),
                                 reply_to_message_id=get_reply_to_message_id(self.config,
                                                                             update) if index == 0 else None,
-                                text=chunk,
-                                parse_mode=constants.ParseMode.MARKDOWN
+                                text=chunk
                             )
-                        except Exception:
-                            try:
-                                await update.effective_message.reply_text(
-                                    message_thread_id=get_thread_id(update),
-                                    reply_to_message_id=get_reply_to_message_id(self.config,
-                                                                                update) if index == 0 else None,
-                                    text=chunk
-                                )
-                            except Exception as exception:
-                                raise exception
+                        except Exception as exception:
+                            raise exception
 
-                await wrap_with_indicator(update, context, _reply, constants.ChatAction.TYPING)
+            await wrap_with_indicator(update, context, _reply, constants.ChatAction.TYPING)
 
             add_chat_request_to_usage_tracker(self.usage, self.config, user_id, total_tokens)
 
@@ -668,7 +561,6 @@ class ChatGPTTelegramBot:
 
                         # We only want to send the first 4096 characters. No chunking allowed in inline mode.
                         text_content = text_content[:4096]
-                        # print(response)
 
                         # Edit the original message with the generated content
                         await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
@@ -721,13 +613,12 @@ class ChatGPTTelegramBot:
     async def message_censor(self, update: Update, context: ContextTypes.DEFAULT_TYPE, *args,
                             is_inline=False) -> bool:
         db = self.db
-        # name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
-        # user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
         print(args)
         if args:
             message = args[0].lower()
         else:
             message = message_text(update.message).lower()
+        message = ' '.join(re.findall(r'\b\w+\b', message))
         print(message)
         if censor_check(db, self.banned_words, self.config, self.usage, update, message, is_inline=is_inline):
             logging.warning(f'User message has been censored') # {name} (id: {user_id})
@@ -811,6 +702,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('terms', self.terms))
         application.add_handler(CommandHandler('trial', self.trial))
         application.add_handler(CommandHandler('subscribe', self.subscribe))
+        application.add_handler(CommandHandler('test', self.test))
         application.add_handler(CallbackQueryHandler(self.inline_query_handler))
         application.add_handler(PreCheckoutQueryHandler(self.precheckout_subscription_callback))
         application.add_handler(CommandHandler(
