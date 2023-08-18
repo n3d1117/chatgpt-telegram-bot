@@ -429,10 +429,10 @@ class OpenAIHelper:
 
         if model in GPT_3_MODELS + GPT_3_16K_MODELS:
             tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
-            tokens_per_name = -1  # if there's a name, the role is omitted
+            tokens_per_role = -1  # values with role keys are not counted
         elif model in GPT_4_MODELS + GPT_4_32K_MODELS:
             tokens_per_message = 3
-            tokens_per_name = 1
+            tokens_per_role = 0
         else:
             raise NotImplementedError(f"""num_tokens_from_messages() is not implemented for model {model}.""")
         num_tokens = 0
@@ -440,8 +440,8 @@ class OpenAIHelper:
             num_tokens += tokens_per_message
             for key, value in message.items():
                 num_tokens += len(encoding.encode(value))
-                if key == "name":
-                    num_tokens += tokens_per_name
+                if key == "role":
+                    num_tokens += tokens_per_role
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
