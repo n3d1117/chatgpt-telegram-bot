@@ -108,6 +108,7 @@ class ChatGPTTelegramBot:
             f"----------------------------\n"
         )
         
+        # Check if image generation is enabled and, if so, generate the image statistics for today
         text_today_images = ""
         if self.config.get('enable_image_generation', False):
             text_today_images = f"{images_today} {localized_text('stats_images', bot_language)}\n"
@@ -115,7 +116,7 @@ class ChatGPTTelegramBot:
         text_today = (
             f"*{localized_text('usage_today', bot_language)}:*\n"
             f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
-            f"{text_today_images}"  # <- Incorporamos la variable que contiene el texto de imágenes
+            f"{text_today_images}"  # Include the image statistics for today if applicable
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
@@ -126,10 +127,11 @@ class ChatGPTTelegramBot:
         if self.config.get('enable_image_generation', False):
             text_month_images = f"{images_month} {localized_text('stats_images', bot_language)}\n"
         
+        # Check if image generation is enabled and, if so, generate the image statistics for the month
         text_month = (
             f"*{localized_text('usage_month', bot_language)}:*\n"
             f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
-            f"{text_month_images}"  # <- Incorporamos la variable que contiene el texto de imágenes
+            f"{text_month_images}"  # Include the image statistics for the month if applicable
             f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
