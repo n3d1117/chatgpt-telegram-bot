@@ -39,10 +39,13 @@ class ChatGPTTelegramBot:
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
-            BotCommand(command='image', description=localized_text('image_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
             BotCommand(command='resend', description=localized_text('resend_description', bot_language))
         ]
+        # If imaging is enabled, add the "image" command to the list
+        if self.config.get('enable_image_generation', False):
+            self.commands.append(BotCommand(command='image', description=localized_text('image_description', bot_language)))
+
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
         )] + self.commands
@@ -97,29 +100,43 @@ class ChatGPTTelegramBot:
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
         remaining_budget = get_remaining_budget(self.config, self.usage, update)
         bot_language = self.config['bot_language']
+        
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
             f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}\n"
             f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
             f"----------------------------\n"
         )
+        
+        # Check if image generation is enabled and, if so, generate the image statistics for today
+        text_today_images = ""
+        if self.config.get('enable_image_generation', False):
+            text_today_images = f"{images_today} {localized_text('stats_images', bot_language)}\n"
+        
         text_today = (
             f"*{localized_text('usage_today', bot_language)}:*\n"
             f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_today} {localized_text('stats_images', bot_language)}\n"
+            f"{text_today_images}"  # Include the image statistics for today if applicable
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
             f"----------------------------\n"
         )
+        
+        text_month_images = ""
+        if self.config.get('enable_image_generation', False):
+            text_month_images = f"{images_month} {localized_text('stats_images', bot_language)}\n"
+        
+        # Check if image generation is enabled and, if so, generate the image statistics for the month
         text_month = (
             f"*{localized_text('usage_month', bot_language)}:*\n"
             f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
-            f"{images_month} {localized_text('stats_images', bot_language)}\n"
+            f"{text_month_images}"  # Include the image statistics for the month if applicable
             f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
         )
+
         # text_budget filled with conditional content
         text_budget = "\n\n"
         budget_period = self.config['budget_period']
