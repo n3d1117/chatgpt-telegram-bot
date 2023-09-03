@@ -341,7 +341,8 @@ class OpenAIHelper:
         """
         try:
             with open(filename, "rb") as audio:
-                result = await openai.Audio.atranscribe("whisper-1", audio)
+                prompt_text = os.environ.get('WHISPER_PROMPT', '')
+                result = await openai.Audio.atranscribe("whisper-1", audio, prompt=prompt_text)
                 return result.text
         except Exception as e:
             logging.exception(e)
