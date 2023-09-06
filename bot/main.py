@@ -49,6 +49,7 @@ def main():
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
         'show_plugins_used': os.environ.get('SHOW_PLUGINS_USED', 'false').lower() == 'true',
+        'whisper_prompt': os.environ.get('WHISPER_PROMPT', ''),
     }
 
     if openai_config['enable_functions'] and not functions_available:
