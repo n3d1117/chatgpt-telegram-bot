@@ -14,14 +14,12 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext
 
 from openai_helper import GPT_3_MODELS, GPT_3_16K_MODELS, GPT_4_MODELS, GPT_4_32K_MODELS
-from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
-    edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_within_budget, \
-    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, escape
-
-get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_direct_result, handle_direct_result, \
-    cleanup_intermediate_files
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
+from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
+    edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_within_budget, \
+    get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, escape, is_direct_result, \
+    handle_direct_result, cleanup_intermediate_files
 
 
 class ChatGPTTelegramBot:
@@ -47,7 +45,9 @@ class ChatGPTTelegramBot:
         ]
         # If imaging is enabled, add the "image" command to the list
         if self.config.get('enable_image_generation', False):
-            self.commands.append(BotCommand(command='image', description=localized_text('image_description', bot_language)))
+            self.commands.append(
+                BotCommand(command='image', description=localized_text('image_description', bot_language))
+            )
 
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
@@ -782,18 +782,18 @@ class ChatGPTTelegramBot:
             f"(id: {update.message.from_user.id})..."
         )
 
-        models_by_name = {
-            "GPT-3 models": "\n".join(GPT_3_MODELS + GPT_3_16K_MODELS),
-            "GPT-4 models": "\n".join(GPT_4_MODELS + GPT_4_32K_MODELS)
+        available_models = {
+            "GPT-3 models": "\n  ".join(GPT_3_MODELS + GPT_3_16K_MODELS),
+            "GPT-4 models": "\n  ".join(GPT_4_MODELS + GPT_4_32K_MODELS)
         }
 
-        available_models = "\n\n".join(f"*{escape(name)}:*\n{escape(models)}" for name, models in models_by_name.items())
+        available_models_str = "Available models:\n\n" + "\n\n".join(f"*{escape(name)}:*\n  {escape(models)}"
+                                                                     for name, models in available_models.items())
 
         if not context.args:
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=escape(f"Your current model is '{self.openai.config['model']}'. ") + \
-                    f"Available models:\n\n{available_models}",
+                text=escape(f"Your current model is '{self.openai.config['model']}'. ") + available_models_str,
                 disable_web_page_preview=True,
                 parse_mode=constants.ParseMode.MARKDOWN_V2,
             )
@@ -804,7 +804,7 @@ class ChatGPTTelegramBot:
         if not model.startswith(("gpt-3", "gpt3", "gpt-4", "gpt4")):
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
-                text=f"'{model}' is not a valid model\. Available models:\n\n{available_models}",
+                text=escape(f"'{model}' is not a valid model. ") + available_models_str,
                 disable_web_page_preview=True,
                 parse_mode=constants.ParseMode.MARKDOWN_V2,
             )

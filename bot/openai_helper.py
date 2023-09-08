@@ -210,7 +210,7 @@ class OpenAIHelper:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
                 self.reset_chat_history(chat_id)
 
-            self.last_updated[chat_id] = datetime.now()
+            self.last_updated[chat_id] = datetime.datetime.now()
 
             self.__add_to_history(chat_id, role="user", content=query)
 
@@ -368,9 +368,9 @@ class OpenAIHelper:
         if chat_id not in self.last_updated:
             return False
         last_updated = self.last_updated[chat_id]
-        now = datetime.now()
+        now = datetime.datetime.now()
         max_age_minutes = self.config['max_conversation_age_minutes']
-        return last_updated < now - timedelta(minutes=max_age_minutes)
+        return last_updated < now - datetime.timedelta(minutes=max_age_minutes)
 
     def __add_function_call_to_history(self, chat_id, function_name, content):
         """
