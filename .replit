@@ -6,3 +6,4 @@ channel = "stable-23_05"
 [deployment]
 run = ["sh", "-c", "pip install -r requirements.txt && python3 bot/main.py"]
 deploymentTarget = "cloudrun"
+package.allowAutoUpdate = false
