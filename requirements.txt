@@ -1,4 +1,4 @@
-flask==2.0.0
+Flask
 python-dotenv~=1.0.0
 pydub~=0.25.1
 tiktoken==0.4.0
