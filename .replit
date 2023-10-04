@@ -1,9 +1,9 @@
 modules = ["python-3.10:v18-20230807-322e88b"]
 hidden = [".pythonlibs"]
-run = "python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python3 bot/main.py"
+run = "pip install -r requirements.txt && python3 bot/main.py"
 [nix]
 channel = "stable-23_05"
 [deployment]
-run = ["sh", "-c", "python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python3 bot/main.py"]
+run = ["sh", "-c", "pip install -r requirements.txt && python3 bot/main.py"]
 deploymentTarget = "cloudrun"
 package.allowAutoUpdate = false
