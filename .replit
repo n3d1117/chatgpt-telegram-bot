@@ -4,5 +4,6 @@ run = "pip install -r requirements.txt && pip install Flask && python3 bot/main.
 [nix]
 channel = "stable-23_05"
 [deployment]
-run = ["pip install -r requirements.txt && pip install Flask && python3 bot/main.py"]
+run = ["sh", "-c", "pip install -r requirements.txt && pip install Flask && python3 bot/main.py"]
 deploymentTarget = "cloudrun"
+package.allowAutoUpdate = false
