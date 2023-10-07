@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "python-template"
 version = "0.1.0"
+auto-update = false
 description = ""
 authors = ["Your Name <you@example.com>"]
 [tool.poetry.dependencies]
@@ -14,5 +15,4 @@ ignore = ['W291', 'W292', 'W293']
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-[tool.poetry]
-auto-update = false
+
