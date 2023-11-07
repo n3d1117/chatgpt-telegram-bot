@@ -34,6 +34,8 @@ def default_max_tokens(model: str) -> int:
     """
     base = 1200
     if model in GPT_3_MODELS:
+        if model == "gpt-3.5-turbo-0301":
+            return 4096
         return base
     elif model in GPT_4_MODELS:
         return base * 2
@@ -42,7 +44,7 @@ def default_max_tokens(model: str) -> int:
     elif model in GPT_4_32K_MODELS:
         return base * 8
     elif model in GPT_4_128K_MODELS:
-        return base * 31
+        return 4096
 
 
 def are_functions_available(model: str) -> bool:
