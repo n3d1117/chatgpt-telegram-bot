@@ -74,7 +74,7 @@ class UsageTracker:
         :param tokens_price: price per 1000 tokens, defaults to 0.002
         """
         today = date.today()
-        token_cost = round(tokens * tokens_price / 1000, 6)
+        token_cost = round(float(tokens) * tokens_price / 1000, 6)
         self.add_current_costs(token_cost)
 
         # update usage_history

@@ -3,7 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
-from openai_helper import OpenAIHelper, default_max_tokens
+from plugin_manager import PluginManager
+from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
 
 
@@ -16,6 +17,7 @@ def main():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # Check if the required environment variables are set
     required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
@@ -27,6 +29,7 @@ def main():
 
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
     openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
@@ -41,14 +44,19 @@ def main():
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
         'model': model,
+        'enable_functions': os.environ.get('ENABLE_FUNCTIONS', str(functions_available)).lower() == 'true',
+        'functions_max_consecutive_calls': int(os.environ.get('FUNCTIONS_MAX_CONSECUTIVE_CALLS', 10)),
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
+        'show_plugins_used': os.environ.get('SHOW_PLUGINS_USED', 'false').lower() == 'true',
+        'whisper_prompt': os.environ.get('WHISPER_PROMPT', ''),
     }
 
-    # log deprecation warning for old budget variable names
-    # old variables are caught in the telegram_config definition for now
-    # remove support for old budget names at some point in the future
+    if openai_config['enable_functions'] and not functions_available:
+        logging.error(f'ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. '
+                        f'Please set ENABLE_FUNCTIONS to false or use a model that supports it.')
+        exit(1)
     if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
         logging.warning('The environment variable MONTHLY_USER_BUDGETS is deprecated. '
                         'Please use USER_BUDGETS with BUDGET_PERIOD instead.')
@@ -74,12 +82,17 @@ def main():
         'group_trigger_keyword': os.environ.get('GROUP_TRIGGER_KEYWORD', ''),
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES', "0.016,0.018,0.02").split(",")],
-        'transcription_price': float(os.environ.get('TOKEN_PRICE', 0.006)),
+        'transcription_price': float(os.environ.get('TRANSCRIPTION_PRICE', 0.006)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
     }
 
+    plugin_config = {
+        'plugins': os.environ.get('PLUGINS', '').split(',')
+    }
+
     # Setup and run ChatGPT and Telegram bot
-    openai_helper = OpenAIHelper(config=openai_config)
+    plugin_manager = PluginManager(config=plugin_config)
+    openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
     telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 

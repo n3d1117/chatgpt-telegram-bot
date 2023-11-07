@@ -14,7 +14,7 @@
         "stats_conversation":["Current conversation", "chat messages in history", "chat tokens in history"],
         "usage_today":"Usage today",
         "usage_month":"Usage this month",
-        "stats_tokens":"chat tokens used",
+        "stats_tokens":"tokens",
         "stats_images":"images generated",
         "stats_transcribe":["minutes and", "seconds transcribed"],
         "stats_total":"💰 For a total amount of $",
@@ -41,7 +41,8 @@
         "try_again":"Please try again in a while",
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
-        "loading":"Loading..."
+        "loading":"Loading...",
+        "function_unavailable_in_inline_mode": "This function is unavailable in inline mode"
     },
     "es": {
         "help_description":"Muestra el mensaje de ayuda",
@@ -83,9 +84,10 @@
         "try_again":"Por favor, inténtalo de nuevo más tarde",
         "answer_with_chatgpt":"Responder con ChatGPT",
         "ask_chatgpt":"Preguntar a ChatGPT",
-        "loading":"Cargando..."
+        "loading":"Cargando...",
+        "function_unavailable_in_inline_mode": "Esta función no está disponible en el modo inline"
     },
-    "pt-br":{
+    "pt-br": {
         "help_description": "Mostra a mensagem de ajuda",
         "reset_description": "Redefine a conversa. Opcionalmente, passe instruções de alto nível (por exemplo, /reset Você é um assistente útil)",
         "image_description": "Gera uma imagem a partir do prompt (por exemplo, /image gato)",
@@ -125,7 +127,9 @@
         "try_again": "Por favor, tente novamente mais tarde",
         "answer_with_chatgpt": "Responder com ChatGPT",
         "ask_chatgpt": "Perguntar ao ChatGPT",
-        "loading": "Carregando..."},
+        "loading": "Carregando...",
+        "function_unavailable_in_inline_mode": "Esta função não está disponível no modo inline"
+    },
     "de": {
         "help_description":"Zeige die Hilfenachricht",
         "reset_description":"Setze die Konversation zurück. Optionale Eingabe einer grundlegenden Anweisung (z.B. /reset Du bist ein hilfreicher Assistent)",
@@ -166,7 +170,8 @@
         "try_again":"Bitte versuche es später erneut",
         "answer_with_chatgpt":"Antworte mit ChatGPT",
         "ask_chatgpt":"Frage ChatGPT",
-        "loading":"Lade..."
+        "loading":"Lade...",
+        "function_unavailable_in_inline_mode": "Diese Funktion ist im Inline-Modus nicht verfügbar"
     },
     "fi": {
         "help_description":"Näytä ohjeet",
@@ -208,7 +213,8 @@
         "try_again":"Yritä myöhemmin uudelleen",
         "answer_with_chatgpt":"Vastaa ChatGPT:n avulla",
         "ask_chatgpt":"Kysy ChatGPT:ltä",
-        "loading":"Lataa..."
+        "loading":"Lataa...",
+        "function_unavailable_in_inline_mode": "Tämä toiminto ei ole käytettävissä sisäisessä tilassa"
     },
     "ru": {
         "help_description":"Показать справочное сообщение",
@@ -250,7 +256,8 @@
         "try_again":"Пожалуйста, повторите попытку позже",
         "answer_with_chatgpt":"Ответить с помощью ChatGPT",
         "ask_chatgpt":"Спросить ChatGPT",
-        "loading":"Загрузка..."
+        "loading":"Загрузка...",
+        "function_unavailable_in_inline_mode": "Эта функция недоступна в режиме inline"
     },
     "tr": {
         "help_description":"Yardım mesajını göster",
@@ -292,7 +299,8 @@
         "try_again":"Lütfen birazdan tekrar deneyiniz",
         "answer_with_chatgpt":"ChatGPT ile cevapla",
         "ask_chatgpt":"ChatGPT'ye sor",
-        "loading":"Yükleniyor..."
+        "loading":"Yükleniyor...",
+        "function_unavailable_in_inline_mode": "Bu işlev inline modda kullanılamaz"
     },
     "it": {
         "help_description":"Mostra il messaggio di aiuto",
@@ -334,7 +342,8 @@
         "try_again":"Riprova più tardi",
         "answer_with_chatgpt":"Rispondi con ChatGPT",
         "ask_chatgpt":"Chiedi a ChatGPT",
-        "loading":"Carico..."
+        "loading":"Carico...",
+        "function_unavailable_in_inline_mode": "Questa funzione non è disponibile in modalità inline"
     },
     "id": {
         "help_description": "Menampilkan pesan bantuan",
@@ -376,7 +385,8 @@
         "try_again": "Silakan coba lagi nanti",
         "answer_with_chatgpt": "Jawaban dengan ChatGPT",
         "ask_chatgpt": "Tanya ChatGPT",
-        "loading": "Sedang memuat..."
+        "loading": "Sedang memuat...",
+        "function_unavailable_in_inline_mode": "Fungsi ini tidak tersedia dalam mode inline"
     },
     "nl": {
         "help_description":"Toon uitleg",
@@ -418,7 +428,8 @@
         "try_again":"Probeer het a.u.b. later opnieuw",
         "answer_with_chatgpt":"Antwoord met ChatGPT",
         "ask_chatgpt":"Vraag ChatGPT",
-        "loading":"Laden..."
+        "loading":"Laden...",
+        "function_unavailable_in_inline_mode": "Deze functie is niet beschikbaar in de inline modus"
     },
     "zh-cn": {
         "help_description":"显示帮助信息",
@@ -460,23 +471,24 @@
         "try_again":"请稍后再试",
         "answer_with_chatgpt":"使用ChatGPT回答",
         "ask_chatgpt":"询问ChatGPT",
-        "loading":"载入中..."
+        "loading":"载入中...",
+        "function_unavailable_in_inline_mode": "此功能在内联模式下不可用"
     },
     "zh-tw": {
         "help_description":"顯示幫助訊息",
-        "reset_description":"重置對話。可以選擇傳遞高級指示（例如 /reset 你是一個樂於助人的助手）",
-        "image_description":"根據提示生成圖像（例如 /image 貓）",
+        "reset_description":"重設對話。可以選擇傳遞進階指令（例如 /reset 你是一個樂於助人的助手）",
+        "image_description":"根據提示生成圖片（例如 /image 貓）",
         "stats_description":"取得當前使用統計",
-        "resend_description":"重發最後一個訊息",
+        "resend_description":"重新傳送最後一則訊息",
         "chat_description":"與機器人聊天！",
-        "disallowed":"抱歉，您不允許使用此機器人。查看原始碼：https://github.com/n3d1117/chatgpt-telegram-bot",
+        "disallowed":"抱歉，您不被允許使用此機器人。你可以在以下網址檢視原始碼：https://github.com/n3d1117/chatgpt-telegram-bot",
         "budget_limit":"抱歉，已達到用量上限。",
-        "help_text":["我是一個 ChatGPT 機器人，跟我聊天吧！", "傳送語音訊息或檔案給我，我會為您進行轉錄", "開放原始碼：https://github.com/n3d1117/chatgpt-telegram-bot"],
-        "stats_conversation":["當前對話", "聊天訊息記錄", "聊天 Token 記錄"],
+        "help_text":["我是一個 ChatGPT 機器人，跟我聊天吧！", "傳送語音訊息或檔案給我，我會為您進行轉錄", "開放原始碼在：https://github.com/n3d1117/chatgpt-telegram-bot"],
+        "stats_conversation":["目前的對話", "聊天訊息紀錄", "聊天 Token 紀錄"],
         "usage_today":"今日用量",
         "usage_month":"本月用量",
         "stats_tokens":"Token 已使用",
-        "stats_images":"圖像已生成",
+        "stats_images":"圖片已生成",
         "stats_transcribe":["分", "秒已轉錄"],
         "stats_total":"💰 總計金額 $",
         "stats_budget":"剩餘預算",
@@ -484,25 +496,26 @@
         "daily":"今日",
         "all-time":"",
         "stats_openai":"本月您的 OpenAI 帳戶總共計費 $",
-        "resend_failed":"沒有訊息可以重發",
-        "reset_done":"重置完成！",
+        "resend_failed":"沒有訊息可以重新傳送",
+        "reset_done":"重設完成！",
         "image_no_prompt":"請輸入提示！（例如 /image 貓）",
-        "image_fail":"無法生成圖像",
-        "media_download_fail":["無法下載音效檔案", "請確保檔案大小不超過 20MB"],
+        "image_fail":"圖片生成失敗",
+        "media_download_fail":["下載音訊檔案失敗", "請確保檔案大小不超過 20MB"],
         "media_type_fail":"不支援的檔案類型",
         "transcript":"轉錄",
         "answer":"回答",
-        "transcribe_fail":"無法轉錄文字",
+        "transcribe_fail":"轉錄文字失敗",
         "chat_fail":"無法取得回應",
         "prompt":"提示",
         "completion":"填充",
-        "openai_rate_limit":"OpenAI 請求超出限制",
-        "openai_invalid":"OpenAI 無效請求",
+        "openai_rate_limit":"OpenAI 的請求數量已超過上限",
+        "openai_invalid":"OpenAI 的請求無效",
         "error":"發生錯誤",
         "try_again":"請稍後重試",
         "answer_with_chatgpt":"使用 ChatGPT 回答",
         "ask_chatgpt":"詢問 ChatGPT",
-        "loading":"載入中…"
+        "loading":"載入中...",
+        "function_unavailable_in_inline_mode": "此功能在內嵌模式下不可用"
     },
     "vi": {
         "help_description":"Hiển thị trợ giúp",
@@ -544,7 +557,8 @@
         "try_again":"Vui lòng thử lại sau một lúc",
         "answer_with_chatgpt":"Trả lời với ChatGPT",
         "ask_chatgpt":"Hỏi ChatGPT",
-        "loading":"Đang tải..."
+        "loading":"Đang tải...",
+        "function_unavailable_in_inline_mode": "Chức năng này không khả dụng trong chế độ nội tuyến"
     },
     "fa": {
         "help_description":"نمایش پیغام راهنما",
@@ -586,6 +600,50 @@
         "try_again":"لطفا بعد از مدتی دوباره امتحان کنید",
         "answer_with_chatgpt":"با ChatGPT پاسخ دهید",
         "ask_chatgpt":"از ChatGPT بپرسید",
-        "loading":"در حال بارگذاری..."
+        "loading":"در حال بارگذاری...",
+        "function_unavailable_in_inline_mode": "این عملکرد در حالت آنلاین در دسترس نیست"
+    },
+    "uk": {
+        "help_description":"Показати повідомлення допомоги",
+        "reset_description":"Скинути розмову. Опціонально передайте високорівневі інструкції (наприклад, /reset Ви корисний помічник)",
+        "image_description":"Створити зображення за вашим запитом (наприклад, /image кіт)",
+        "stats_description":"Отримати вашу поточну статистику використання",
+        "resend_description":"Повторно відправити останнє повідомлення",
+        "chat_description":"Розмовляйте з ботом!",
+        "disallowed":"Вибачте, вам не дозволено використовувати цього бота. Ви можете переглянути його код за адресою https://github.com/n3d1117/chatgpt-telegram-bot",
+        "budget_limit":"Вибачте, ви вичерпали ліміт використання.",
+        "help_text":["Я бот ChatGPT, розмовляйте зі мною!", "Надішліть мені голосове повідомлення або файл, і я транскрибую його для вас", "Відкритий код за адресою https://github.com/n3d1117/chatgpt-telegram-bot"],
+        "stats_conversation":["Поточна розмова", "повідомлень у історії чату", "токенів у історії чату"],
+        "usage_today":"Використання сьогодні",
+        "usage_month":"Використання цього місяця",
+        "stats_tokens":"використано токенів чату",
+        "stats_images":"згенеровано зображень",
+        "stats_transcribe":["хвилин і", "секунд транскрибовано"],
+        "stats_total":"💰 Загальна сума $",
+        "stats_budget":"Ваш залишок бюджету",
+        "monthly":" за цей місяць",
+        "daily":" за сьогодні",
+        "all-time":"",
+        "stats_openai":"Цього місяця з вашого облікового запису OpenAI було списано $",
+        "resend_failed":"У вас немає повідомлень для повторної відправки",
+        "reset_done":"Готово!",
+        "image_no_prompt":"Будь ласка, надайте свій запит! (наприклад, /image кіт)",
+        "image_fail":"Не вдалося створити зображення",
+        "media_download_fail":["Не вдалося завантажити аудіофайл", "Переконайтеся, що файл не занадто великий. (максимум 20 МБ)"],
+        "media_type_fail":"Непідтримуваний тип файлу",
+        "transcript":"Транскрипт",
+        "answer":"Відповідь",
+        "transcribe_fail":"Не вдалося транскрибувати текст",
+        "chat_fail":"Не вдалося отримати відповідь",
+        "prompt":"запит",
+        "completion":"завершення",
+        "openai_rate_limit":"Перевищено ліміт частоти запитів до OpenAI",
+        "openai_invalid":"Неправильний запит до OpenAI",
+        "error":"Сталася помилка",
+        "try_again":"Будь ласка, спробуйте знову через деякий час",
+        "answer_with_chatgpt":"Відповідь за допомогою ChatGPT",
+        "ask_chatgpt":"Запитати ChatGPT",
+        "loading":"Завантаження...",
+        "function_unavailable_in_inline_mode": "Ця функція недоступна в режимі Inline"
     }
 }

@@ -1,6 +1,6 @@
 # ChatGPT Telegram Bot
 ![python-version](https://img.shields.io/badge/python-3.9-blue.svg)
-[![openai-version](https://img.shields.io/badge/openai-0.27.4-orange.svg)](https://openai.com/)
+[![openai-version](https://img.shields.io/badge/openai-0.27.8-orange.svg)](https://openai.com/)
 [![license](https://img.shields.io/badge/License-GPL%202.0-brightgreen.svg)](LICENSE)
 [![Docker Image CI - Dev](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-dev.yml/badge.svg)](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-dev.yml)
 [![Docker Image CI - Releases - Latest](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-release.yml/badge.svg)](https://github.com/ZorgeR/chatgpt-telegram-bot/actions/workflows/docker-image-release.yml)
@@ -10,8 +10,13 @@
 A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI's _official_ [ChatGPT](https://openai.com/blog/chatgpt/), [DALL·E](https://openai.com/product/dall-e-2) and [Whisper](https://openai.com/research/whisper) APIs to provide answers. Ready to use with minimal configuration required.
 
 ## Screenshots
+
+### Demo
 ![demo](https://user-images.githubusercontent.com/11541888/225114786-0d639854-b3e1-4214-b49a-e51ce8c40387.png)
 ![model_selection](static/img_5.png)
+
+### Plugins
+![plugins](https://github.com/n3d1117/chatgpt-telegram-bot/assets/11541888/83d5e0cd-e09a-463d-a292-722f919e929f)
 
 ## Features
 - [x] (NEW!) Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
@@ -20,19 +25,22 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker and Proxy support
-- [x] (NEW!) Image generation using DALL·E via the `/image` command
-- [x] (NEW!) Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
-- [x] (NEW!) Automatic conversation summary to avoid excessive token usage
-- [x] (NEW!) Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
-- [x] (NEW!) Get personal token usage statistics and cost per day/month via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
-- [x] (NEW!) User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
-- [x] (NEW!) Stream support
-- [x] (NEW!) GPT-4 support
+- [x] Image generation using DALL·E via the `/image` command
+- [x] Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
+- [x] Automatic conversation summary to avoid excessive token usage
+- [x] Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] Get personal token usage statistics via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
+- [x] Stream support
+- [x] GPT-4 support
   - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
-- [x] (NEW!) Localized bot language
-  - Available languages :gb: :de: :ru: :tr: :it: :finland: :es: :indonesia: :netherlands: :cn: :taiwan: :vietnam: :iran: :brazil:
-- [x] (NEW!) Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)
+- [x] Localized bot language
+  - Available languages :gb: :de: :ru: :tr: :it: :finland: :es: :indonesia: :netherlands: :cn: :taiwan: :vietnam: :iran: :brazil: :ukraine:
+- [x] Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)
   - To use this feature, enable inline queries for your bot in BotFather via the `/setinline` [command](https://core.telegram.org/bots/inline)
+- [x] (NEW!) Support *new models* [announced on June 13, 2023](https://openai.com/blog/function-calling-and-other-api-updates)
+- [x] (NEW!) Support *functions* (plugins) to extend the bot's functionality with 3rd party services
+  - Weather, Spotify, Web search, text-to-speech and more. See [here](#available-plugins) for a list of available plugins
 
 ## Additional features - help needed!
 If you'd like to help, check out the [issues](https://github.com/ZorgeR/chatgpt-telegram-bot/issues) section and contribute!  
@@ -73,31 +81,69 @@ The following parameters are optional and can be set in the `.env` file:
 Check out the [Budget Manual](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/184) for possible budget configurations.
 
 #### Additional optional configuration options
-| Parameter                          | Description                                                                                                                                                                                                                                            | Default value                      |
-|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| `ENABLE_QUOTING`                   | Whether to enable message quoting in private chats                                                                                                                                                                                                     | `true`                             |
-| `ENABLE_IMAGE_GENERATION`          | Whether to enable image generation via the `/image` command                                                                                                                                                                                            | `true`                             |
-| `ENABLE_TRANSCRIPTION`             | Whether to enable transcriptions of audio and video messages                                                                                                                                                                                           | `true`                             |
-| `PROXY`                            | Proxy to be used for OpenAI and Telegram bot (e.g. `http://localhost:8080`)                                                                                                                                                                            | -                                  |
-| `OPENAI_MODEL`                     | The OpenAI model to use for generating responses                                                                                                                                                                                                       | `gpt-3.5-turbo`                    |
-| `ASSISTANT_PROMPT`                 | A system message that sets the tone and controls the behavior of the assistant                                                                                                                                                                         | `You are a helpful assistant.`     |
-| `SHOW_USAGE`                       | Whether to show OpenAI token usage information after each response                                                                                                                                                                                     | `false`                            |
-| `STREAM`                           | Whether to stream responses. **Note**: incompatible, if enabled, with `N_CHOICES` higher than 1                                                                                                                                                        | `true`                             |
-| `MAX_TOKENS`                       | Upper bound on how many tokens the ChatGPT API will return                                                                                                                                                                                             | `1200` for GPT-3, `2400` for GPT-4 |
-| `MAX_HISTORY_SIZE`                 | Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage                                                                                                                               | `15`                               |
-| `MAX_CONVERSATION_AGE_MINUTES`     | Maximum number of minutes a conversation should live since the last message, after which the conversation will be reset                                                                                                                                | `180`                              |
-| `VOICE_REPLY_WITH_TRANSCRIPT_ONLY` | Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript                                                                                                                                              | `false`                            |
-| `VOICE_REPLY_PROMPTS`              | A semicolon separated list of phrases (i.e. `Hi bot;Hello chat`). If the transcript starts with any of them, it will be treated as a prompt even if `VOICE_REPLY_WITH_TRANSCRIPT_ONLY` is set to `true`                                                | -                                  |
-| `N_CHOICES`                        | Number of answers to generate for each input message. **Note**: setting this to a number higher than 1 will not work properly if `STREAM` is enabled                                                                                                   | `1`                                |
-| `TEMPERATURE`                      | Number between 0 and 2. Higher values will make the output more random                                                                                                                                                                                 | `1.0`                              |
-| `PRESENCE_PENALTY`                 | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far                                                                                                                                       | `0.0`                              |
-| `FREQUENCY_PENALTY`                | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far                                                                                                                                  | `0.0`                              |
-| `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: `256x256`, `512x512` or `1024x1024`                                                                                                                                                                   | `512x512`                          |
-| `GROUP_TRIGGER_KEYWORD`            | If set, the bot in group chats will only respond to messages that start with this keyword                                                                                                                                                              | -                                  |
-| `IGNORE_GROUP_TRANSCRIPTIONS`      | If set to true, the bot will not process transcriptions in group chats                                                                                                                                                                                 | `true`                             |
-| `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`, `tr`, `it`, `fi`, `es`, `id`, `nl`, `zh-cn`, `zh-tw`, `vi`, `fa`, `pt-br`.  [Contribute with additional translations](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219) | `en`                               |
+| Parameter                          | Description                                                                                                                                                                                                                                                           | Default value                       |
+|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `ENABLE_QUOTING`                   | Whether to enable message quoting in private chats                                                                                                                                                                                                                    | `true`                              |
+| `ENABLE_IMAGE_GENERATION`          | Whether to enable image generation via the `/image` command                                                                                                                                                                                                           | `true`                              |
+| `ENABLE_TRANSCRIPTION`             | Whether to enable transcriptions of audio and video messages                                                                                                                                                                                                          | `true`                              |
+| `PROXY`                            | Proxy to be used for OpenAI and Telegram bot (e.g. `http://localhost:8080`)                                                                                                                                                                                           | -                                   |
+| `OPENAI_MODEL`                     | The OpenAI model to use for generating responses. You can find all available models [here](https://platform.openai.com/docs/models/)                                                                                                                                  | `gpt-3.5-turbo`                     |
+| `ASSISTANT_PROMPT`                 | A system message that sets the tone and controls the behavior of the assistant                                                                                                                                                                                        | `You are a helpful assistant.`      |
+| `SHOW_USAGE`                       | Whether to show OpenAI token usage information after each response                                                                                                                                                                                                    | `false`                             |
+| `STREAM`                           | Whether to stream responses. **Note**: incompatible, if enabled, with `N_CHOICES` higher than 1                                                                                                                                                                       | `true`                              |
+| `MAX_TOKENS`                       | Upper bound on how many tokens the ChatGPT API will return                                                                                                                                                                                                            | `1200` for GPT-3, `2400` for GPT-4  |
+| `MAX_HISTORY_SIZE`                 | Max number of messages to keep in memory, after which the conversation will be summarised to avoid excessive token usage                                                                                                                                              | `15`                                |
+| `MAX_CONVERSATION_AGE_MINUTES`     | Maximum number of minutes a conversation should live since the last message, after which the conversation will be reset                                                                                                                                               | `180`                               |
+| `VOICE_REPLY_WITH_TRANSCRIPT_ONLY` | Whether to answer to voice messages with the transcript only or with a ChatGPT response of the transcript                                                                                                                                                             | `false`                             |
+| `VOICE_REPLY_PROMPTS`              | A semicolon separated list of phrases (i.e. `Hi bot;Hello chat`). If the transcript starts with any of them, it will be treated as a prompt even if `VOICE_REPLY_WITH_TRANSCRIPT_ONLY` is set to `true`                                                               | -                                   |
+| `N_CHOICES`                        | Number of answers to generate for each input message. **Note**: setting this to a number higher than 1 will not work properly if `STREAM` is enabled                                                                                                                  | `1`                                 |
+| `TEMPERATURE`                      | Number between 0 and 2. Higher values will make the output more random                                                                                                                                                                                                | `1.0`                               |
+| `PRESENCE_PENALTY`                 | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far                                                                                                                                                      | `0.0`                               |
+| `FREQUENCY_PENALTY`                | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far                                                                                                                                                 | `0.0`                               |
+| `IMAGE_SIZE`                       | The DALL·E generated image size. Allowed values: `256x256`, `512x512` or `1024x1024`                                                                                                                                                                                  | `512x512`                           |
+| `GROUP_TRIGGER_KEYWORD`            | If set, the bot in group chats will only respond to messages that start with this keyword                                                                                                                                                                             | -                                   |
+| `IGNORE_GROUP_TRANSCRIPTIONS`      | If set to true, the bot will not process transcriptions in group chats                                                                                                                                                                                                | `true`                              |
+| `BOT_LANGUAGE`                     | Language of general bot messages. Currently available: `en`, `de`, `ru`, `tr`, `it`, `fi`, `es`, `id`, `nl`, `zh-cn`, `zh-tw`, `vi`, `fa`, `pt-br`, `uk`.  [Contribute with additional translations](https://github.com/n3d1117/chatgpt-telegram-bot/discussions/219) | `en`                                |
+| `WHISPER_PROMPT`                     | To improve the accuracy of Whisper's transcription service, especially for specific names or terms, you can set up a custom message.  [Speech to text - Prompting](https://platform.openai.com/docs/guides/speech-to-text/prompting) | `-`                                |
 
 Check out the [official API reference](https://platform.openai.com/docs/api-reference/chat) for more details.
+
+#### Functions
+| Parameter                         | Description                                                                                                                                      | Default value                       |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `ENABLE_FUNCTIONS`                | Whether to use functions (aka plugins). You can read more about functions [here](https://openai.com/blog/function-calling-and-other-api-updates) | `true` (if available for the model) |
+| `FUNCTIONS_MAX_CONSECUTIVE_CALLS` | Maximum number of back-to-back function calls to be made by the model in a single response, before displaying a user-facing message              | `10`                                |
+| `PLUGINS`                         | List of plugins to enable (see below for a full list), e.g: `PLUGINS=wolfram,weather`                                                            | -                                   |
+| `SHOW_PLUGINS_USED`               | Whether to show which plugins were used for a response                                                                                           | `false`                             |
+
+#### Available plugins
+| Name                      | Description                                                                                                                                         | Required environment variable(s)                                     | Dependency          |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|---------------------|
+| `weather`                 | Daily weather and 7-day forecast for any location (powered by [Open-Meteo](https://open-meteo.com))                                                 | -                                                                    |                     |
+| `wolfram`                 | WolframAlpha queries (powered by [WolframAlpha](https://www.wolframalpha.com))                                                                      | `WOLFRAM_APP_ID`                                                     | `wolframalpha`      |
+| `ddg_web_search`          | Web search (powered by [DuckDuckGo](https://duckduckgo.com))                                                                                        | -                                                                    | `duckduckgo_search` |
+| `ddg_translate`           | Translate text to any language (powered by [DuckDuckGo](https://duckduckgo.com))                                                                    | -                                                                    | `duckduckgo_search` |       
+| `ddg_image_search`        | Search image or GIF (powered by [DuckDuckGo](https://duckduckgo.com))                                                                               | -                                                                    | `duckduckgo_search` |
+| `crypto`                  | Live cryptocurrencies rate (powered by [CoinCap](https://coincap.io)) - by [@stumpyfr](https://github.com/stumpyfr)                                 | -                                                                    |                     |
+| `spotify`                 | Spotify top tracks/artists, currently playing song and content search (powered by [Spotify](https://spotify.com)). Requires one-time authorization. | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI` | `spotipy`           |
+| `worldtimeapi`            | Get latest world time (powered by [WorldTimeAPI](https://worldtimeapi.org/)) - by [@noriellecruz](https://github.com/noriellecruz)                  | `WORLDTIME_DEFAULT_TIMEZONE`                                         |                     |
+| `dice`                    | Send a dice in the chat!                                                                                                                            | -                                                                    |                     |
+| `youtube_audio_extractor` | Extract audio from YouTube videos                                                                                                                   | -                                                                    | `pytube`            |
+| `deepl_translate`         | Translate text to any language (powered by [DeepL](https://deepl.com)) - by [@LedyBacer](https://github.com/LedyBacer)                              | `DEEPL_API_KEY`                                                      |                     |
+| `gtts_text_to_speech`     | Text to speech (powered by Google Translate APIs)                                                                                                   | -                                                                    | `gtts`              |
+| `whois`                   | Query the whois domain database - by [@jnaskali](https://github.com/jnaskali)                                                                       | -                                                                    | `whois`             |
+| `webshot`                 | Screenshot a website from a given url or domain name - by [@noriellecruz](https://github.com/noriellecruz)                                          | -                                                                    |                     |
+
+#### Environment variables
+| Variable                          | Description                                                                                                                                                                                     | Default value                       |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `WOLFRAM_APP_ID`                  | Wolfram Alpha APP ID (required only for the `wolfram` plugin, you can get one [here](https://products.wolframalpha.com/simple-api/documentation))                                               | -                                   |
+| `SPOTIFY_CLIENT_ID`               | Spotify app Client ID (required only for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))                                                    | -                                   |
+| `SPOTIFY_CLIENT_SECRET`           | Spotify app Client Secret (required only for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))                                                | -                                   |
+| `SPOTIFY_REDIRECT_URI`            | Spotify app Redirect URI (required only for the `spotify` plugin, you can find it on the [dashboard](https://developer.spotify.com/dashboard/))                                                 | -                                   |
+| `WORLDTIME_DEFAULT_TIMEZONE`      | Default timezone to use, i.e. `Europe/Rome` (required only for the `worldtimeapi` plugin, you can get TZ Identifiers from [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) | -                                   |
+| `DUCKDUCKGO_SAFESEARCH`           | DuckDuckGo safe search (`on`, `off` or `moderate`) (optional, applies to `ddg_web_search` and `ddg_image_search`)                                                                               | `moderate`                          |
+| `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                                                                       | -                                   |
 
 ### Installing
 Clone the repository and navigate to the project directory:
