@@ -42,7 +42,7 @@ def default_max_tokens(model: str) -> int:
     elif model in GPT_4_32K_MODELS:
         return base * 8
     elif model in GPT_4_128K_MODELS:
-        return base * 100
+        return base * 31
 
 
 def are_functions_available(model: str) -> bool:
@@ -418,7 +418,7 @@ class OpenAIHelper:
         if self.config['model'] in GPT_4_32K_MODELS:
             return base * 8
         if self.config['model'] in GPT_4_128K_MODELS:
-            return base * 100
+            return base * 31
         raise NotImplementedError(
             f"Max tokens for model {self.config['model']} is not implemented yet."
         )
