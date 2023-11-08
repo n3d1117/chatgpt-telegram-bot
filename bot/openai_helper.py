@@ -398,7 +398,7 @@ class OpenAIHelper:
             messages=messages,
             temperature=0.4
         )
-        return response.choices[0]['message']['content']
+        return response.choices[0].message.content
 
     def __max_model_tokens(self):
         base = 4096
