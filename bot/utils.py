@@ -5,6 +5,7 @@ import itertools
 import json
 import logging
 import os
+import base64
 
 import telegram
 from telegram import Message, MessageEntity, Update, ChatMember, constants
@@ -377,3 +378,9 @@ def cleanup_intermediate_files(response: any):
     if format == 'path':
         if os.path.exists(value):
             os.remove(value)
+
+
+# Function to encode the image
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')

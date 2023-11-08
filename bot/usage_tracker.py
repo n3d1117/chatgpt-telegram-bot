@@ -56,6 +56,8 @@ class UsageTracker:
         if os.path.isfile(self.user_file):
             with open(self.user_file, "r") as file:
                 self.usage = json.load(file)
+                if 'vision_tokens' not in self.usage['usage_history']:
+                    self.usage['usage_history']['vision_tokens'] = {}
         else:
             # ensure directory exists
             pathlib.Path(logs_dir).mkdir(exist_ok=True)
@@ -63,7 +65,7 @@ class UsageTracker:
             self.usage = {
                 "user_name": user_name,
                 "current_cost": {"day": 0.0, "month": 0.0, "all_time": 0.0, "last_update": str(date.today())},
-                "usage_history": {"chat_tokens": {}, "transcription_seconds": {}, "number_images": {}}
+                "usage_history": {"chat_tokens": {}, "transcription_seconds": {}, "number_images": {}, "vision_tokens":{}}
             }
 
     # token usage functions:
@@ -151,6 +153,47 @@ class UsageTracker:
                 usage_month += sum(images)
         return usage_day, usage_month
 
+
+    # vision usage functions
+    def add_vision_tokens(self, tokens, vision_token_price=0.01):
+        """
+         Adds requested vision tokens to a users usage history and updates current cost.
+        :param tokens: total tokens used in last request
+        :param vision_token_price: price per 1K tokens transcription, defaults to 0.01
+        """
+        today = date.today()
+        token_price = round(tokens * vision_token_price / 1000, 2)
+        self.add_current_costs(token_price)
+
+        # update usage_history
+        if str(today) in self.usage["usage_history"]["vision_tokens"]:
+            # add requested seconds to existing date
+            self.usage["usage_history"]["vision_tokens"][str(today)] += tokens
+        else:
+            # create new entry for current date
+            self.usage["usage_history"]["vision_tokens"][str(today)] = tokens
+
+        # write updated token usage to user file
+        with open(self.user_file, "w") as outfile:
+            json.dump(self.usage, outfile)
+
+    def get_current_vision_tokens(self):
+        """Get vision tokens for today and this month.
+
+        :return: total amount of vision tokens per day and per month
+        """
+        today = date.today()
+        if str(today) in self.usage["usage_history"]["vision_tokens"]:
+            tokens_day = self.usage["usage_history"]["vision_tokens"][str(today)]
+        else:
+            tokens_day = 0
+        month = str(today)[:7]  # year-month as string
+        tokens_month = 0
+        for today, tokens in self.usage["usage_history"]["vision_tokens"].items():
+            if today.startswith(month):
+                tokens_month += tokens
+        return tokens_day, tokens_month
+
     # transcription usage functions:
 
     def add_transcription_seconds(self, seconds, minute_price=0.006):
@@ -236,13 +279,14 @@ class UsageTracker:
         cost_all_time = self.usage["current_cost"].get("all_time", self.initialize_all_time_cost())
         return {"cost_today": cost_day, "cost_month": cost_month, "cost_all_time": cost_all_time}
 
-    def initialize_all_time_cost(self, tokens_price=0.002, image_prices="0.016,0.018,0.02", minute_price=0.006):
+    def initialize_all_time_cost(self, tokens_price=0.002, image_prices="0.016,0.018,0.02", minute_price=0.006, vision_token_price=0.01):
         """Get total USD amount of all requests in history
         
         :param tokens_price: price per 1000 tokens, defaults to 0.002
         :param image_prices: prices for images of sizes ["256x256", "512x512", "1024x1024"],
             defaults to [0.016, 0.018, 0.02]
         :param minute_price: price per minute transcription, defaults to 0.006
+        :param vision_token_price: price per 1k vision token interpretation, defaults to 0.01
         :return: total cost of all requests
         """
         total_tokens = sum(self.usage['usage_history']['chat_tokens'].values())
@@ -255,5 +299,8 @@ class UsageTracker:
         total_transcription_seconds = sum(self.usage['usage_history']['transcription_seconds'].values())
         transcription_cost = round(total_transcription_seconds * minute_price / 60, 2)
 
-        all_time_cost = token_cost + transcription_cost + image_cost
+        total_vision_tokens = sum(self.usage['usage_history']['vision_tokens'].values())
+        vision_cost = round(total_vision_tokens * vision_token_price / 1000, 2)
+
+        all_time_cost = token_cost + transcription_cost + image_cost + vision_cost
         return all_time_cost
