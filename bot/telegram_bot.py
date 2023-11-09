@@ -390,13 +390,22 @@ class ChatGPTTelegramBot:
         if not self.config['enable_vision'] or not await self.check_allowed_and_within_budget(update, context):
             return
 
-        if is_group_chat(update) and self.config['ignore_group_vision']:
-            logging.info(f'Vision coming from group chat, ignoring...')
-            return
-
         chat_id = update.effective_chat.id
-        image = update.message.effective_attachment[-1]
         prompt = update.message.caption
+
+        if is_group_chat(update):
+            if self.config['ignore_group_vision']:
+                logging.info(f'Vision coming from group chat, ignoring...')
+                return
+            else:
+                trigger_keyword = self.config['group_trigger_keyword']
+                if (prompt is None and trigger_keyword != '') or \
+                   (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
+                    logging.info(f'Vision coming from group chat with wrong keyword, ignoring...')
+                    return
+        
+        image = update.message.effective_attachment[-1]
+        
         temp_file = tempfile.NamedTemporaryFile()
 
         async def _execute():
