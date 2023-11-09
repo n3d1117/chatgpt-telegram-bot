@@ -452,7 +452,7 @@ class ChatGPTTelegramBot:
                 self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
 
             try:
-                interpretation, tokens = await self.openai.interpret_image(temp_file_png.name, prompt=prompt)
+                interpretation, tokens = await self.openai.interpret_image(chat_id, temp_file_png.name, prompt=prompt)
 
                 vision_token_price = self.config['vision_token_price']
                 self.usage[user_id].add_vision_tokens(tokens, vision_token_price)

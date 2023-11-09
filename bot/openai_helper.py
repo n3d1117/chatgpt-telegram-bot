@@ -353,17 +353,44 @@ class OpenAIHelper:
             logging.exception(e)
             raise Exception(f"⚠️ _{localized_text('error', self.config['bot_language'])}._ ⚠️\n{str(e)}") from e
 
-    async def interpret_image(self, filename, prompt=None):
+    async def interpret_image(self, chat_id, filename, prompt=None):
         """
         Interprets a given PNG image file using the Vision model.
         """
         try:
             image = encode_image(filename)
             prompt = self.config['vision_prompt'] if prompt is None else prompt
+
+            # for now I am not adding the image itself to the history
+
+            if chat_id not in self.conversations or self.__max_age_reached(chat_id):
+                self.reset_chat_history(chat_id)
+
+            self.last_updated[chat_id] = datetime.datetime.now()
+
+
             message = {'role':'user', 'content':[{'type':'text', 'text':prompt}, {'type':'image_url', \
                         'image_url': {'url':f'data:image/jpeg;base64,{image}', 'detail':self.config['vision_detail'] } }]}
-            response = await self.client.chat.completions.create(model=self.config['model'], messages=[message], max_tokens=self.config['vision_max_tokens'])
-            return response.choices[0].message.content, self.__count_tokens_vision(filename)
+            common_args = {
+                'model': self.config['model'],
+                'messages': self.conversations[chat_id] + [message],
+                'temperature': self.config['temperature'],
+                'n': 1, # several choices is not implemented yet
+                'max_tokens': self.config['vision_max_tokens'],
+                'presence_penalty': self.config['presence_penalty'],
+                'frequency_penalty': self.config['frequency_penalty'],
+                'stream': False # We need to refactor this class to make this feasible without too much repetition
+            }
+            self.__add_to_history(chat_id, role="user", content=prompt)
+
+            response = await self.client.chat.completions.create(**common_args)
+            
+
+            content = response.choices[0].message.content
+            self.__add_to_history(chat_id, role="assistant", content=content)
+            
+
+            return content, self.__count_tokens_vision(filename)
         
         except openai.RateLimitError as e:
             raise e
