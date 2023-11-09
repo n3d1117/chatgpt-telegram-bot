@@ -353,12 +353,12 @@ class OpenAIHelper:
             logging.exception(e)
             raise Exception(f"⚠️ _{localized_text('error', self.config['bot_language'])}._ ⚠️\n{str(e)}") from e
 
-    async def interpret_image(self, chat_id, filename, prompt=None):
+    async def interpret_image(self, chat_id, fileobj, prompt=None):
         """
         Interprets a given PNG image file using the Vision model.
         """
         try:
-            image = encode_image(filename)
+            image = encode_image(fileobj)
             prompt = self.config['vision_prompt'] if prompt is None else prompt
 
             # for now I am not adding the image itself to the history
@@ -390,7 +390,7 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=content)
             
 
-            return content, self.__count_tokens_vision(filename)
+            return content, self.__count_tokens_vision(fileobj)
         
         except openai.RateLimitError as e:
             raise e
@@ -500,13 +500,13 @@ class OpenAIHelper:
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
-    def __count_tokens_vision(self, filename) -> int:
+    def __count_tokens_vision(self, fileobj) -> int:
         """
         Counts the number of tokens for interpreting an image.
         :param image: image to interpret
         :return: the number of tokens required
         """
-        image = Image.open(filename)
+        image = Image.open(fileobj)
         model = self.config['model']
         if model not in GPT_4_VISION_MODELS:
             raise NotImplementedError(f"""num_tokens_from_messages() is not implemented for model {model}.""")
