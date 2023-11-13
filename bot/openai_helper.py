@@ -6,6 +6,9 @@ import os
 import tiktoken
 
 import openai
+from openai import AsyncOpenAI
+
+aclient = AsyncOpenAI(api_key=config['api_key'])
 
 import requests
 import json
@@ -91,8 +94,8 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
-        openai.api_key = config['api_key']
-        openai.proxy = config['proxy']
+        
+        raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy=config['proxy'])'")
         self.config = config
         self.plugin_manager = plugin_manager
         self.conversations: dict[int: list] = {}  # {chat_id: history}
@@ -250,9 +253,9 @@ class OpenAIHelper:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
                     common_args['function_call'] = 'auto'
 
-            return await openai.ChatCompletion.acreate(**common_args)
+            return await aclient.chat.completions.create(**common_args)
 
-        except openai.error.RateLimitError as e:
+        except openai.RateLimitError as e:
             raise e
 
         except openai.error.InvalidRequestError as e:
@@ -306,13 +309,11 @@ class OpenAIHelper:
             return function_response, plugins_used
 
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
-        response = await openai.ChatCompletion.acreate(
-            model=self.config['model'],
-            messages=self.conversations[chat_id],
-            functions=self.plugin_manager.get_functions_specs(),
-            function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
-            stream=stream
-        )
+        response = await aclient.chat.completions.create(model=self.config['model'],
+        messages=self.conversations[chat_id],
+        functions=self.plugin_manager.get_functions_specs(),
+        function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
+        stream=stream)
         return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
@@ -323,12 +324,10 @@ class OpenAIHelper:
         """
         bot_language = self.config['bot_language']
         try:
-            response = await openai.Image.acreate(
-                prompt=prompt,
-                model='dall-e-3',
-                n=1,
-                size=self.config['image_size']
-            )
+            response = await aclient.images.generate(prompt=prompt,
+            model='dall-e-3',
+            n=1,
+            size=self.config['image_size'])
 
             if 'data' not in response or len(response['data']) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
@@ -348,7 +347,7 @@ class OpenAIHelper:
         try:
             with open(filename, "rb") as audio:
                 prompt_text = self.config['whisper_prompt']
-                result = await openai.Audio.atranscribe("whisper-1", audio, prompt=prompt_text)
+                result = await aclient.audio.transcribe("whisper-1", audio, prompt=prompt_text)
                 return result.text
         except Exception as e:
             logging.exception(e)
@@ -400,11 +399,9 @@ class OpenAIHelper:
             {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
             {"role": "user", "content": str(conversation)}
         ]
-        response = await openai.ChatCompletion.acreate(
-            model=self.config['model'],
-            messages=messages,
-            temperature=0.4
-        )
+        response = await aclient.chat.completions.create(model=self.config['model'],
+        messages=messages,
+        temperature=0.4)
         return response.choices[0]['message']['content']
 
     def __max_model_tokens(self):
