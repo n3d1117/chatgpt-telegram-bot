@@ -8,8 +8,6 @@ import tiktoken
 import openai
 from openai import AsyncOpenAI
 
-aclient = AsyncOpenAI(api_key=config['api_key'])
-
 import requests
 import json
 from datetime import date
@@ -83,6 +81,9 @@ def localized_text(key, bot_language):
         return key
 
 
+aclient = None
+
+
 class OpenAIHelper:
     """
     ChatGPT helper class.
@@ -94,12 +95,14 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
-        
-        raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy=config['proxy'])'")
+        global aclient
+        aclient = AsyncOpenAI(api_key=config['api_key'])
+        # raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy=config['proxy'])'")
         self.config = config
         self.plugin_manager = plugin_manager
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
+
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
         """
