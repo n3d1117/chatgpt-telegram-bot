@@ -193,7 +193,7 @@ class OpenAIHelper:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(openai.error.RateLimitError),
+        retry=retry_if_exception_type(openai.RateLimitError),
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
