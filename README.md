@@ -19,21 +19,20 @@ A [Telegram bot](https://core.telegram.org/bots/api) that integrates with OpenAI
 ![plugins](https://github.com/n3d1117/chatgpt-telegram-bot/assets/11541888/83d5e0cd-e09a-463d-a292-722f919e929f)
 
 ## Features
-- [x] (NEW!) Support change model (gpt-3.5-turbo / gpt-4) on the fly in telegram
+- [x] (NEW!) Support change model (gpt-3.5-turbo / gpt-4 / gpt-4-turbo) on the fly in telegram
 - [x] Support markdown in answers
 - [x] Reset conversation with the `/reset` command
 - [x] Typing indicator while generating a response
 - [x] Access can be restricted by specifying a list of allowed users
 - [x] Docker and Proxy support
-- [x] Image generation using DALL·E via the `/image` command
+- [x] Image generation using DALL·E 3 via the `/image` command
 - [x] Transcribe audio and video messages using Whisper (may require [ffmpeg](https://ffmpeg.org))
 - [x] Automatic conversation summary to avoid excessive token usage
 - [x] Track token usage per user - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] Get personal token usage statistics via the `/stats` command - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] User budgets and guest budgets - by [@AlexHTW](https://github.com/AlexHTW)
 - [x] Stream support
-- [x] GPT-4 support
-  - If you have access to the GPT-4 API, simply change the `OPENAI_MODEL` parameter to `gpt-4`
+- [x] GPT-4 and GPT-4 Turbo support, you can change version using `/model` command, via bot, on the fly.
 - [x] Localized bot language
   - Available languages :gb: :de: :ru: :tr: :it: :finland: :es: :indonesia: :netherlands: :cn: :taiwan: :vietnam: :iran: :brazil: :ukraine:
 - [x] Improved inline queries support for group and private chats - by [@bugfloyd](https://github.com/bugfloyd)

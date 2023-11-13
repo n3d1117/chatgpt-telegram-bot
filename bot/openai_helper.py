@@ -325,6 +325,7 @@ class OpenAIHelper:
         try:
             response = await openai.Image.acreate(
                 prompt=prompt,
+                model='dall-e-3',
                 n=1,
                 size=self.config['image_size']
             )
