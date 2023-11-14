@@ -9,7 +9,7 @@ from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
-from telegram.error import RetryAfter, TimedOut
+from telegram.error import RetryAfter, TimedOut, BadRequest
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext
 
@@ -460,14 +460,28 @@ class ChatGPTTelegramBot:
                 if str(user_id) not in allowed_user_ids and 'guests' in self.usage:
                     self.usage["guests"].add_vision_tokens(tokens, vision_token_price)
 
-
-                await update.effective_message.reply_text(
-                    message_thread_id=get_thread_id(update),
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    text=interpretation,
-                    parse_mode=constants.ParseMode.MARKDOWN
-                )
-
+                try:
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=interpretation,
+                        parse_mode=constants.ParseMode.MARKDOWN
+                    )
+                except BadRequest:
+                    try:
+                        await update.effective_message.reply_text(
+                            message_thread_id=get_thread_id(update),
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            text=interpretation
+                        )
+                    except Exception as e:
+                        logging.exception(e)
+                        await update.effective_message.reply_text(
+                            message_thread_id=get_thread_id(update),
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            text=f"{localized_text('vision_fail', bot_language)}: {str(e)}",
+                            parse_mode=constants.ParseMode.MARKDOWN
+                        )
             except Exception as e:
                 logging.exception(e)
                 await update.effective_message.reply_text(
