@@ -6,7 +6,6 @@ import os
 import tiktoken
 
 import openai
-from openai import AsyncOpenAI
 
 import requests
 import json
@@ -20,7 +19,7 @@ from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
-GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613")
+GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_128K_MODELS = ("gpt-4-1106-preview", "gpt-4-vision-preview")
@@ -81,9 +80,6 @@ def localized_text(key, bot_language):
         return key
 
 
-aclient = None
-
-
 class OpenAIHelper:
     """
     ChatGPT helper class.
@@ -95,14 +91,12 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
-        global aclient
-        aclient = AsyncOpenAI(api_key=config['api_key'])
-        # raise Exception("The 'openai.proxy' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(proxy=config['proxy'])'")
+        openai.api_key = config['api_key']
+        openai.proxy = config['proxy']
         self.config = config
         self.plugin_manager = plugin_manager
         self.conversations: dict[int: list] = {}  # {chat_id: history}
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
-
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
         """
@@ -199,7 +193,7 @@ class OpenAIHelper:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(openai.RateLimitError),
+        retry=retry_if_exception_type(openai.error.RateLimitError),
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
@@ -256,9 +250,9 @@ class OpenAIHelper:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
                     common_args['function_call'] = 'auto'
 
-            return await aclient.chat.completions.create(**common_args)
+            return await openai.ChatCompletion.acreate(**common_args)
 
-        except openai.RateLimitError as e:
+        except openai.error.RateLimitError as e:
             raise e
 
         except openai.error.InvalidRequestError as e:
@@ -312,11 +306,13 @@ class OpenAIHelper:
             return function_response, plugins_used
 
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
-        response = await aclient.chat.completions.create(model=self.config['model'],
-        messages=self.conversations[chat_id],
-        functions=self.plugin_manager.get_functions_specs(),
-        function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
-        stream=stream)
+        response = await openai.ChatCompletion.acreate(
+            model=self.config['model'],
+            messages=self.conversations[chat_id],
+            functions=self.plugin_manager.get_functions_specs(),
+            function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
+            stream=stream
+        )
         return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
@@ -327,10 +323,14 @@ class OpenAIHelper:
         """
         bot_language = self.config['bot_language']
         try:
-            response = await aclient.images.generate(prompt=prompt,
-            model='dall-e-3',
-            n=1,
-            size=self.config['image_size'])
+            response = await openai.Image.acreate(
+                prompt=prompt,
+                n=1,
+                model=self.config['image_model'],
+                quality=self.config['image_quality'],
+                style=self.config['image_style'],
+                size=self.config['image_size']
+            )
 
             if 'data' not in response or len(response['data']) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
@@ -350,7 +350,7 @@ class OpenAIHelper:
         try:
             with open(filename, "rb") as audio:
                 prompt_text = self.config['whisper_prompt']
-                result = await aclient.audio.transcribe("whisper-1", audio, prompt=prompt_text)
+                result = await openai.Audio.atranscribe("whisper-1", audio, prompt=prompt_text)
                 return result.text
         except Exception as e:
             logging.exception(e)
@@ -402,9 +402,11 @@ class OpenAIHelper:
             {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
             {"role": "user", "content": str(conversation)}
         ]
-        response = await aclient.chat.completions.create(model=self.config['model'],
-        messages=messages,
-        temperature=0.4)
+        response = await openai.ChatCompletion.acreate(
+            model=self.config['model'],
+            messages=messages,
+            temperature=0.4
+        )
         return response.choices[0]['message']['content']
 
     def __max_model_tokens(self):
