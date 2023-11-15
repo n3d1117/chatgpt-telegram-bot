@@ -15,7 +15,7 @@ from calendar import monthrange
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-from utils import is_direct_result
+from utils import is_direct_result, compute_image_diff
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
@@ -333,6 +333,39 @@ class OpenAIHelper:
             return response.data[0].url, self.config['image_size']
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+    
+    async def edit_image(self, chat_id, orig_image, modified_image, prompt):
+        """
+        Edits a given PNG image (and the mask) using the Dalle 2 model.
+        """
+        try:
+
+            mask_image = compute_image_diff(orig_image, modified_image)
+
+            args = {
+                'model': 'dall-e-2', # for now only this is supported
+                'n': 1,
+                'size':self.config['image_size'],
+                'image':orig_image,
+                'prompt':prompt,
+                'mask':mask_image
+            }
+
+            response = await self.client.images.edit(**args)
+            
+
+            
+            image_urls = [_.url for _ in response.data]
+            
+            return image_urls, self.config['image_size']
+        
+        except openai.RateLimitError as e:
+            raise e
+        except openai.BadRequestError as e:
+            raise Exception(f"⚠️ _{localized_text('openai_invalid', self.config['bot_language'])}._ ⚠️\n{str(e)}") from e
+        except Exception as e:
+            logging.exception(e)
+            raise Exception(f"⚠️ _{localized_text('error', self.config['bot_language'])}._ ⚠️\n{str(e)}") from e
 
     async def transcribe(self, filename):
         """
