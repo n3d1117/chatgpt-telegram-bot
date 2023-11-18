@@ -600,7 +600,7 @@ class ChatGPTTelegramBot:
                 try:
                     
                     prompt = update.message.caption[len('/edit '):].replace('\n', ' ')
-                    caption = f'prompt: {prompt}\nReply to this message with the mask in png format'
+                    caption = f'prompt: {prompt}\nReply to this message with the masked image'
 
                     await update.effective_message.reply_document(
                         reply_to_message_id=get_reply_to_message_id(self.config, update),
