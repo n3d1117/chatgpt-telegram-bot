@@ -10,6 +10,7 @@ import openai
 import requests
 import json
 import httpx
+import io
 from datetime import date
 from calendar import monthrange
 
@@ -339,6 +340,28 @@ class OpenAIHelper:
                 )
 
             return response.data[0].url, self.config['image_size']
+        except Exception as e:
+            raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+
+    async def generate_speech(self, text: str) -> tuple[any, int]:
+        """
+        Generates an audio from the given text using TTS model.
+        :param prompt: The text to send to the model
+        :return: The audio in bytes and the text size
+        """
+        bot_language = self.config['bot_language']
+        try:
+            response = await self.client.audio.speech.create(
+                model=self.config['tts_model'],
+                voice=self.config['tts_voice'],
+                input=text,
+                response_format='opus'
+            )
+
+            temp_file = io.BytesIO()
+            temp_file.write(response.read())
+            temp_file.seek(0)
+            return temp_file, len(text)
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
