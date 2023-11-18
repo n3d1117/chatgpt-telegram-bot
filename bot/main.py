@@ -31,6 +31,7 @@ def main():
     functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
     openai_config = {
+        'api_base': os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com'),
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',

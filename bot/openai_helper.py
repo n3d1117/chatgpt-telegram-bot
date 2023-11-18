@@ -96,6 +96,7 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
+        openai.api_base = config['api_base']
         openai.api_key = config['api_key']
         openai.proxy = config['proxy']
         self.config = config
