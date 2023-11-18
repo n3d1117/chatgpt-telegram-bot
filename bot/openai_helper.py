@@ -10,6 +10,7 @@ import openai
 import requests
 import json
 import httpx
+import io
 from datetime import date
 from calendar import monthrange
 from PIL import Image
@@ -21,11 +22,12 @@ from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
-GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613")
+GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
-GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS
+GPT_4_128K_MODELS = ("gpt-4-1106-preview",)
+GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
 
 
 def default_max_tokens(model: str) -> int:
@@ -39,11 +41,15 @@ def default_max_tokens(model: str) -> int:
         return base
     elif model in GPT_4_MODELS:
         return base * 2
-    elif model in GPT_3_16K_MODELS:
+    elif model in GPT_3_16K_MODELS:    
+        if model == "gpt-3.5-turbo-1106":
+            return 4096
         return base * 4
     elif model in GPT_4_32K_MODELS:
         return base * 8
     elif model in GPT_4_VISION_MODELS:
+        return 4096
+    elif model in GPT_4_128K_MODELS:
         return 4096
 
 
@@ -55,7 +61,7 @@ def are_functions_available(model: str) -> bool:
     if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314"):
         return False
     # Stable models will be updated to support functions on June 27, 2023
-    if model in ("gpt-3.5-turbo", "gpt-4", "gpt-4-32k"):
+    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k","gpt-4-1106-preview"):
         return datetime.date.today() > datetime.date(2023, 6, 27)
     if model == 'gpt-4-vision-preview':
         return False
@@ -326,6 +332,9 @@ class OpenAIHelper:
             response = await self.client.images.generate(
                 prompt=prompt,
                 n=1,
+                model=self.config['image_model'],
+                quality=self.config['image_quality'],
+                style=self.config['image_style'],
                 size=self.config['image_size']
             )
 
@@ -337,6 +346,28 @@ class OpenAIHelper:
                 )
 
             return response.data[0].url, self.config['image_size']
+        except Exception as e:
+            raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+
+    async def generate_speech(self, text: str) -> tuple[any, int]:
+        """
+        Generates an audio from the given text using TTS model.
+        :param prompt: The text to send to the model
+        :return: The audio in bytes and the text size
+        """
+        bot_language = self.config['bot_language']
+        try:
+            response = await self.client.audio.speech.create(
+                model=self.config['tts_model'],
+                voice=self.config['tts_voice'],
+                input=text,
+                response_format='opus'
+            )
+
+            temp_file = io.BytesIO()
+            temp_file.write(response.read())
+            temp_file.seek(0)
+            return temp_file, len(text)
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
@@ -372,7 +403,7 @@ class OpenAIHelper:
             message = {'role':'user', 'content':[{'type':'text', 'text':prompt}, {'type':'image_url', \
                         'image_url': {'url':f'data:image/jpeg;base64,{image}', 'detail':self.config['vision_detail'] } }]}
             common_args = {
-                'model': self.config['model'],
+                'model': 'gpt-4-vision-preview', # the only one that currently makes sense here
                 'messages': self.conversations[chat_id] + [message],
                 'temperature': self.config['temperature'],
                 'n': 1, # several choices is not implemented yet
@@ -451,7 +482,7 @@ class OpenAIHelper:
             messages=messages,
             temperature=0.4
         )
-        return response.choices[0]['message']['content']
+        return response.choices[0].message.content
 
     def __max_model_tokens(self):
         base = 4096
@@ -464,6 +495,8 @@ class OpenAIHelper:
         if self.config['model'] in GPT_4_32K_MODELS:
             return base * 8
         if self.config['model'] in GPT_4_VISION_MODELS:
+            return base * 31
+        if self.config['model'] in GPT_4_128K_MODELS:
             return base * 31
         raise NotImplementedError(
             f"Max tokens for model {self.config['model']} is not implemented yet."
@@ -485,7 +518,7 @@ class OpenAIHelper:
         if model in GPT_3_MODELS + GPT_3_16K_MODELS:
             tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             tokens_per_name = -1  # if there's a name, the role is omitted
-        elif model in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS:
+        elif model in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS:
             tokens_per_message = 3
             tokens_per_name = 1
         else:
@@ -507,9 +540,9 @@ class OpenAIHelper:
         :return: the number of tokens required
         """
         image = Image.open(fileobj)
-        model = self.config['model']
+        model = 'gpt-4-vision-preview' # fixed for now
         if model not in GPT_4_VISION_MODELS:
-            raise NotImplementedError(f"""num_tokens_from_messages() is not implemented for model {model}.""")
+            raise NotImplementedError(f"""count_tokens_vision() is not implemented for model {model}.""")
         
         w, h = image.size
         if w > h: w, h = h, w

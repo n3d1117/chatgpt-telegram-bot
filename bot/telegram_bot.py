@@ -48,6 +48,9 @@ class ChatGPTTelegramBot:
         if self.config.get('enable_image_generation', False):
             self.commands.append(BotCommand(command='image', description=localized_text('image_description', bot_language)))
 
+        if self.config.get('enable_tts_generation', False):
+            self.commands.append(BotCommand(command='tts', description=localized_text('tts_description', bot_language)))
+
         self.group_commands = [BotCommand(
             command='chat', description=localized_text('chat_description', bot_language)
         )] + self.commands
@@ -97,6 +100,7 @@ class ChatGPTTelegramBot:
         (transcribe_minutes_today, transcribe_seconds_today, transcribe_minutes_month,
          transcribe_seconds_month) = self.usage[user_id].get_current_transcription_duration()
         vision_today, vision_month = self.usage[user_id].get_current_vision_tokens()
+        characters_today, characters_month = self.usage[user_id].get_current_tts_usage()
         current_cost = self.usage[user_id].get_current_cost()
 
         chat_id = update.effective_chat.id
@@ -119,12 +123,17 @@ class ChatGPTTelegramBot:
         text_today_vision = ""
         if self.config.get('enable_vision', False):
             text_today_vision = f"{vision_today} {localized_text('stats_vision', bot_language)}\n"
+
+        text_today_tts = ""
+        if self.config.get('enable_tts_generation', False):
+            text_today_tts = f"{characters_today} {localized_text('stats_tts', bot_language)}\n"
         
         text_today = (
             f"*{localized_text('usage_today', bot_language)}:*\n"
             f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
             f"{text_today_images}"  # Include the image statistics for today if applicable
             f"{text_today_vision}"
+            f"{text_today_tts}"
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
@@ -138,6 +147,10 @@ class ChatGPTTelegramBot:
         text_month_vision = ""
         if self.config.get('enable_vision', False):
             text_month_vision = f"{vision_month} {localized_text('stats_vision', bot_language)}\n"
+
+        text_month_tts = ""
+        if self.config.get('enable_tts_generation', False):
+            text_month_tts = f"{characters_month} {localized_text('stats_tts', bot_language)}\n"
         
         # Check if image generation is enabled and, if so, generate the image statistics for the month
         text_month = (
@@ -145,6 +158,7 @@ class ChatGPTTelegramBot:
             f"{tokens_month} {localized_text('stats_tokens', bot_language)}\n"
             f"{text_month_images}"  # Include the image statistics for the month if applicable
             f"{text_month_vision}"
+            f"{text_month_tts}"
             f"{transcribe_minutes_month} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_month} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_month']:.2f}"
@@ -241,10 +255,18 @@ class ChatGPTTelegramBot:
         async def _generate():
             try:
                 image_url, image_size = await self.openai.generate_image(prompt=image_query)
-                await update.effective_message.reply_photo(
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    photo=image_url
-                )
+                if self.config['image_receive_mode'] == 'photo':
+                    await update.effective_message.reply_photo(
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        photo=image_url
+                    )
+                elif self.config['image_receive_mode'] == 'document':
+                    await update.effective_message.reply_document(
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        document=image_url
+                    )
+                else:
+                    raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
                 # add image request to users usage tracker
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
@@ -262,6 +284,52 @@ class ChatGPTTelegramBot:
                 )
 
         await wrap_with_indicator(update, context, _generate, constants.ChatAction.UPLOAD_PHOTO)
+
+    async def tts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Generates an speech for the given input using TTS APIs
+        """
+        if not self.config['enable_tts_generation'] \
+                or not await self.check_allowed_and_within_budget(update, context):
+            return
+
+        tts_query = message_text(update.message)
+        if tts_query == '':
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text=localized_text('tts_no_prompt', self.config['bot_language'])
+            )
+            return
+
+        logging.info(f'New speech generation request received from user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})')
+
+        async def _generate():
+            try:
+                speech_file, text_length = await self.openai.generate_speech(text=tts_query)
+
+                await update.effective_message.reply_voice(
+                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    voice=speech_file
+                )
+                speech_file.close()
+                # add image request to users usage tracker
+                user_id = update.message.from_user.id
+                self.usage[user_id].add_tts_request(text_length, self.config['tts_model'], self.config['tts_prices'])
+                # add guest chat request to guest usage tracker
+                if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
+                    self.usage["guests"].add_tts_request(text_length, self.config['tts_model'], self.config['tts_prices'])
+
+            except Exception as e:
+                logging.exception(e)
+                await update.effective_message.reply_text(
+                    message_thread_id=get_thread_id(update),
+                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    text=f"{localized_text('tts_fail', self.config['bot_language'])}: {str(e)}",
+                    parse_mode=constants.ParseMode.MARKDOWN
+                )
+
+        await wrap_with_indicator(update, context, _generate, constants.ChatAction.UPLOAD_VOICE)
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -909,6 +977,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
+        application.add_handler(CommandHandler('tts', self.tts))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
