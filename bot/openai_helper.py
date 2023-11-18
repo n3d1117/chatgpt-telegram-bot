@@ -9,6 +9,7 @@ import openai
 
 import requests
 import json
+import httpx
 from datetime import date
 from calendar import monthrange
 
@@ -96,8 +97,8 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
-        openai.api_key = config['api_key']
-        openai.proxy = config['proxy']
+        http_client = httpx.AsyncClient(proxies=config['proxy']) if 'proxy' in config else None
+        self.client = openai.AsyncOpenAI(api_key=config['api_key'], http_client=http_client)
         self.config = config
         self.plugin_manager = plugin_manager
         self.conversations: dict[int: list] = {}  # {chat_id: history}
@@ -131,14 +132,14 @@ class OpenAIHelper:
 
         if len(response.choices) > 1 and self.config['n_choices'] > 1:
             for index, choice in enumerate(response.choices):
-                content = choice['message']['content'].strip()
+                content = choice.message.content.strip()
                 if index == 0:
                     self.__add_to_history(chat_id, role="assistant", content=content)
                 answer += f'{index + 1}\u20e3\n'
                 answer += content
                 answer += '\n\n'
         else:
-            answer = response.choices[0]['message']['content'].strip()
+            answer = response.choices[0].message.content.strip()
             self.__add_to_history(chat_id, role="assistant", content=answer)
 
         bot_language = self.config['bot_language']
@@ -146,15 +147,15 @@ class OpenAIHelper:
         plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
         if self.config['show_usage']:
             answer += "\n\n---\n" \
-                      f"💰 {str(response.usage['total_tokens'])} {localized_text('stats_tokens', bot_language)}" \
-                      f" ({str(response.usage['prompt_tokens'])} {localized_text('prompt', bot_language)}," \
-                      f" {str(response.usage['completion_tokens'])} {localized_text('completion', bot_language)})"
+                      f"💰 {str(response.usage.total_tokens)} {localized_text('stats_tokens', bot_language)}" \
+                      f" ({str(response.usage.prompt_tokens)} {localized_text('prompt', bot_language)}," \
+                      f" {str(response.usage.completion_tokens)} {localized_text('completion', bot_language)})"
             if show_plugins_used:
                 answer += f"\n🔌 {', '.join(plugin_names)}"
         elif show_plugins_used:
             answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
-        return answer, response.usage['total_tokens']
+        return answer, response.usage.total_tokens
 
     async def get_chat_response_stream(self, chat_id: int, query: str):
         """
@@ -172,11 +173,11 @@ class OpenAIHelper:
                 return
 
         answer = ''
-        async for item in response:
-            if 'choices' not in item or len(item.choices) == 0:
+        async for chunk in response:
+            if len(chunk.choices) == 0:
                 continue
-            delta = item.choices[0].delta
-            if 'content' in delta and delta.content is not None:
+            delta = chunk.choices[0].delta
+            if delta.content:
                 answer += delta.content
                 yield answer, 'not_finished'
         answer = answer.strip()
@@ -196,7 +197,7 @@ class OpenAIHelper:
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(openai.error.RateLimitError),
+        retry=retry_if_exception_type(openai.RateLimitError),
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
@@ -249,13 +250,12 @@ class OpenAIHelper:
                 if len(functions) > 0:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
                     common_args['function_call'] = 'auto'
+            return await self.client.chat.completions.create(**common_args)
 
-            return await openai.ChatCompletion.acreate(**common_args)
-
-        except openai.error.RateLimitError as e:
+        except openai.RateLimitError as e:
             raise e
 
-        except openai.error.InvalidRequestError as e:
+        except openai.BadRequestError as e:
             raise Exception(f"⚠️ _{localized_text('openai_invalid', bot_language)}._ ⚠️\n{str(e)}") from e
 
         except Exception as e:
@@ -266,28 +266,27 @@ class OpenAIHelper:
         arguments = ''
         if stream:
             async for item in response:
-                if 'choices' in item and len(item.choices) > 0:
+                if len(item.choices) > 0:
                     first_choice = item.choices[0]
-                    if 'delta' in first_choice \
-                            and 'function_call' in first_choice.delta:
-                        if 'name' in first_choice.delta.function_call:
+                    if first_choice.delta and first_choice.delta.function_call:
+                        if first_choice.delta.function_call.name:
                             function_name += first_choice.delta.function_call.name
-                        if 'arguments' in first_choice.delta.function_call:
-                            arguments += str(first_choice.delta.function_call.arguments)
-                    elif 'finish_reason' in first_choice and first_choice.finish_reason == 'function_call':
+                        if first_choice.delta.function_call.arguments:
+                            arguments += first_choice.delta.function_call.arguments
+                    elif first_choice.finish_reason and first_choice.finish_reason == 'function_call':
                         break
                     else:
                         return response, plugins_used
                 else:
                     return response, plugins_used
         else:
-            if 'choices' in response and len(response.choices) > 0:
+            if len(response.choices) > 0:
                 first_choice = response.choices[0]
-                if 'function_call' in first_choice.message:
-                    if 'name' in first_choice.message.function_call:
+                if first_choice.message.function_call:
+                    if first_choice.message.function_call.name:
                         function_name += first_choice.message.function_call.name
-                    if 'arguments' in first_choice.message.function_call:
-                        arguments += str(first_choice.message.function_call.arguments)
+                    if first_choice.message.function_call.arguments:
+                        arguments += first_choice.message.function_call.arguments
                 else:
                     return response, plugins_used
             else:
@@ -306,7 +305,7 @@ class OpenAIHelper:
             return function_response, plugins_used
 
         self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
-        response = await openai.ChatCompletion.acreate(
+        response = await self.client.chat.completions.create(
             model=self.config['model'],
             messages=self.conversations[chat_id],
             functions=self.plugin_manager.get_functions_specs(),
@@ -323,7 +322,7 @@ class OpenAIHelper:
         """
         bot_language = self.config['bot_language']
         try:
-            response = await openai.Image.acreate(
+            response = await self.client.images.generate(
                 prompt=prompt,
                 n=1,
                 model=self.config['image_model'],
@@ -332,14 +331,14 @@ class OpenAIHelper:
                 size=self.config['image_size']
             )
 
-            if 'data' not in response or len(response['data']) == 0:
+            if len(response.data) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
                 raise Exception(
                     f"⚠️ _{localized_text('error', bot_language)}._ "
                     f"⚠️\n{localized_text('try_again', bot_language)}."
                 )
 
-            return response['data'][0]['url'], self.config['image_size']
+            return response.data[0].url, self.config['image_size']
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
@@ -350,7 +349,7 @@ class OpenAIHelper:
         try:
             with open(filename, "rb") as audio:
                 prompt_text = self.config['whisper_prompt']
-                result = await openai.Audio.atranscribe("whisper-1", audio, prompt=prompt_text)
+                result = await self.client.audio.transcriptions.create(model="whisper-1", file=audio, prompt=prompt_text)
                 return result.text
         except Exception as e:
             logging.exception(e)
@@ -402,12 +401,12 @@ class OpenAIHelper:
             {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
             {"role": "user", "content": str(conversation)}
         ]
-        response = await openai.ChatCompletion.acreate(
+        response = await self.client.chat.completions.create(
             model=self.config['model'],
             messages=messages,
             temperature=0.4
         )
-        return response.choices[0]['message']['content']
+        return response.choices[0].message.content
 
     def __max_model_tokens(self):
         base = 4096
