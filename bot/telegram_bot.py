@@ -242,10 +242,18 @@ class ChatGPTTelegramBot:
         async def _generate():
             try:
                 image_url, image_size = await self.openai.generate_image(prompt=image_query)
-                await update.effective_message.reply_photo(
-                    reply_to_message_id=get_reply_to_message_id(self.config, update),
-                    photo=image_url
-                )
+                if self.config['image_receive_mode'] == 'photo':
+                    await update.effective_message.reply_photo(
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        photo=image_url
+                    )
+                elif self.config['image_receive_mode'] == 'document':
+                    await update.effective_message.reply_document(
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        document=image_url
+                    )
+                else:
+                    raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
                 # add image request to users usage tracker
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
