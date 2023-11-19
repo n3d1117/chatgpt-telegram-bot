@@ -421,7 +421,7 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=content)
             
 
-            return content, self.__count_tokens_vision(fileobj)
+            return content, response.usage.total_tokens
         
         except openai.RateLimitError as e:
             raise e
@@ -533,34 +533,36 @@ class OpenAIHelper:
         num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
         return num_tokens
 
-    def __count_tokens_vision(self, fileobj) -> int:
-        """
-        Counts the number of tokens for interpreting an image.
-        :param image: image to interpret
-        :return: the number of tokens required
-        """
-        image = Image.open(fileobj)
-        model = 'gpt-4-vision-preview' # fixed for now
-        if model not in GPT_4_VISION_MODELS:
-            raise NotImplementedError(f"""count_tokens_vision() is not implemented for model {model}.""")
+    # no longer needed
+
+    # def __count_tokens_vision(self, fileobj) -> int:
+    #     """
+    #     Counts the number of tokens for interpreting an image.
+    #     :param image: image to interpret
+    #     :return: the number of tokens required
+    #     """
+    #     image = Image.open(fileobj)
+    #     model = 'gpt-4-vision-preview' # fixed for now
+    #     if model not in GPT_4_VISION_MODELS:
+    #         raise NotImplementedError(f"""count_tokens_vision() is not implemented for model {model}.""")
         
-        w, h = image.size
-        if w > h: w, h = h, w
-        # this computation follows https://platform.openai.com/docs/guides/vision and https://openai.com/pricing#gpt-4-turbo
-        base_tokens = 85
-        detail = self.config['vision_detail']
-        if detail == 'low':
-            return base_tokens
-        elif detail == 'high':
-            f = max(w / 768, h / 2048)
-            if f > 1:
-                w, h = int(w / f), int(h / f)
-            tw, th = (w + 511) // 512, (h + 511) // 512
-            tiles = tw * th
-            num_tokens = base_tokens + tiles * 170
-            return num_tokens
-        else:
-            raise NotImplementedError(f"""unknown parameter detail={detail} for model {model}.""")
+    #     w, h = image.size
+    #     if w > h: w, h = h, w
+    #     # this computation follows https://platform.openai.com/docs/guides/vision and https://openai.com/pricing#gpt-4-turbo
+    #     base_tokens = 85
+    #     detail = self.config['vision_detail']
+    #     if detail == 'low':
+    #         return base_tokens
+    #     elif detail == 'high':
+    #         f = max(w / 768, h / 2048)
+    #         if f > 1:
+    #             w, h = int(w / f), int(h / f)
+    #         tw, th = (w + 511) // 512, (h + 511) // 512
+    #         tiles = tw * th
+    #         num_tokens = base_tokens + tiles * 170
+    #         return num_tokens
+    #     else:
+    #         raise NotImplementedError(f"""unknown parameter detail={detail} for model {model}.""")
 
     # No longer works as of July 21st 2023, as OpenAI has removed the billing API
     # def get_billing_current_month(self):
