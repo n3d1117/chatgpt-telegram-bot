@@ -3,7 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
-from openai_helper import OpenAIHelper, default_max_tokens
+from plugin_manager import PluginManager
+from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
 
 
@@ -27,6 +28,7 @@ def main():
 
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
     openai_config = {
         'api_key': os.environ['OPENAI_API_KEY'],
@@ -39,16 +41,26 @@ def main():
         'max_tokens': int(os.environ.get('MAX_TOKENS', max_tokens_default)),
         'n_choices': int(os.environ.get('N_CHOICES', 1)),
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
+        'image_model': os.environ.get('IMAGE_MODEL', 'dall-e-2'),
+        'image_quality': os.environ.get('IMAGE_QUALITY', 'standard'),
+        'image_style': os.environ.get('IMAGE_STYLE', 'vivid'),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
         'model': model,
+        'enable_functions': os.environ.get('ENABLE_FUNCTIONS', str(functions_available)).lower() == 'true',
+        'functions_max_consecutive_calls': int(os.environ.get('FUNCTIONS_MAX_CONSECUTIVE_CALLS', 10)),
         'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
         'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
+        'show_plugins_used': os.environ.get('SHOW_PLUGINS_USED', 'false').lower() == 'true',
+        'whisper_prompt': os.environ.get('WHISPER_PROMPT', ''),
+        'tts_model': os.environ.get('TTS_MODEL', 'tts-1'),
+        'tts_voice': os.environ.get('TTS_VOICE', 'alloy'),
     }
 
-    # log deprecation warning for old budget variable names
-    # old variables are caught in the telegram_config definition for now
-    # remove support for old budget names at some point in the future
+    if openai_config['enable_functions'] and not functions_available:
+        logging.error(f'ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. '
+                        f'Please set ENABLE_FUNCTIONS to false or use a model that supports it.')
+        exit(1)
     if os.environ.get('MONTHLY_USER_BUDGETS') is not None:
         logging.warning('The environment variable MONTHLY_USER_BUDGETS is deprecated. '
                         'Please use USER_BUDGETS with BUDGET_PERIOD instead.')
@@ -63,6 +75,7 @@ def main():
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
         'enable_image_generation': os.environ.get('ENABLE_IMAGE_GENERATION', 'true').lower() == 'true',
         'enable_transcription': os.environ.get('ENABLE_TRANSCRIPTION', 'true').lower() == 'true',
+        'enable_tts_generation': os.environ.get('ENABLE_TTS_GENERATION', 'true').lower() == 'true',
         'budget_period': os.environ.get('BUDGET_PERIOD', 'monthly').lower(),
         'user_budgets': os.environ.get('USER_BUDGETS', os.environ.get('MONTHLY_USER_BUDGETS', '*')),
         'guest_budget': float(os.environ.get('GUEST_BUDGET', os.environ.get('MONTHLY_GUEST_BUDGET', '100.0'))),
@@ -74,13 +87,21 @@ def main():
         'group_trigger_keyword': os.environ.get('GROUP_TRIGGER_KEYWORD', ''),
         'token_price': float(os.environ.get('TOKEN_PRICE', 0.002)),
         'image_prices': [float(i) for i in os.environ.get('IMAGE_PRICES', "0.016,0.018,0.02").split(",")],
+        'image_receive_mode': os.environ.get('IMAGE_FORMAT', "photo"),
+        'tts_model': os.environ.get('TTS_MODEL', 'tts-1'),
+        'tts_prices': [float(i) for i in os.environ.get('TTS_PRICES', "0.015,0.030").split(",")],
         'transcription_price': float(os.environ.get('TRANSCRIPTION_PRICE', 0.006)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
         'server_url': os.environ.get('SERVER_URL', '')
     }
 
+    plugin_config = {
+        'plugins': os.environ.get('PLUGINS', '').split(',')
+    }
+
     # Setup and run ChatGPT and Telegram bot
-    openai_helper = OpenAIHelper(config=openai_config)
+    plugin_manager = PluginManager(config=plugin_config)
+    openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
     telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
     telegram_bot.run()
 
