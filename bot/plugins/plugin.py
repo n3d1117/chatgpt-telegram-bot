@@ -23,7 +23,7 @@ class Plugin(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         """
         Execute the plugin and return a JSON serializable response
         """

@@ -26,5 +26,5 @@ class CryptoPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         return requests.get(f"https://api.coincap.io/v2/rates/{kwargs['asset']}").json()

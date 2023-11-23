@@ -294,7 +294,7 @@ class OpenAIHelper:
                 return response, plugins_used
 
         logging.info(f'Calling function {function_name} with arguments {arguments}')
-        function_response = await self.plugin_manager.call_function(function_name, arguments)
+        function_response = await self.plugin_manager.call_function(function_name, self, arguments)
 
         if function_name not in plugins_used:
             plugins_used += (function_name,)

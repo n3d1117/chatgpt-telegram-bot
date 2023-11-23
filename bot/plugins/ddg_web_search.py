@@ -46,7 +46,7 @@ class DDGWebSearchPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         with DDGS() as ddgs:
             ddgs_gen = ddgs.text(
                 kwargs['query'],
