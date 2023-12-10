@@ -799,7 +799,7 @@
         "ask_chatgpt": "ChatGPTdan so'rash",
         "loading": "Yuklanmoqda...",
         "function_unavailable_in_inline_mode": "Bu funksiya inline rejimida mavjud emas"
-    }
+    },
     "pl": {
         "help_description": "Pokaż wiadomości pomocnicze",
         "reset_description": "Zresetuj konwersację. Opcjonalnie dołącz nową frazę (np. /reset Jesteś pomocnym asystentem)",
