@@ -31,7 +31,7 @@ class GTTSTextToSpeech(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         tts = gTTS(kwargs['text'], lang=kwargs.get('lang', 'en'))
         output = f'gtts_{datetime.datetime.now().timestamp()}.mp3'
         tts.save(output)

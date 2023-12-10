@@ -35,7 +35,7 @@ class WorldTimeApiPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         timezone = kwargs.get('timezone', self.default_timezone)
         url = f'https://worldtimeapi.org/api/timezone/{timezone}'
 
