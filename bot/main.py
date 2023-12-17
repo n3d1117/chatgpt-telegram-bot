@@ -100,6 +100,9 @@ def main():
         'tts_prices': [float(i) for i in os.environ.get('TTS_PRICES', "0.015,0.030").split(",")],
         'transcription_price': float(os.environ.get('TRANSCRIPTION_PRICE', 0.006)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
+        'telegram_bot_api_url': os.environ.get('TELEGRAM_BOT_API_URL', 'https://api.telegram.org/bot'),
+        'telegram_bot_api_base_file_url': os.environ.get('TELEGRAM_BOT_API_BASE_FILE_URL', 'https://api.telegram.org/file/bot'),
+        'telegram_bot_api_local_mode': os.environ.get('TELEGRAM_BOT_API_LOCAL_MODE', 'false').lower() == 'true',
     }
 
     plugin_config = {
