@@ -85,23 +85,6 @@ def split_into_chunks(text: str, chunk_size: int = 4096) -> list[str]:
     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
-async def wrap_with_indicator(update: Update, context: CallbackContext, coroutine,
-                              chat_action: constants.ChatAction = "", is_inline=False):
-    """
-    Wraps a coroutine while repeatedly sending a chat action to the user.
-    """
-    task = context.application.create_task(coroutine(), update=update)
-    while not task.done():
-        if not is_inline:
-            context.application.create_task(
-                update.effective_chat.send_action(chat_action, message_thread_id=get_thread_id(update))
-            )
-        try:
-            await asyncio.wait_for(asyncio.shield(task), 4.5)
-        except asyncio.TimeoutError:
-            pass
-
-
 async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: int | None,
                                   message_id: str, text: str, markdown: bool = True, is_inline: bool = False):
     """

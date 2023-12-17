@@ -1,4 +1,5 @@
 import datetime
+import telegram
 from typing import Dict
 
 from gtts import gTTS
@@ -31,7 +32,7 @@ class GTTSTextToSpeech(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         tts = gTTS(kwargs['text'], lang=kwargs.get('lang', 'en'))
         output = f'gtts_{datetime.datetime.now().timestamp()}.mp3'
         tts.save(output)

@@ -1,3 +1,4 @@
+import telegram
 from typing import Dict
 
 from .plugin import Plugin
@@ -28,7 +29,7 @@ class DicePlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         return {
             'direct_result': {
                 'kind': 'dice',

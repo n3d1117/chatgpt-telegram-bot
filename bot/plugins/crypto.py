@@ -1,3 +1,4 @@
+import telegram
 from typing import Dict
 
 import requests
@@ -26,5 +27,5 @@ class CryptoPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         return requests.get(f"https://api.coincap.io/v2/rates/{kwargs['asset']}").json()

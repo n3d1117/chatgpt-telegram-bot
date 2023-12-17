@@ -122,7 +122,7 @@ class OpenAIHelper:
             self.reset_chat_history(chat_id)
         return len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id])
 
-    async def get_chat_response(self, chat_id: int, query: str) -> tuple[str, str]:
+    async def get_chat_response(self, bot: ChatGPTTelegramBot, tg_upd: telegram.Update, chat_id: int, query: str) -> tuple[str, str]:
         """
         Gets a full response from the GPT model.
         :param chat_id: The chat ID
@@ -132,7 +132,7 @@ class OpenAIHelper:
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query)
         if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
-            response, plugins_used = await self.__handle_function_call(chat_id, response)
+            response, plugins_used = await self.__handle_function_call(bot, tg_upd, chat_id, response)
             if is_direct_result(response):
                 return response, '0'
 
@@ -165,17 +165,19 @@ class OpenAIHelper:
 
         return answer, response.usage.total_tokens
 
-    async def get_chat_response_stream(self, chat_id: int, query: str):
+    async def get_chat_response_stream(self, bot: ChatGPTTelegramBot, tg_upd: telegram.Update, chat_id: int, query: str):
         """
         Stream response from the GPT model.
         :param chat_id: The chat ID
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used, or 'not_finished'
         """
+        import telegram_bot
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
-        if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
-            response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
+
+        if self.config['enable_functions']:
+            response, plugins_used = await self.__handle_function_call(bot, tg_upd, chat_id, response, stream=True)
             if is_direct_result(response):
                 yield response, '0'
                 return
@@ -269,7 +271,7 @@ class OpenAIHelper:
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
-    async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
+    async def __handle_function_call(self, bot: ChatGPTTelegramBot, tg_upd: telegram.Update, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
         arguments = ''
         if stream:
@@ -301,10 +303,14 @@ class OpenAIHelper:
                 return response, plugins_used
 
         logging.info(f'Calling function {function_name} with arguments {arguments}')
-        function_response = await self.plugin_manager.call_function(function_name, self, arguments)
+        function_response, function_response_dict = await self.plugin_manager.call_function(bot, tg_upd, chat_id, function_name, arguments)
 
         if function_name not in plugins_used:
             plugins_used += (function_name,)
+
+        # if "result" in function_response_dict and function_response_dict["result"] == "Success":
+        #     self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name, content=function_response)
+        #     return response, plugins_used
 
         if is_direct_result(function_response):
             self.__add_function_call_to_history(chat_id=chat_id, function_name=function_name,
@@ -320,7 +326,7 @@ class OpenAIHelper:
             function_call='auto' if times < self.config['functions_max_consecutive_calls'] else 'none',
             stream=stream
         )
-        return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
+        return await self.__handle_function_call(bot, tg_upd, chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
         """
