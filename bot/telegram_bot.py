@@ -1054,6 +1054,9 @@ class ChatGPTTelegramBot:
             .get_updates_proxy_url(self.config['proxy']) \
             .post_init(self.post_init) \
             .concurrent_updates(True) \
+            .base_url(self.config['telegram_bot_api_url']) \
+            .base_file_url(self.config['telegram_bot_api_base_file_url']) \
+            .local_mode(self.config['telegram_bot_api_local_mode']) \
             .build()
 
         application.add_handler(CommandHandler('reset', self.reset))
