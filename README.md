@@ -198,10 +198,17 @@ python bot/main.py
 ```
 
 #### Using Docker Compose
-
 Run the following command to build and run the Docker image:
 ```shell
-docker compose up
+docker-compose up
+```
+If you need start docker-compose in daemon - use command:
+```shell
+# to start:
+docker-compose up -d
+
+# to remove : 
+docker-compose remove
 ```
 
 #### Ready-to-use Docker images
