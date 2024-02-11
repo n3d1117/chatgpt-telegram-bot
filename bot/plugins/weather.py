@@ -19,7 +19,7 @@ class WeatherPlugin(Plugin):
         longitude_param = {"type": "string", "description": "Longitude of the location"}
         unit_param = {
             "type": "string",
-            "enum": ["celsius", "fahrenheit"],
+            "enum": ["fahrenheit"],
             "description": "The temperature unit to use. Infer this from the provided location.",
         }
         return [
