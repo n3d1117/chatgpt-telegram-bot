@@ -775,9 +775,11 @@ class OpenAIHelper:
             tokens_per_message = 3
             tokens_per_name = 1
         else:
-            raise NotImplementedError(
-                f"""num_tokens_from_messages() is not implemented for model {model}."""
+            tokens_per_message = (
+                4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             )
+            tokens_per_name = -1  # if there's a name, the role is omitted
+
         num_tokens = 0
         for message in messages:
             num_tokens += tokens_per_message
