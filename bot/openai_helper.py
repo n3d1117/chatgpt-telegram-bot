@@ -22,7 +22,7 @@ from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = (
-    "pplx-7b-chat",
+    "pplx-7b-online",
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0301",
     "gpt-3.5-turbo-0613",
@@ -130,9 +130,7 @@ class OpenAIHelper:
             httpx.AsyncClient(proxies=config["proxy"]) if "proxy" in config else None
         )
         self.client = openai.AsyncOpenAI(
-            api_key=config["api_key"],
-            http_client=http_client,
-            base_url=config["base_url"],
+            api_key=config["api_key"], http_client=http_client
         )
         self.config = config
         self.plugin_manager = plugin_manager
@@ -766,7 +764,7 @@ class OpenAIHelper:
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            encoding = tiktoken.get_encoding("cl100k_base")
+            encoding = tiktoken.get_encoding("gpt-3.5-turbo")
 
         if model in GPT_3_MODELS + GPT_3_16K_MODELS:
             tokens_per_message = (
