@@ -772,11 +772,9 @@ class OpenAIHelper:
                 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             )
             tokens_per_name = -1  # if there's a name, the role is omitted
-        elif (
-            model in ("pplx-7b-chat", "pplx-7b-online")
-        )
-            tokens_per_message = 0  # no tokens are counted for messages
-            tokens_per_name = 0  # no tokens are counted for names
+        elif (model in ("pplx-7b-chat", "pplx-7b-online")):
+            tokens_per_message = 0
+            tokens_per_name = 0
         elif (
             model
             in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
