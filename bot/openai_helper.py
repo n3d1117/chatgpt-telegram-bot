@@ -23,6 +23,7 @@ from plugin_manager import PluginManager
 # Models can be found here: https://platform.openai.com/docs/models/overview
 GPT_3_MODELS = (
     "pplx-7b-chat",
+    "pplx-7b-online",
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-0301",
     "gpt-3.5-turbo-0613",
