@@ -773,7 +773,7 @@ class OpenAIHelper:
             )
             tokens_per_name = -1  # if there's a name, the role is omitted
         elif (model in ("pplx-7b-chat", "pplx-7b-online")):
-            tokens_per_message = 8
+            tokens_per_message = -1
             tokens_per_name = -1
         elif (
             model
