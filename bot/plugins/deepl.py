@@ -49,4 +49,5 @@ class DeeplTranslatePlugin(Plugin):
             "text": kwargs['text'],
             "target_lang": kwargs['to_language']
         }
-        return requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]
+        translated_text = requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]
+        return translated_text.encode('unicode-escape').decode('unicode-escape')
