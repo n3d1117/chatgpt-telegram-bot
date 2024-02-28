@@ -3,4 +3,4 @@
 .github
 .gitignore
 docker-compose.yml
-Dockerfilegit 
+Dockerfile
