@@ -1,4 +1,3 @@
-from __future__ import annotations
 import datetime
 import logging
 import os
@@ -21,13 +20,12 @@ from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
-GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
-GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106")
-GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613")
-GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
+GPT_3_MODELS =("gpt-3.5-turbo-0125",)
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
-GPT_4_128K_MODELS = ("gpt-4-1106-preview",)
-GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
+GPT_4_128K_MODELS = ("gpt-4-0125-preview",)
+GPT_ALL_MODELS = GPT_3_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
+
+FUNCTION_CALL_COUNTER = 0
 
 
 def default_max_tokens(model: str) -> int:
@@ -39,14 +37,6 @@ def default_max_tokens(model: str) -> int:
     base = 1200
     if model in GPT_3_MODELS:
         return base
-    elif model in GPT_4_MODELS:
-        return base * 2
-    elif model in GPT_3_16K_MODELS:    
-        if model == "gpt-3.5-turbo-1106":
-            return 4096
-        return base * 4
-    elif model in GPT_4_32K_MODELS:
-        return base * 8
     elif model in GPT_4_VISION_MODELS:
         return 4096
     elif model in GPT_4_128K_MODELS:
@@ -61,7 +51,7 @@ def are_functions_available(model: str) -> bool:
     if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314"):
         return False
     # Stable models will be updated to support functions on June 27, 2023
-    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k","gpt-4-1106-preview"):
+    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k", "gpt-4-1106-preview"):
         return datetime.date.today() > datetime.date(2023, 6, 27)
     if model == 'gpt-4-vision-preview':
         return False
@@ -69,8 +59,9 @@ def are_functions_available(model: str) -> bool:
 
 
 # Load translations
-parent_dir_path = os.path.join(os.path.dirname(__file__), os.pardir)
-translations_file_path = os.path.join(parent_dir_path, 'translations.json')
+# parent_dir_path = os.path.join(os.path.dirname(__file__), os.pardir)
+translations_file_path = os.path.join('bot/resources/translations.json')
+logging.info(translations_file_path)
 with open(translations_file_path, 'r', encoding='utf-8') as f:
     translations = json.load(f)
 
@@ -175,6 +166,7 @@ class OpenAIHelper:
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query, stream=True)
         if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
+            logging.info(f"i am working and streaming")
             response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
             if is_direct_result(response):
                 yield response, '0'
@@ -189,6 +181,7 @@ class OpenAIHelper:
                 answer += delta.content
                 yield answer, 'not_finished'
         answer = answer.strip()
+        logging.info(f"this is the answer {answer}")
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
@@ -216,6 +209,7 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
         """
+        logging.info(f"__common_get_chat_response worked {FUNCTION_CALL_COUNTER} times")
         bot_language = self.config['bot_language']
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
@@ -243,7 +237,8 @@ class OpenAIHelper:
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
             common_args = {
-                'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
+                'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config[
+                    'vision_model'],
                 'messages': self.conversations[chat_id],
                 'temperature': self.config['temperature'],
                 'n': self.config['n_choices'],
@@ -270,6 +265,9 @@ class OpenAIHelper:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
+        global FUNCTION_CALL_COUNTER
+        FUNCTION_CALL_COUNTER += 1
+        logging.info(f"__handle_function_call worked {FUNCTION_CALL_COUNTER} times")
         function_name = ''
         arguments = ''
         if stream:
@@ -284,8 +282,10 @@ class OpenAIHelper:
                     elif first_choice.finish_reason and first_choice.finish_reason == 'function_call':
                         break
                     else:
+                        logging.info(f" the resoponse is :{response}, the plug has been used {plugins_used}")
                         return response, plugins_used
                 else:
+                    logging.info(f"{response}", {plugins_used})
                     return response, plugins_used
         else:
             if len(response.choices) > 0:
@@ -296,12 +296,14 @@ class OpenAIHelper:
                     if first_choice.message.function_call.arguments:
                         arguments += first_choice.message.function_call.arguments
                 else:
+                    logging.info(f"{response}", {plugins_used})
                     return response, plugins_used
             else:
+                logging.info(f"{response}", {plugins_used})
                 return response, plugins_used
 
         logging.info(f'Calling function {function_name} with arguments {arguments}')
-        function_response = await self.plugin_manager.call_function(function_name, self, arguments)
+        function_response = await self.plugin_manager.call_function(function_name, self, **json.loads(arguments))
 
         if function_name not in plugins_used:
             plugins_used += (function_name,)
@@ -379,7 +381,8 @@ class OpenAIHelper:
         try:
             with open(filename, "rb") as audio:
                 prompt_text = self.config['whisper_prompt']
-                result = await self.client.audio.transcriptions.create(model="whisper-1", file=audio, prompt=prompt_text)
+                result = await self.client.audio.transcriptions.create(model="whisper-1", file=audio,
+                                                                       prompt=prompt_text)
                 return result.text
         except Exception as e:
             logging.exception(e)
@@ -423,7 +426,7 @@ class OpenAIHelper:
             if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
-                    
+
                     last = self.conversations[chat_id][-1]
                     summary = await self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
@@ -434,19 +437,18 @@ class OpenAIHelper:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
-            message = {'role':'user', 'content':content}
+            message = {'role': 'user', 'content': content}
 
             common_args = {
                 'model': self.config['vision_model'],
                 'messages': self.conversations[chat_id][:-1] + [message],
                 'temperature': self.config['temperature'],
-                'n': 1, # several choices is not implemented yet
+                'n': 1,  # several choices is not implemented yet
                 'max_tokens': self.config['vision_max_tokens'],
                 'presence_penalty': self.config['presence_penalty'],
                 'frequency_penalty': self.config['frequency_penalty'],
                 'stream': stream
             }
-
 
             # vision model does not yet support functions
 
@@ -455,7 +457,7 @@ class OpenAIHelper:
             #     if len(functions) > 0:
             #         common_args['functions'] = self.plugin_manager.get_functions_specs()
             #         common_args['function_call'] = 'auto'
-            
+
             return await self.client.chat.completions.create(**common_args)
 
         except openai.RateLimitError as e:
@@ -467,7 +469,6 @@ class OpenAIHelper:
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
-
     async def interpret_image(self, chat_id, fileobj, prompt=None):
         """
         Interprets a given PNG image file using the Vision model.
@@ -475,15 +476,14 @@ class OpenAIHelper:
         image = encode_image(fileobj)
         prompt = self.config['vision_prompt'] if prompt is None else prompt
 
-        content = [{'type':'text', 'text':prompt}, {'type':'image_url', \
-                    'image_url': {'url':image, 'detail':self.config['vision_detail'] } }]
+        content = [{'type': 'text', 'text': prompt}, {'type': 'image_url',
+                                                      'image_url': {'url': image,
+                                                                    'detail': self.config['vision_detail']}}]
 
         response = await self.__common_get_chat_response_vision(chat_id, content)
 
-        
-
         # functions are not available for this model
-        
+
         # if self.config['enable_functions']:
         #     response, plugins_used = await self.__handle_function_call(chat_id, response)
         #     if is_direct_result(response):
@@ -526,12 +526,11 @@ class OpenAIHelper:
         image = encode_image(fileobj)
         prompt = self.config['vision_prompt'] if prompt is None else prompt
 
-        content = [{'type':'text', 'text':prompt}, {'type':'image_url', \
-                    'image_url': {'url':image, 'detail':self.config['vision_detail'] } }]
+        content = [{'type': 'text', 'text': prompt}, {'type': 'image_url',
+                                                      'image_url': {'url': image,
+                                                                    'detail': self.config['vision_detail']}}]
 
         response = await self.__common_get_chat_response_vision(chat_id, content, stream=True)
-
-        
 
         # if self.config['enable_functions']:
         #     response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
@@ -551,8 +550,8 @@ class OpenAIHelper:
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
-        #show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
-        #plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+        # show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        # plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
         if self.config['show_usage']:
             answer += f"\n\n---\n💰 {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
         #     if show_plugins_used:
@@ -620,12 +619,6 @@ class OpenAIHelper:
         base = 4096
         if self.config['model'] in GPT_3_MODELS:
             return base
-        if self.config['model'] in GPT_3_16K_MODELS:
-            return base * 4
-        if self.config['model'] in GPT_4_MODELS:
-            return base * 2
-        if self.config['model'] in GPT_4_32K_MODELS:
-            return base * 8
         if self.config['model'] in GPT_4_VISION_MODELS:
             return base * 31
         if self.config['model'] in GPT_4_128K_MODELS:
@@ -647,10 +640,10 @@ class OpenAIHelper:
         except KeyError:
             encoding = tiktoken.get_encoding("gpt-3.5-turbo")
 
-        if model in GPT_3_MODELS + GPT_3_16K_MODELS:
+        if model in GPT_3_MODELS:
             tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             tokens_per_name = -1  # if there's a name, the role is omitted
-        elif model in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS:
+        elif model in GPT_4_VISION_MODELS + GPT_4_128K_MODELS:
             tokens_per_message = 3
             tokens_per_name = 1
         else:
@@ -689,7 +682,7 @@ class OpenAIHelper:
         model = self.config['vision_model']
         if model not in GPT_4_VISION_MODELS:
             raise NotImplementedError(f"""count_tokens_vision() is not implemented for model {model}.""")
-        
+
         w, h = image.size
         if w > h: w, h = h, w
         # this computation follows https://platform.openai.com/docs/guides/vision and https://openai.com/pricing#gpt-4-turbo
@@ -697,7 +690,7 @@ class OpenAIHelper:
         detail = self.config['vision_detail']
         if detail == 'low':
             return base_tokens
-        elif detail == 'high' or detail == 'auto': # assuming worst cost for auto
+        elif detail == 'high' or detail == 'auto':  # assuming worst cost for auto
             f = max(w / 768, h / 2048)
             if f > 1:
                 w, h = int(w / f), int(h / f)

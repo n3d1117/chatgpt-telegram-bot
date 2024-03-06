@@ -1,0 +1,56 @@
+available_text_models: ["gpt-3.5-turbo-0125", "gpt-4-0125-preview", "gpt-4-vision-preview"]
+
+info:
+  gpt-3.5-turbo-0125:
+    type: chat_completion
+    name: ChatGPT
+    description: ChatGPT 3.5 is that well-known model. It's <b>fast</b> and <b>cheap</b>. Ideal for everyday tasks. If there are some tasks it can't handle, try the <b>GPT-4</b>.
+    description_ar:   هذا النموذج معروف. إنه <b>سريع</b> و<b>رخيص</b>. مثالي للمهام اليومية. إذا كانت هناك بعض المهام التي لا يمكنه التعامل معها، فجرّب <b>GPT-4</b>.
+    price_per_1000_input_tokens: 0.002
+    price_per_1000_output_tokens: 0.004
+
+    scores:
+      Smart: 3
+      Fast: 5
+      Cheap: 5
+
+  gpt-4-0125-preview:
+    type: chat_completion
+    name: GPT4 Turbo
+    description: ChatGPT 4 is that well-known the smartest model. It's <b>Super Smart</b> and <b>expansive</b>. Ideal for more complex long tasks recommended to use with Modes like Coder, Math, Scientist, accountant and psychologist, can handle 128K token.
+    description_ar: هو النموذج الأذكى المعروف. إنه <b>فائق الذكاء</b>. مثالي للمهام الطويلة الأكثر تعقيدًا يوصى باستخدامها مع أوضاع مثل Coder، وMath، وScientist، والمحاسب، وعالم النفس، ويمكنه التعامل مع 128 ألف كلمة.
+    price_per_1000_input_tokens: 0.02
+    price_per_1000_output_tokens: 0.04
+
+    scores:
+      Smart: 5
+      Fast: 3
+      Cheap: 3
+
+  gpt-4-vision-preview:
+    type: chat_completion
+    name: GPT4 Vision
+    description: Ability to <b>understand images</b>, in addition to all other GPT-4 Turbo capabilities.
+    description_ar: القدرة على <b>فهم الصور</b>، بالإضافة إلى جميع إمكانيات GPT-4 الأخرى.
+    price_per_1000_input_tokens: 0.02
+    price_per_1000_output_tokens: 0.04
+
+    scores:
+      Smart: 5
+      Fast: 4
+      Cheap: 3
+
+
+  dalle-3:
+     type: image
+     price_per_1_image: 0.16  # 1024×1024
+     # 	1024×1792, 1792×1024	$0.120 / image
+
+  whisper:
+    type: audio
+    price_per_1_min: 0.012
+
+
+  segmind:
+    type: image
+    price_per_1_image: 0.01

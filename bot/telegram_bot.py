@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 import os
@@ -9,6 +7,7 @@ from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
+from telegram.constants import ParseMode
 from telegram.error import RetryAfter, TimedOut, BadRequest
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext
@@ -19,9 +18,10 @@ from PIL import Image
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_admin, is_within_budget, \
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_direct_result, handle_direct_result, \
-    cleanup_intermediate_files
+    cleanup_intermediate_files, get_paginated_keyboard
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
+from config import chat_modes
 
 
 class ChatGPTTelegramBot:
@@ -46,7 +46,8 @@ class ChatGPTTelegramBot:
         ]
         # If imaging is enabled, add the "image" command to the list
         if self.config.get('enable_image_generation', False):
-            self.commands.append(BotCommand(command='image', description=localized_text('image_description', bot_language)))
+            self.commands.append(
+                BotCommand(command='image', description=localized_text('image_description', bot_language)))
 
         if self.config.get('enable_tts_generation', False):
             self.commands.append(BotCommand(command='tts', description=localized_text('tts_description', bot_language)))
@@ -107,14 +108,14 @@ class ChatGPTTelegramBot:
         chat_messages, chat_token_length = self.openai.get_conversation_stats(chat_id)
         remaining_budget = get_remaining_budget(self.config, self.usage, update)
         bot_language = self.config['bot_language']
-        
+
         text_current_conversation = (
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
             f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}\n"
             f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
             f"----------------------------\n"
         )
-        
+
         # Check if image generation is enabled and, if so, generate the image statistics for today
         text_today_images = ""
         if self.config.get('enable_image_generation', False):
@@ -127,7 +128,7 @@ class ChatGPTTelegramBot:
         text_today_tts = ""
         if self.config.get('enable_tts_generation', False):
             text_today_tts = f"{characters_today} {localized_text('stats_tts', bot_language)}\n"
-        
+
         text_today = (
             f"*{localized_text('usage_today', bot_language)}:*\n"
             f"{tokens_today} {localized_text('stats_tokens', bot_language)}\n"
@@ -139,7 +140,7 @@ class ChatGPTTelegramBot:
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
             f"----------------------------\n"
         )
-        
+
         text_month_images = ""
         if self.config.get('enable_image_generation', False):
             text_month_images = f"{images_month} {localized_text('stats_images', bot_language)}\n"
@@ -151,7 +152,7 @@ class ChatGPTTelegramBot:
         text_month_tts = ""
         if self.config.get('enable_tts_generation', False):
             text_month_tts = f"{characters_month} {localized_text('stats_tts', bot_language)}\n"
-        
+
         # Check if image generation is enabled and, if so, generate the image statistics for the month
         text_month = (
             f"*{localized_text('usage_month', bot_language)}:*\n"
@@ -183,6 +184,66 @@ class ChatGPTTelegramBot:
 
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
+
+    async def get_chat_modes(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        displays a paginated
+        keyboard that allows the user to select a chat mode.
+        """
+        if not await self.check_allowed_and_within_budget(update, context):
+            return
+        text, reply_markup = get_paginated_keyboard(0)
+        await update.message.reply_text("Select <b>chat mode</b>:", reply_markup=reply_markup,
+                                        parse_mode=ParseMode.HTML)
+
+    async def get_chat_modes_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        processes the callback query, logs relevant information, and updates
+        the message with a new set of chat mode options based
+        on the page index from the callback data.
+        """
+        if not await is_allowed(self.config, update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            f'is not allowed to reset the conversation')
+            await self.send_disallowed_message(update, context)
+            return
+        query = update.callback_query
+        await query.answer()
+
+        # Extracting page index from callback data
+        page_index = int(query.data.split("|")[1])
+        logging.info(f"page index is {page_index}")
+        if page_index < 0:
+            return
+
+        # Assume user's language is English for simplicity
+        text, reply_markup = get_paginated_keyboard(page_index=page_index)
+
+        await query.edit_message_text(text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+
+    async def set_chat_mode_handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+        if not await is_allowed(self.config, update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            f'is not allowed to reset the conversation')
+            await self.send_disallowed_message(update, context)
+            return
+        logging.info(f"update is NoNe: {update}")
+        query = update.callback_query
+        await query.answer()
+
+        chat_mode = query.data.split("|")[1]
+        logging.info(f"chat mode is : {chat_mode}")
+        core_chat_mode = chat_modes
+        # await update.message.reply_text(
+        #     f"{core_chat_mode[chat_mode]['welcome_message']}",
+        #     parse_mode=ParseMode.HTML,
+        # )
+        await context.bot.send_message(
+            update.callback_query.message.chat.id,
+            f"{core_chat_mode[chat_mode]['welcome_message']}",
+            parse_mode=ParseMode.HTML,
+        )
 
     async def resend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -266,7 +327,8 @@ class ChatGPTTelegramBot:
                         document=image_url
                     )
                 else:
-                    raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
+                    raise Exception(
+                        f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
                 # add image request to users usage tracker
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
@@ -318,7 +380,8 @@ class ChatGPTTelegramBot:
                 self.usage[user_id].add_tts_request(text_length, self.config['tts_model'], self.config['tts_prices'])
                 # add guest chat request to guest usage tracker
                 if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
-                    self.usage["guests"].add_tts_request(text_length, self.config['tts_model'], self.config['tts_prices'])
+                    self.usage["guests"].add_tts_request(text_length, self.config['tts_model'],
+                                                         self.config['tts_prices'])
 
             except Exception as e:
                 logging.exception(e)
@@ -468,12 +531,11 @@ class ChatGPTTelegramBot:
             else:
                 trigger_keyword = self.config['group_trigger_keyword']
                 if (prompt is None and trigger_keyword != '') or \
-                   (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
+                        (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
                     logging.info(f'Vision coming from group chat with wrong keyword, ignoring...')
                     return
-        
+
         image = update.message.effective_attachment[-1]
-        
 
         async def _execute():
             bot_language = self.config['bot_language']
@@ -492,14 +554,14 @@ class ChatGPTTelegramBot:
                     parse_mode=constants.ParseMode.MARKDOWN
                 )
                 return
-            
+
             # convert jpg from telegram to png as understood by openai
 
             temp_file_png = io.BytesIO()
 
             try:
                 original_image = Image.open(temp_file)
-                
+
                 original_image.save(temp_file_png, format='PNG')
                 logging.info(f'New vision request received from user {update.message.from_user.name} '
                              f'(id: {update.message.from_user.id})')
@@ -511,8 +573,6 @@ class ChatGPTTelegramBot:
                     reply_to_message_id=get_reply_to_message_id(self.config, update),
                     text=localized_text('media_type_fail', bot_language)
                 )
-            
-            
 
             user_id = update.message.from_user.id
             if user_id not in self.usage:
@@ -520,7 +580,8 @@ class ChatGPTTelegramBot:
 
             if self.config['stream']:
 
-                stream_response = self.openai.interpret_image_stream(chat_id=chat_id, fileobj=temp_file_png, prompt=prompt)
+                stream_response = self.openai.interpret_image_stream(chat_id=chat_id, fileobj=temp_file_png,
+                                                                     prompt=prompt)
                 i = 0
                 prev = ''
                 sent_message = None
@@ -597,12 +658,12 @@ class ChatGPTTelegramBot:
                     if tokens != 'not_finished':
                         total_tokens = int(tokens)
 
-                
+
             else:
 
                 try:
-                    interpretation, total_tokens = await self.openai.interpret_image(chat_id, temp_file_png, prompt=prompt)
-
+                    interpretation, total_tokens = await self.openai.interpret_image(chat_id, temp_file_png,
+                                                                                     prompt=prompt)
 
                     try:
                         await update.effective_message.reply_text(
@@ -644,6 +705,7 @@ class ChatGPTTelegramBot:
         await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # TODO here add the modes
         """
         React to incoming messages and respond accordingly.
         """
@@ -987,6 +1049,7 @@ class ChatGPTTelegramBot:
                                           text=f"{query}\n\n_{answer_tr}:_\n{localized_answer} {str(e)}",
                                           is_inline=True)
 
+    # TODO check this function
     async def check_allowed_and_within_budget(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
         """
@@ -1063,6 +1126,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('brains', self.get_chat_modes))
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
         )
@@ -1077,8 +1141,9 @@ class ChatGPTTelegramBot:
         application.add_handler(InlineQueryHandler(self.inline_query, chat_types=[
             constants.ChatType.GROUP, constants.ChatType.SUPERGROUP, constants.ChatType.PRIVATE
         ]))
+        application.add_handler(CallbackQueryHandler(self.get_chat_modes_callback, pattern="^show_chat_modes"))
+        application.add_handler(CallbackQueryHandler(self.set_chat_mode_handle, pattern="^set_chat_mode"))
         application.add_handler(CallbackQueryHandler(self.handle_callback_inline_query))
-
         application.add_error_handler(error_handler)
 
         application.run_polling()

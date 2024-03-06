@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "chatgpt-telegram-bot"
+version = "0.1.0"
+description = ""
+authors = ["MaHDiaLaGaB <elmahdi.alagab@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-dotenv = "^1.0.1"
+pydub = "^0.25.1"
+tiktoken = "^0.6.0"
+openai = "^1.12.0"
+python-telegram-bot = "^20.8"
+requests = "^2.31.0"
+tenacity = "^8.2.3"
+wolframalpha = "^5.0.0"
+duckduckgo-search = "^4.5.0"
+spotipy = "^2.23.0"
+pytube = "^15.0.0"
+gtts = "^2.5.1"
+whois = "^1.20240129.2"
+pillow = "^10.2.0"
+pyyaml = "^6.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

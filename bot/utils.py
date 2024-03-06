@@ -8,10 +8,11 @@ import os
 import base64
 
 import telegram
-from telegram import Message, MessageEntity, Update, ChatMember, constants
+from telegram import Message, MessageEntity, Update, ChatMember, constants, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
+from config import chat_modes
 
 
 def message_text(message: Message) -> str:
@@ -385,6 +386,74 @@ def encode_image(fileobj):
     image = base64.b64encode(fileobj.getvalue()).decode('utf-8')
     return f'data:image/jpeg;base64,{image}'
 
+
 def decode_image(imgbase64):
     image = imgbase64[len('data:image/jpeg;base64,'):]
     return base64.b64decode(image)
+
+
+# Function to generate paginated keyboard
+def get_paginated_keyboard(page_index):
+    n_chat_modes_per_page = 4
+    text = f"Select <b>chat mode</b> ({len(chat_modes)} modes available):"
+    chat_mode_keys = list(chat_modes.keys())
+    if chat_mode_keys:
+        page_chat_mode_keys = chat_mode_keys[
+                              page_index
+                              * n_chat_modes_per_page: (page_index + 1)
+                                                       * n_chat_modes_per_page
+                              ]
+
+        keyboard = []
+        for chat_mode_key in page_chat_mode_keys:
+            name = chat_modes[chat_mode_key]["name"]
+
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        name, callback_data=f"set_chat_mode|{chat_mode_key}"
+                    )
+                ]
+            )
+
+        # pagination
+        if len(chat_mode_keys) > n_chat_modes_per_page:
+            is_first_page = page_index == 0
+            is_last_page = (page_index + 1) * n_chat_modes_per_page >= len(
+                chat_mode_keys
+            )
+
+            if is_first_page:
+                keyboard.append(
+                    [
+                        InlineKeyboardButton(
+                            "»", callback_data=f"show_chat_modes|{page_index + 1}"
+                        )
+                    ]
+                )
+            elif is_last_page:
+                keyboard.append(
+                    [
+                        InlineKeyboardButton(
+                            "«", callback_data=f"show_chat_modes|{page_index - 1}"
+                        ),
+                    ]
+                )
+            else:
+                keyboard.append(
+                    [
+                        InlineKeyboardButton(
+                            "«", callback_data=f"show_chat_modes|{page_index - 1}"
+                        ),
+                        InlineKeyboardButton(
+                            "»", callback_data=f"show_chat_modes|{page_index + 1}"
+                        ),
+                    ]
+                )
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        logging.info(f"replay markup from utils {reply_markup}")
+        logging.info(f"text from utils {text}")
+        return text, reply_markup
+    else:
+        raise ValueError("chat modes list is empty or None")

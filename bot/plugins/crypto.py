@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 import requests
@@ -27,4 +28,9 @@ class CryptoPlugin(Plugin):
         }]
 
     async def execute(self, function_name, helper, **kwargs) -> Dict:
-        return requests.get(f"https://api.coincap.io/v2/rates/{kwargs['asset']}").json()
+        if kwargs["asset"] == "btc" or kwargs["asset"] == "BTC":
+            kwargs["asset"] = "bitcoin"
+        logging.info(f"crypto plugin works, the asset is: {kwargs}")
+        response = requests.get(f"https://api.coincap.io/v2/assets/{kwargs['asset']}").json()
+        logging.info(f"the coin price {response}")
+        return response
