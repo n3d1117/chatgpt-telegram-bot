@@ -21,8 +21,9 @@ from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
+# Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
-GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106")
+GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
@@ -63,6 +64,9 @@ def are_functions_available(model: str) -> bool:
     # Stable models will be updated to support functions on June 27, 2023
     if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k","gpt-4-1106-preview"):
         return datetime.date.today() > datetime.date(2023, 6, 27)
+    # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
+    if model in ("gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k-0613"):
+        return datetime.date.today() < datetime.date(2024, 6, 13)
     if model == 'gpt-4-vision-preview':
         return False
     return True
