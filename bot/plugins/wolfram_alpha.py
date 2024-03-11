@@ -1,4 +1,5 @@
 import os
+import telegram
 from typing import Dict
 
 import wolframalpha
@@ -32,7 +33,7 @@ class WolframAlphaPlugin(Plugin):
             }
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         client = wolframalpha.Client(self.app_id)
         res = client.query(kwargs['query'])
         try:

@@ -1,5 +1,6 @@
 import logging
 import re
+import telegram
 from typing import Dict
 
 from pytube import YouTube
@@ -28,7 +29,7 @@ class YouTubeAudioExtractorPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         link = kwargs['youtube_link']
         try:
             video = YouTube(link)

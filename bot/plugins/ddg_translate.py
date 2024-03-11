@@ -1,3 +1,4 @@
+import telegram
 from typing import Dict
 
 from duckduckgo_search import DDGS
@@ -26,6 +27,6 @@ class DDGTranslatePlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         with DDGS() as ddgs:
             return ddgs.translate(kwargs['text'], to=kwargs['to_language'])

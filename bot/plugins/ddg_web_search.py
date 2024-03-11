@@ -1,5 +1,6 @@
 import os
 from itertools import islice
+import telegram
 from typing import Dict
 
 from duckduckgo_search import DDGS
@@ -46,7 +47,7 @@ class DDGWebSearchPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         with DDGS() as ddgs:
             ddgs_gen = ddgs.text(
                 kwargs['query'],

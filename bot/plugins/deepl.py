@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 
+import telegram
 import requests
 
 from .plugin import Plugin
@@ -33,7 +34,7 @@ class DeeplTranslatePlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         if self.api_key.endswith(':fx'):
             url = "https://api-free.deepl.com/v2/translate"
         else:

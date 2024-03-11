@@ -1,5 +1,6 @@
 import os
 import random
+import telegram
 from itertools import islice
 from typing import Dict
 
@@ -49,7 +50,7 @@ class DDGImageSearchPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         with DDGS() as ddgs:
             image_type = kwargs.get('type', 'photo')
             ddgs_images_gen = ddgs.images(

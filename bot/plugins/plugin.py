@@ -1,3 +1,4 @@
+import telegram
 from abc import abstractmethod, ABC
 from typing import Dict
 
@@ -23,7 +24,7 @@ class Plugin(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         """
         Execute the plugin and return a JSON serializable response
         """

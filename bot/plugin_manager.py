@@ -2,6 +2,7 @@ import json
 
 from plugins.gtts_text_to_speech import GTTSTextToSpeech
 from plugins.auto_tts import AutoTextToSpeech
+from plugins.auto_dalle import AutoDalle
 from plugins.dice import DicePlugin
 from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
@@ -38,6 +39,7 @@ class PluginManager:
             'deepl_translate': DeeplTranslatePlugin,
             'gtts_text_to_speech': GTTSTextToSpeech,
             'auto_tts': AutoTextToSpeech,
+            'auto_dalle': AutoDalle,
             'whois': WhoisPlugin,
             'webshot': WebshotPlugin,
         }
@@ -49,14 +51,15 @@ class PluginManager:
         """
         return [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
 
-    async def call_function(self, function_name, helper, arguments):
+    async def call_function(self, bot, tg_upd, chat_id, function_name, arguments):
         """
         Call a function based on the name and parameters provided
         """
         plugin = self.__get_plugin_by_function_name(function_name)
         if not plugin:
             return json.dumps({'error': f'Function {function_name} not found'})
-        return json.dumps(await plugin.execute(function_name, helper, **json.loads(arguments)), default=str)
+        result = await plugin.execute(function_name, bot, tg_upd, chat_id, **json.loads(arguments))
+        return json.dumps(result, default=str), result
 
     def get_plugin_source_name(self, function_name) -> str:
         """

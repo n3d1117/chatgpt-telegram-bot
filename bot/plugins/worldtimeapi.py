@@ -1,4 +1,5 @@
 import os, requests
+import telegram
 from typing import Dict
 from datetime import datetime
 
@@ -35,7 +36,7 @@ class WorldTimeApiPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         timezone = kwargs.get('timezone', self.default_timezone)
         url = f'https://worldtimeapi.org/api/timezone/{timezone}'
 

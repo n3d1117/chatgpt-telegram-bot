@@ -1,4 +1,5 @@
 import os, requests, random, string
+import telegram
 from typing import Dict
 from .plugin import Plugin
 
@@ -26,7 +27,7 @@ class WebshotPlugin(Plugin):
         characters = string.ascii_letters + string.digits
         return ''.join(random.choice(characters) for _ in range(length))
 
-    async def execute(self, function_name, helper, **kwargs) -> Dict:
+    async def execute(self, function_name, bot, tg_upd: telegram.Update, chat_id, **kwargs) -> Dict:
         try:
             image_url = f'https://image.thum.io/get/maxAge/12/width/720/{kwargs["url"]}'
             
