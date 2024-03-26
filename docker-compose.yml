@@ -1,9 +1,19 @@
+---
+# Specify the Docker Compose version
 version: '3'
+
+# Define services
 services:
+  # Define a service named 'chatgpt-telegram-bot'
   chatgpt-telegram-bot:
+    # Build the service using the provided Dockerfile in the current context
     build:
       context: .
       dockerfile: Dockerfile
+
+    # Mount the current directory as a volume inside the container at '/app'
     volumes:
       - .:/app
+
+    # Restart the service unless explicitly stopped
     restart: unless-stopped

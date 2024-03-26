@@ -1,0 +1,57 @@
+---
+# Define the API version and kind of Kubernetes resource
+apiVersion: apps/v1
+kind: Deployment
+
+# Metadata for the deployment
+metadata:
+  # Name of the deployment, using the full name defined in the Helm chart
+  name: {{ include "python.fullname" . }}
+  # Labels for the deployment
+  labels:
+    # App label indicating the name of the application
+    app.kubernetes.io/name: {{ include "python.name" . }}
+    # Label indicating the Helm chart used for managing this deployment
+    helm.sh/chart: {{ include "python.chart" . }}
+
+# Specification for the deployment
+spec:
+  # Number of replicas for the deployment
+  replicas: {{ .Values.replicaCount }}
+
+  # Selector to match labels for pods controlled by this deployment
+  selector:
+    matchLabels:
+      # App label indicating the name of the application
+      app.kubernetes.io/name: {{ include "python.name" . }}
+      # Instance label to match the release name of the Helm deployment
+      app.kubernetes.io/instance: {{ .Release.Name }}
+
+  # Template for the pods managed by this deployment
+  template:
+    # Metadata for the pods
+    metadata:
+      # Labels for the pods
+      labels:
+        # App label indicating the name of the application
+        app.kubernetes.io/name: {{ include "python.name" . }}
+        # Instance label indicating the release name of the Helm deployment
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    # Specification for the containers within the pods
+    spec:
+      # Containers within the pod
+      containers:
+        # Container definition
+        - name: {{ .Chart.Name }}
+          # Docker image for the container
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # Environment variables sourced from ConfigMaps
+          envFrom:
+            # ConfigMap reference
+            - configMapRef:
+                # Name of the ConfigMap
+                name: {{ include "python.fullname" . }}
+            # Secret reference
+            - secretRef:
+                # Name of the Secret
+                name: {{ include "python.fullname" . }}

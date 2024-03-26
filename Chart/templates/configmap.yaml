@@ -1,0 +1,18 @@
+---
+# Description:
+#   This ConfigMap is used to store configuration data for the Python application deployed using the helm chart.
+#   It includes environment variables defined in the values.yaml file, which are used to configure the application.
+#   The data stored in this ConfigMap is mounted into the application container as a file named config.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # Name of the ConfigMap is generated using the python.fullname template
+  name: {{ include "python.fullname" . }}
+  # Namespace where the ConfigMap is deployed
+data:
+  # Configuration data is stored in a file named config.yaml
+  config.yaml: |
+    {{- range $key, $value := .Values.env }}
+    # Each environment variable is represented as a key-value pair
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
