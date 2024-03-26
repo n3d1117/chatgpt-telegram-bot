@@ -231,6 +231,40 @@ docker build -t chatgpt-telegram-bot .
 docker run -it --env-file .env chatgpt-telegram-bot
 ```
 
+#### Helm (must install k8s/openshift/k3s/minikube/other)
+1. Download your kubernetes config in env (example: k3s):
+  ```sh
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  ```
+2. Change default env in helm:
+  ```sh
+secrets:
+    TOKEN: "CHANGE_TOKEN" <---- # Specifies the Telegram bot token
+    ALLOWED_USERS: "CHANGE_ALLOWED_USERS" <---- # Specifies the allowed users for the bot
+  ```
+3. Install helm Chart:
+  ```sh
+user@computername chatgpt-telegram-bot % helm install chatgpt-telegram-bot ./Chart  
+    NAME: chatgpt-telegram-bot
+    LAST DEPLOYED: Wed Mar 13 15:17:48 2024
+    NAMESPACE: default
+    STATUS: deployed
+    REVISION: 1
+    TEST SUITE: None
+  ```
+4. Look at your helm charts:
+  ```sh
+user@computername chatgpt-telegram-bot % helm list
+    NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+    chatgpt-telegram-bot     default         1               2024-03-13 15:17:48.087093 -0400 EDT    deployed        python-0.0.1    0.0.1 
+  ```
+5. Look at your kubernetes cluster:
+  ```sh
+user@computername chatgpt-telegram-bot % kubectl get pods
+    NAME                                  READY   STATUS    RESTARTS   AGE
+    chatgpt-telegram-bot-54cd7cb78b-nztbw   1/1     Running   0          11s
+  ```
+
 ## Credits
 - [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
 - [python-telegram-bot](https://python-telegram-bot.org)
@@ -241,3 +275,5 @@ This is a personal project and is not affiliated with OpenAI in any way.
 
 ## License
 This project is released under the terms of the GPL 2.0 license. For more information, see the [LICENSE](LICENSE) file included in the repository.
+
+

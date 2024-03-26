@@ -1,0 +1,18 @@
+---
+# USE DEFAULT NAMESPACE!
+
+replicaCount: 1  # Specifies the number of replicas for the deployment
+
+image:
+  repository: n3d1117/chatgpt-telegram-bot  # Docker image repository
+  tag: latest  # Docker image tag
+  pullPolicy: Always  # Specifies when to pull the Docker image (Always/IfNotPresent/Never)
+
+env:
+  LOG_LEVEL: "INFO"  # Sets the log level to INFO
+  LOG_FILE: "/tmp/bot.log"  # Specifies the path for the log file
+  RESTART_NOTIFICATION: "true"  # Enables restart notifications
+
+secrets:
+  TOKEN: "CHANGE_TOKEN"  # Specifies the Telegram bot token
+  ALLOWED_USERS: "CHANGE_ALLOWED_USERS"  # Specifies the allowed users for the bot
