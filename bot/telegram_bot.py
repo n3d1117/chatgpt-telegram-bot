@@ -647,7 +647,7 @@ class ChatGPTTelegramBot:
 
     async def edit_image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        Edit image using Dalle-2.
+        Edit image using Dalle-3.
         """
         if not self.config['enable_image_editing'] or not await self.check_allowed_and_within_budget(update, context):
             return

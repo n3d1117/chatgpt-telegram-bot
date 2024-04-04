@@ -356,14 +356,13 @@ class OpenAIHelper:
     
     async def edit_image(self, chat_id, orig_image, modified_image, prompt):
         """
-        Edits a given PNG image (and the mask) using the Dalle 2 model.
+        Edits a given PNG image (and the mask) using the Dalle 3 model.
         """
         try:
 
             mask_image = compute_image_diff(orig_image, modified_image)
 
             args = {
-                'model': 'dall-e-2', # for now only this is supported
                 'n': 1,
                 'size':self.config['image_size'],
                 'image':orig_image,
