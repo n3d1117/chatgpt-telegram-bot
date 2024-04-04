@@ -24,7 +24,7 @@ class WhoisPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         try:
             whois_result = whois.query(kwargs['domain'])
             if whois_result is None:

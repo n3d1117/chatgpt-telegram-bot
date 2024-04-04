@@ -49,7 +49,7 @@ class DDGImageSearchPlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         with DDGS() as ddgs:
             image_type = kwargs.get('type', 'photo')
             ddgs_images_gen = ddgs.images(

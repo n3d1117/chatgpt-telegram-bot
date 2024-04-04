@@ -111,7 +111,7 @@ class SpotifyPlugin(Plugin):
             }
         ]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         time_range = kwargs.get('time_range', 'short_term')
         limit = kwargs.get('limit', 5)
 
