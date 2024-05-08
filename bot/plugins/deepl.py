@@ -33,7 +33,7 @@ class DeeplTranslatePlugin(Plugin):
             },
         }]
 
-    async def execute(self, function_name, **kwargs) -> Dict:
+    async def execute(self, function_name, helper, **kwargs) -> Dict:
         if self.api_key.endswith(':fx'):
             url = "https://api-free.deepl.com/v2/translate"
         else:
@@ -42,10 +42,12 @@ class DeeplTranslatePlugin(Plugin):
         headers = {
             "Authorization": f"DeepL-Auth-Key {self.api_key}",
             "User-Agent": "chatgpt-telegram-bot",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept-Encoding": "utf-8"
         }
         data = {
             "text": kwargs['text'],
             "target_lang": kwargs['to_language']
         }
-        return requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]
+        translated_text = requests.post(url, headers=headers, data=data).json()["translations"][0]["text"]
+        return translated_text.encode('unicode-escape').decode('unicode-escape')
