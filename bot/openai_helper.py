@@ -114,9 +114,39 @@ class OpenAIHelper:
         self.client = openai.AsyncOpenAI(api_key=config['api_key'], http_client=http_client)
         self.config = config
         self.plugin_manager = plugin_manager
-        self.conversations: dict[int: list] = {}  # {chat_id: history}
+        self.__load_conversations_and_last_updated()
         self.conversations_vision: dict[int: bool] = {}  # {chat_id: is_vision}
-        self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
+
+    def __load_file(self, file_path: str):
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                logging.info(f"Loading from {file_path}")
+                return json.load(f)
+        except Exception as e:
+            logging.error(f"An error occurred while loading conversations from {file_path}: {e}")
+            return {}
+
+    def __save_file(self, file_path: str, data: dict):
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            logging.error(f"An error occurred while saving conversations to {file_path}: {e}")
+
+    def __save_conversations(self):
+        self.__save_file('storage/conversations.json', self.conversations)
+
+    def __save_last_updated(self):
+        last_updated_copy = {chat_id: last_update.isoformat() for chat_id, last_update in self.last_updated.items()}
+        self.__save_file('storage/last_updated.json', last_updated_copy)
+
+    def __load_conversations_and_last_updated(self):
+        self.conversations = {int(k): v for k, v in self.__load_file('storage/conversations.json').items()}
+        last_updated_copy = {int(k): v for k, v in self.__load_file('storage/last_updated.json').items()}
+        if last_updated_copy:
+            self.last_updated = {chat_id: datetime.datetime.fromisoformat(last_update) for chat_id, last_update in last_updated_copy.items()}
+        else:
+            self.last_updated = {}
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
         """
@@ -137,7 +167,7 @@ class OpenAIHelper:
         """
         plugins_used = ()
         response = await self.__common_get_chat_response(chat_id, query)
-        if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
+        if self.config['enable_functions'] and chat_id not in self.conversations_vision:
             response, plugins_used = await self.__handle_function_call(chat_id, response)
             if is_direct_result(response):
                 return response, '0'
@@ -228,6 +258,7 @@ class OpenAIHelper:
                 self.reset_chat_history(chat_id)
 
             self.last_updated[chat_id] = datetime.datetime.now()
+            self.__save_last_updated()
 
             self.__add_to_history(chat_id, role="user", content=query)
 
@@ -247,9 +278,14 @@ class OpenAIHelper:
                 except Exception as e:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
+                    self.__save_conversations()
+
+            model = self.config['model']
+            if chat_id in self.conversations_vision:
+                model = self.config['vision_model']
 
             common_args = {
-                'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
+                'model': model,
                 'messages': self.conversations[chat_id],
                 'temperature': self.config['temperature'],
                 'n': self.config['n_choices'],
@@ -259,7 +295,7 @@ class OpenAIHelper:
                 'stream': stream
             }
 
-            if self.config['enable_functions'] and not self.conversations_vision[chat_id]:
+            if self.config['enable_functions'] and chat_id not in self.conversations_vision:
                 functions = self.plugin_manager.get_functions_specs()
                 if len(functions) > 0:
                     common_args['functions'] = self.plugin_manager.get_functions_specs()
@@ -410,6 +446,7 @@ class OpenAIHelper:
                 self.reset_chat_history(chat_id)
 
             self.last_updated[chat_id] = datetime.datetime.now()
+            self.__save_last_updated()
 
             if self.config['enable_vision_follow_up_questions']:
                 self.conversations_vision[chat_id] = True
@@ -429,16 +466,17 @@ class OpenAIHelper:
             if exceeded_max_tokens or exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
-                    
                     last = self.conversations[chat_id][-1]
                     summary = await self.__summarise(self.conversations[chat_id][:-1])
                     logging.debug(f'Summary: {summary}')
                     self.reset_chat_history(chat_id, self.conversations[chat_id][0]['content'])
                     self.__add_to_history(chat_id, role="assistant", content=summary)
                     self.conversations[chat_id] += [last]
+                    self.__save_conversations()
                 except Exception as e:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
+                    self.__save_conversations()
 
             message = {'role':'user', 'content':content}
 
@@ -575,6 +613,7 @@ class OpenAIHelper:
         if content == '':
             content = self.config['assistant_prompt']
         self.conversations[chat_id] = [{"role": "system", "content": content}]
+        self.__save_conversations()
         self.conversations_vision[chat_id] = False
 
     def __max_age_reached(self, chat_id) -> bool:
@@ -604,6 +643,7 @@ class OpenAIHelper:
         :param content: The message content
         """
         self.conversations[chat_id].append({"role": role, "content": content})
+        self.__save_conversations()
 
     async def __summarise(self, conversation) -> str:
         """

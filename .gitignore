@@ -5,3 +5,6 @@ __pycache__
 /usage_logs
 venv
 /.cache
+
+storage/conversations.json
+storage/last_updated.json
