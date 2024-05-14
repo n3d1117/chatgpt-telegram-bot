@@ -84,12 +84,12 @@ class ChatGPTTelegramBot:
         """
         if not await is_allowed(self.config, update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                            f'is not allowed to request their usage statistics')
+                            'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
             return
 
         logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                     f'requested their usage statistics')
+                     'requested their usage statistics')
 
         user_id = update.message.from_user.id
         if user_id not in self.usage:
@@ -112,7 +112,7 @@ class ChatGPTTelegramBot:
             f"*{localized_text('stats_conversation', bot_language)[0]}*:\n"
             f"{chat_messages} {localized_text('stats_conversation', bot_language)[1]}\n"
             f"{chat_token_length} {localized_text('stats_conversation', bot_language)[2]}\n"
-            f"----------------------------\n"
+            "----------------------------\n"
         )
         
         # Check if image generation is enabled and, if so, generate the image statistics for today
@@ -137,7 +137,7 @@ class ChatGPTTelegramBot:
             f"{transcribe_minutes_today} {localized_text('stats_transcribe', bot_language)[0]} "
             f"{transcribe_seconds_today} {localized_text('stats_transcribe', bot_language)[1]}\n"
             f"{localized_text('stats_total', bot_language)}{current_cost['cost_today']:.2f}\n"
-            f"----------------------------\n"
+            "----------------------------\n"
         )
         
         text_month_images = ""
@@ -190,14 +190,14 @@ class ChatGPTTelegramBot:
         """
         if not await is_allowed(self.config, update, context):
             logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
-                            f' is not allowed to resend the message')
+                            ' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
             return
 
         chat_id = update.effective_chat.id
         if chat_id not in self.last_message:
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
-                            f' does not have anything to resend')
+                            ' does not have anything to resend')
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
                 text=localized_text('resend_failed', self.config['bot_language'])
@@ -218,7 +218,7 @@ class ChatGPTTelegramBot:
         """
         if not await is_allowed(self.config, update, context):
             logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
-                            f'is not allowed to reset the conversation')
+                            'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
 
@@ -339,7 +339,7 @@ class ChatGPTTelegramBot:
             return
 
         if is_group_chat(update) and self.config['ignore_group_transcriptions']:
-            logging.info(f'Transcription coming from group chat, ignoring...')
+            logging.info('Transcription coming from group chat, ignoring...')
             return
 
         chat_id = update.effective_chat.id
@@ -463,13 +463,13 @@ class ChatGPTTelegramBot:
 
         if is_group_chat(update):
             if self.config['ignore_group_vision']:
-                logging.info(f'Vision coming from group chat, ignoring...')
+                logging.info('Vision coming from group chat, ignoring...')
                 return
             else:
                 trigger_keyword = self.config['group_trigger_keyword']
                 if (prompt is None and trigger_keyword != '') or \
                    (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
-                    logging.info(f'Vision coming from group chat with wrong keyword, ignoring...')
+                    logging.info('Vision coming from group chat with wrong keyword, ignoring...')
                     return
         
         image = update.message.effective_attachment[-1]
