@@ -2,7 +2,7 @@ python-dotenv~=1.0.0
 pydub~=0.25.1
 tiktoken==0.7.0
 openai==1.29.0
-python-telegram-bot[webhooks]==20.4
+python-telegram-bot[webhooks]==21.1.1
 requests~=2.31.0
 tenacity==8.3.0
 wolframalpha~=5.0.0
