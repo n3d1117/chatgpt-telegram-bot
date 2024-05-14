@@ -341,7 +341,7 @@
         "ask_chatgpt": "שאל את ChatGPT",
         "loading": "טוען...",
         "function_unavailable_in_inline_mode": "הפונקציה לא זמינה במצב inline"
-      }
+    },
     "id": {
         "help_description": "Menampilkan pesan bantuan",
         "reset_description": "Merestart percakapan. Opsional memasukkan instruksi tingkat tinggi (misalnya /reset Anda adalah asisten yang membantu)",

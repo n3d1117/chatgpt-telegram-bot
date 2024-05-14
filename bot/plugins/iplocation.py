@@ -3,6 +3,7 @@ from typing import Dict
 
 from .plugin import Plugin
 
+
 class IpLocationPlugin(Plugin):
     """
     A plugin to get geolocation and other information for a given IP address
@@ -13,7 +14,7 @@ class IpLocationPlugin(Plugin):
 
     def get_spec(self) -> [Dict]:
         return [{
-            "name": "iplocaion",
+            "name": "iplocation",
             "description": "Get information for an IP address using the IP.FM API.",
             "parameters": {
                 "type": "object",
