@@ -246,7 +246,7 @@ class OpenAIHelper:
                     self.__add_to_history(chat_id, role="user", content=query)
                 except Exception as e:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
-                    self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
+                    self.conversations[chat_id] = [self.conversations[chat_id][0]] + self.conversations[chat_id][-self.config['max_history_size'] - 1:]
 
             common_args = {
                 'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
@@ -438,7 +438,7 @@ class OpenAIHelper:
                     self.conversations[chat_id] += [last]
                 except Exception as e:
                     logging.warning(f'Error while summarising chat history: {str(e)}. Popping elements instead...')
-                    self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
+                    self.conversations[chat_id] = [self.conversations[chat_id][0]] + self.conversations[chat_id][-self.config['max_history_size'] - 1:]
 
             message = {'role':'user', 'content':content}
 
