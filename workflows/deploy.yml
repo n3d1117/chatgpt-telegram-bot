@@ -1,0 +1,40 @@
+name: Build and Deploy to Azure Functions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t docker push dzmitrykuzmin/elka-telegram-bot-openai:0.0.1 .
+
+    - name: Push Docker image to Hub
+      run: |
+        docker push dzmitrykuzmin/elka-telegram-bot-openai:0.0.1
+
+    - name: Deploy to Azure Functions
+      run: |
+        az functionapp create --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --consumption-plan-location ${{ secrets.CONSUMPTION_PLAN_LOCATION }} \
+          --runtime python \
+          --functions-version 4 \
+          --name ${{ secrets.FUNCTION_APP_NAME }} \
+          --storage-account ${{ secrets.STORAGE_ACCOUNT_NAME }} \
+          --deployment-container-image-name dzmitrykuzmin/elka-telegram-bot-openai:0.0.1
