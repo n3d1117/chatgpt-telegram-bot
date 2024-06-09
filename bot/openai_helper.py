@@ -21,32 +21,15 @@ from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
 # Models can be found here: https://platform.openai.com/docs/models/overview
-GPT_3_MODELS = (
-    "gpt-3.5-turbo",
-    "gpt-3.5-turbo-0301",
-    "gpt-3.5-turbo-0613",
-)
-GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106")
-GPT_4_MODELS = (
-    "gpt-4",
-    "gpt-4-0314",
-    "gpt-4-0613",
-    "pplx-7b-chat",
-    "sonar-small-online",
-    "pplx-7b-online",
-)
+# Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
+GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
+GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125")
+GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613", "gpt-4-turbo-preview", "pplx-7b-chat", "sonar-small-online", "pplx-7b-online")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
 GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
-GPT_4_128K_MODELS = ("gpt-4-1106-preview",)
-GPT_ALL_MODELS = (
-    GPT_3_MODELS
-    + GPT_3_16K_MODELS
-    + GPT_4_MODELS
-    + GPT_4_32K_MODELS
-    + GPT_4_VISION_MODELS
-    + GPT_4_128K_MODELS
-)
-
+GPT_4_128K_MODELS = ("gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview", "gpt-4-turbo", "gpt-4-turbo-2024-04-09")
+GPT_4O_MODELS = ("gpt-4o",)
+GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS
 
 def default_max_tokens(model: str) -> int:
     """
@@ -69,6 +52,8 @@ def default_max_tokens(model: str) -> int:
         return 4096
     elif model in GPT_4_128K_MODELS:
         return 4096
+    elif model in GPT_4O_MODELS:
+        return 4096
 
 
 def are_functions_available(model: str) -> bool:
@@ -79,15 +64,12 @@ def are_functions_available(model: str) -> bool:
     if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314"):
         return False
     # Stable models will be updated to support functions on June 27, 2023
-    if model in (
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-1106",
-        "gpt-4",
-        "gpt-4-32k",
-        "gpt-4-1106-preview",
-    ):
+    if model in ("gpt-3.5-turbo", "gpt-3.5-turbo-1106", "gpt-4", "gpt-4-32k","gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview"):
         return datetime.date.today() > datetime.date(2023, 6, 27)
-    if model == "gpt-4-vision-preview":
+    # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
+    if model in ("gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k-0613"):
+        return datetime.date.today() < datetime.date(2024, 6, 13)
+    if model == 'gpt-4-vision-preview':
         return False
     return True
 
@@ -757,6 +739,8 @@ class OpenAIHelper:
             return base * 31
         if self.config["model"] in GPT_4_128K_MODELS:
             return base * 31
+        if self.config['model'] in GPT_4O_MODELS:
+            return base * 31
         raise NotImplementedError(
             f"Max tokens for model {self.config['model']} is not implemented yet."
         )
@@ -779,10 +763,7 @@ class OpenAIHelper:
                 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             )
             tokens_per_name = -1  # if there's a name, the role is omitted
-        elif (
-            model
-            in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS
-        ):
+        elif model in GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS:
             tokens_per_message = 3
             tokens_per_name = 1
         else:

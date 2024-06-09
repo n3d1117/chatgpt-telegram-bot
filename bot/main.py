@@ -80,11 +80,9 @@ def main():
         "tts_voice": os.environ.get("TTS_VOICE", "alloy"),
     }
 
-    if openai_config["enable_functions"] and not functions_available:
-        logging.error(
-            f"ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. "
-            f"Please set ENABLE_FUNCTIONS to false or use a model that supports it."
-        )
+    if openai_config['enable_functions'] and not functions_available:
+        logging.error(f'ENABLE_FUNCTIONS is set to true, but the model {model} does not support it. '
+                        'Please set ENABLE_FUNCTIONS to false or use a model that supports it.')
         exit(1)
     if os.environ.get("MONTHLY_USER_BUDGETS") is not None:
         logging.warning(

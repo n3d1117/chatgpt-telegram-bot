@@ -21,13 +21,13 @@ class WorldTimeApiPlugin(Plugin):
     def get_spec(self) -> [Dict]:
         return [{
             "name": "worldtimeapi",
-            "description": f"Get the current time from a given timezone",
+            "description": "Get the current time from a given timezone",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "timezone": {
                         "type": "string",
-                        "description": f"The timezone identifier (e.g: `Europe/Rome`). Infer this from the location."
+                        "description": "The timezone identifier (e.g: `Europe/Rome`). Infer this from the location."
                                        f"Use {self.default_timezone} if not specified."
                     }
                 },
