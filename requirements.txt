@@ -12,3 +12,4 @@ pytube~=15.0.0
 gtts~=2.5.1
 whois~=0.9.27
 Pillow~=10.3.0
+psycopg2==2.9.9

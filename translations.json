@@ -46,7 +46,10 @@
         "answer_with_chatgpt":"Answer with ChatGPT",
         "ask_chatgpt":"Ask ChatGPT",
         "loading":"Loading...",
-        "function_unavailable_in_inline_mode": "This function is unavailable in inline mode"
+        "function_unavailable_in_inline_mode": "This function is unavailable in inline mode",
+        "reset_and_set_prompt_description": "Reset history and set prompt by id",
+        "get_all_prompts_description": "Get all prompts",
+        "add_prompt_description": "Add prompt"
     },
     "ar": {
         "help_description":"عرض رسالة المساعدة",
@@ -683,7 +686,10 @@
         "answer_with_chatgpt":"Ответить с помощью ChatGPT",
         "ask_chatgpt":"Спросить ChatGPT",
         "loading":"Загрузка...",
-        "function_unavailable_in_inline_mode": "Эта функция недоступна в режиме inline"
+        "function_unavailable_in_inline_mode": "Эта функция недоступна в режиме inline",
+        "reset_and_set_prompt_description": "Сбросить историю и установить промт с id",
+        "get_all_prompts_description": "Получить все промты",
+        "add_prompt_description": "Добавить промт"
     },
     "tr": {
         "help_description":"Yardım mesajını göster",

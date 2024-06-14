@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from plugin_manager import PluginManager
 from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
+from db_service import DbService
 
 
 def main():
@@ -106,10 +107,19 @@ def main():
         'plugins': os.environ.get('PLUGINS', '').split(',')
     }
 
+    postgresql_config = {
+        'db_name': os.environ.get('PSQL_DB_NAME'),
+        'db_user': os.environ.get('PSQL_DB_USER'),
+        'db_host': os.environ.get('PSQL_DB_HOST'),
+        'db_pass': os.environ.get('PSQL_DB_PASS'),
+        'db_port': os.environ.get('PSQL_DB_PORT'),
+    }
+
     # Setup and run ChatGPT and Telegram bot
     plugin_manager = PluginManager(config=plugin_config)
     openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
-    telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
+    db_service = DbService(postgresql_config)
+    telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper, db_service=db_service)
     telegram_bot.run()
 
 

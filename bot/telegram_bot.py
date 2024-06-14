@@ -23,13 +23,15 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
+from db_service import DbService
+
 
 class ChatGPTTelegramBot:
     """
     Class representing a ChatGPT Telegram Bot.
     """
 
-    def __init__(self, config: dict, openai: OpenAIHelper):
+    def __init__(self, config: dict, openai: OpenAIHelper, db_service: DbService):
         """
         Initializes the bot with the given configuration and GPT bot object.
         :param config: A dictionary containing the bot configuration
@@ -37,12 +39,16 @@ class ChatGPTTelegramBot:
         """
         self.config = config
         self.openai = openai
+        self.db_service = db_service
         bot_language = self.config['bot_language']
         self.commands = [
             BotCommand(command='help', description=localized_text('help_description', bot_language)),
             BotCommand(command='reset', description=localized_text('reset_description', bot_language)),
             BotCommand(command='stats', description=localized_text('stats_description', bot_language)),
-            BotCommand(command='resend', description=localized_text('resend_description', bot_language))
+            BotCommand(command='resend', description=localized_text('resend_description', bot_language)),
+            BotCommand(command='reset_and_set_prompt', description=localized_text('reset_and_set_prompt_description', bot_language)),
+            BotCommand(command='get_all_prompts', description=localized_text('get_all_prompts_description', bot_language)),
+            BotCommand(command='add_prompt', description=localized_text('add_prompt_description', bot_language)),
         ]
         # If imaging is enabled, add the "image" command to the list
         if self.config.get('enable_image_generation', False):
@@ -211,6 +217,69 @@ class ChatGPTTelegramBot:
             message.text = self.last_message.pop(chat_id)
 
         await self.prompt(update=update, context=context)
+
+    async def reset_and_set_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Resets the conversation.
+        """
+        try:
+            prompt = self.db_service.get_prompt_by_id(message_text(update.message))
+        except RuntimeError as e:
+            await update.effective_message.reply_text(
+                message_thread_id=get_thread_id(update),
+                text=f'Error {e}'
+            )
+
+        if not await is_allowed(self.config, update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            'is not allowed to reset the conversation')
+            await self.send_disallowed_message(update, context)
+            return
+
+        logging.info(f'Resetting the conversation for user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})...')
+
+        chat_id = update.effective_chat.id
+
+        self.openai.reset_chat_history(chat_id=chat_id, content=prompt[1])
+        await update.effective_message.reply_text(
+            message_thread_id=get_thread_id(update),
+            text=localized_text('reset_done', self.config['bot_language'])
+        )
+
+    async def get_all_prompts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await is_allowed(self.config, update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            'is not allowed to get all prompts')
+            await self.send_disallowed_message(update, context)
+            return
+
+        logging.info(f'Getting all prompts for user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})...')
+
+        prompts = self.db_service.get_all_prompts()
+        formatted_prompts = "\n".join([" - ".join(map(str, prompt)) for prompt in prompts])
+        await update.effective_message.reply_text(
+            message_thread_id=get_thread_id(update),
+            text=formatted_prompts
+        )
+
+    async def add_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not await is_allowed(self.config, update, context):
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            'is not allowed to add prompts')
+            await self.send_disallowed_message(update, context)
+            return
+
+        prompt = message_text(update.message)
+        logging.info(f'Creating prompt {prompt}')
+
+        prompt_id = self.db_service.create_prompt(prompt)
+
+        await update.effective_message.reply_text(
+            message_thread_id=get_thread_id(update),
+            text=f'Success, id = {prompt_id}'
+        )
 
     async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -1063,6 +1132,10 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
         application.add_handler(CommandHandler('resend', self.resend))
+        application.add_handler(CommandHandler('reset_and_set_prompt', self.reset_and_set_prompt))
+        application.add_handler(CommandHandler('get_all_prompts', self.get_all_prompts))
+        application.add_handler(CommandHandler('add_prompt', self.add_prompt))
+
         application.add_handler(CommandHandler(
             'chat', self.prompt, filters=filters.ChatType.GROUP | filters.ChatType.SUPERGROUP)
         )
