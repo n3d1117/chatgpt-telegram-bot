@@ -20,7 +20,7 @@ def main():
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     # Check if the required environment variables are set
-    required_values = ['TELEGRAM_BOT_TOKEN', 'OPENAI_API_KEY']
+    required_values = ['5636862844:AAGG7jioAoBUoe3KINGbZpQZQFMCBAky1oo', 'sk-proj-sEGTaTR5SxkTHdtIocNST3BlbkFJtxOCFlzE8tNWN7US28Rz']
     missing_values = [value for value in required_values if os.environ.get(value) is None]
     if len(missing_values) > 0:
         logging.error(f'The following environment values are missing in your .env: {", ".join(missing_values)}')
@@ -31,13 +31,13 @@ def main():
     functions_available = are_functions_available(model=model)
     max_tokens_default = default_max_tokens(model=model)
     openai_config = {
-        'api_key': os.environ['OPENAI_API_KEY'],
+        'api_key': os.environ['sk-proj-sEGTaTR5SxkTHdtIocNST3BlbkFJtxOCFlzE8tNWN7US28Rz'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',
         'proxy': os.environ.get('PROXY', None) or os.environ.get('OPENAI_PROXY', None),
-        'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 15)),
+        'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 45)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
-        'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
+        'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You Are Royal Katsic a helpful assistant.'),
         'max_tokens': int(os.environ.get('MAX_TOKENS', max_tokens_default)),
         'n_choices': int(os.environ.get('N_CHOICES', 1)),
         'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
@@ -74,8 +74,8 @@ def main():
                         'Please use GUEST_BUDGET with BUDGET_PERIOD instead.')
 
     telegram_config = {
-        'token': os.environ['TELEGRAM_BOT_TOKEN'],
-        'admin_user_ids': os.environ.get('ADMIN_USER_IDS', '-'),
+        'token': os.environ['5636862844:AAGG7jioAoBUoe3KINGbZpQZQFMCBAky1oo'],
+        'admin_user_ids': os.environ.get('6758634665', '5307101347'),
         'allowed_user_ids': os.environ.get('ALLOWED_TELEGRAM_USER_IDS', '*'),
         'enable_quoting': os.environ.get('ENABLE_QUOTING', 'true').lower() == 'true',
         'enable_image_generation': os.environ.get('ENABLE_IMAGE_GENERATION', 'true').lower() == 'true',
