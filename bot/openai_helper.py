@@ -17,6 +17,7 @@ from PIL import Image
 
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
+from core.prompts import get_assistant_prompt
 from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
@@ -573,7 +574,7 @@ class OpenAIHelper:
         Resets the conversation history.
         """
         if content == '':
-            content = self.config['assistant_prompt']
+            content = get_assistant_prompt()
         self.conversations[chat_id] = [{"role": "system", "content": content}]
         self.conversations_vision[chat_id] = False
 
