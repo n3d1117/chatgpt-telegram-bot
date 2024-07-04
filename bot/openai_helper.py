@@ -653,7 +653,7 @@ class OpenAIHelper:
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            encoding = tiktoken.get_encoding("gpt-3.5-turbo")
+            encoding = tiktoken.get_encoding("cl100k_base")
 
         if model in GPT_3_MODELS + GPT_3_16K_MODELS:
             tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
