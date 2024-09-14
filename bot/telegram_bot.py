@@ -20,7 +20,7 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
     edit_message_with_retry, get_stream_cutoff_values, is_allowed, get_remaining_budget, is_admin, is_within_budget, \
     get_reply_to_message_id, add_chat_request_to_usage_tracker, error_handler, is_direct_result, handle_direct_result, \
     cleanup_intermediate_files
-from openai_helper import OpenAIHelper, localized_text
+from openai_helper import OpenAIHelper, localized_text, O1_MODELS
 from usage_tracker import UsageTracker
 
 
@@ -681,7 +681,7 @@ class ChatGPTTelegramBot:
         try:
             total_tokens = 0
 
-            if self.config['stream']:
+            if self.config['stream'] and self.openai.config['model'] not in O1_MODELS:
                 await update.effective_message.reply_chat_action(
                     action=constants.ChatAction.TYPING,
                     message_thread_id=get_thread_id(update)
