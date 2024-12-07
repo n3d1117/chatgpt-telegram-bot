@@ -21,7 +21,7 @@ class CoinMarketCap(Plugin):
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "asset": {"type": "string", "description": "Asset of the crypto"}
+                    "asset": {"type": "string", "description": "Ticker of the cryptocurrency in uppercase (e.g., BTC, ETH, XRP)"}
                 },
                 "required": ["asset"],
             },
