@@ -26,10 +26,10 @@ GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
 GPT_3_16K_MODELS = ("gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-1106", "gpt-3.5-turbo-0125")
 GPT_4_MODELS = ("gpt-4", "gpt-4-0314", "gpt-4-0613", "gpt-4-turbo-preview")
 GPT_4_32K_MODELS = ("gpt-4-32k", "gpt-4-32k-0314", "gpt-4-32k-0613")
-GPT_4_VISION_MODELS = ("gpt-4-vision-preview",)
+GPT_4_VISION_MODELS = ("gpt-4-vision-preview", "o1")
 GPT_4_128K_MODELS = ("gpt-4-1106-preview","gpt-4-0125-preview","gpt-4-turbo-preview", "gpt-4-turbo", "gpt-4-turbo-2024-04-09")
 GPT_4O_MODELS = ("gpt-4o",)
-O1_MODELS = ("o1-preview", "o1-mini")
+O1_MODELS = ("o1-preview", "o1-preview-2024-09-12", "o1-mini", "o1", "o1-2024-12-17",)
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS + O1_MODELS
 
 def default_max_tokens(model: str) -> int:
@@ -254,27 +254,28 @@ class OpenAIHelper:
             common_args = {
                 'model': self.config['model'] if not self.conversations_vision[chat_id] else self.config['vision_model'],
                 'messages': self.conversations[chat_id],
+                'n': self.config['n_choices'],
+                'stream': stream
             }
 
-            if self.config['model'] in O1_MODELS:
-                common_args['max_completion_tokens'] = self.config['max_tokens'] # o1 series only supports max_completion_tokens
-                # 'temperature', 'top_p', 'n', 'presence_penalty', 'frequency_penalty' are currently fixed and cannot be changed
-            else:
-                # Parameters for other models
-                common_args.update({
-                    'temperature': self.config['temperature'],
-                    'n': self.config['n_choices'],
-                    'max_tokens': self.config['max_tokens'],
-                    'presence_penalty': self.config['presence_penalty'],
-                    'frequency_penalty': self.config['frequency_penalty'],
-                    'stream': stream,
-                })
-            
-                if self.config['enable_functions'] and not self.conversations_vision.get(chat_id, False):
+            if self.config['enable_functions'] and not self.conversations_vision.get(chat_id, False):
                     functions = self.plugin_manager.get_functions_specs()
                     if functions:
                         common_args['functions'] = functions
                         common_args['function_call'] = 'auto'
+
+
+            if self.config['model'] in O1_MODELS:
+                common_args['max_completion_tokens'] = self.config['max_tokens'] # o1 series only supports max_completion_tokens
+                # 'temperature', 'top_p', 'presence_penalty', 'frequency_penalty' for o1 are currently fixed and cannot be changed
+            else:
+                # Parameters for other models
+                common_args.update({
+                    'temperature': self.config['temperature'],
+                    'max_tokens': self.config['max_tokens'],
+                    'presence_penalty': self.config['presence_penalty'],
+                    'frequency_penalty': self.config['frequency_penalty']
+                })
 
             return await self.client.chat.completions.create(**common_args)
 
@@ -586,13 +587,7 @@ class OpenAIHelper:
         """
         if content == '':
             content = self.config['assistant_prompt']
-
-        if self.config['model'] not in O1_MODELS:
-            # If not using 'o1' models, add a system message
-            self.conversations[chat_id] = [{"role": "system", "content": content}]
-        else:
-            self.conversations[chat_id] = []
-
+        self.conversations[chat_id] = [{"role": "developer", "content": content}]
         self.conversations_vision[chat_id] = False
 
     def __max_age_reached(self, chat_id) -> bool:
