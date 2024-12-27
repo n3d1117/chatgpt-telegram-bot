@@ -5,7 +5,6 @@ from plugins.auto_tts import AutoTextToSpeech
 from plugins.dice import DicePlugin
 from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
-from plugins.ddg_translate import DDGTranslatePlugin
 from plugins.spotify import SpotifyPlugin
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
@@ -30,7 +29,6 @@ class PluginManager:
             'weather': WeatherPlugin,
             'crypto': CryptoPlugin,
             'ddg_web_search': DDGWebSearchPlugin,
-            'ddg_translate': DDGTranslatePlugin,
             'ddg_image_search': DDGImageSearchPlugin,
             'spotify': SpotifyPlugin,
             'worldtimeapi': WorldTimeApiPlugin,
