@@ -153,6 +153,7 @@ Check out the [official API reference](https://platform.openai.com/docs/api-refe
 | `whois`                   | Query the whois domain database - by [@jnaskali](https://github.com/jnaskali)                                                                       | -                                                                    | `whois`             |
 | `webshot`                 | Screenshot a website from a given url or domain name - by [@noriellecruz](https://github.com/noriellecruz)                                          | -                                                                    |                     |
 | `auto_tts`                | Text to speech using OpenAI APIs - by [@Jipok](https://github.com/Jipok)                                                                            | -                                                                    |                     |
+| `coinmarketcap`           | The largest selection of current cryptocurrency rates - by [@zchk0](https://github.com/zchk0)                                                       | `COINMARKETCAP_KEY`                                                  |                     |
 
 #### Environment variables
 | Variable                          | Description                                                                                                                                                                                     | Default value                       |
@@ -164,6 +165,7 @@ Check out the [official API reference](https://platform.openai.com/docs/api-refe
 | `WORLDTIME_DEFAULT_TIMEZONE`      | Default timezone to use, i.e. `Europe/Rome` (required only for the `worldtimeapi` plugin, you can get TZ Identifiers from [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) | -                                   |
 | `DUCKDUCKGO_SAFESEARCH`           | DuckDuckGo safe search (`on`, `off` or `moderate`) (optional, applies to `ddg_web_search` and `ddg_image_search`)                                                                               | `moderate`                          |
 | `DEEPL_API_KEY`                   | DeepL API key (required for the `deepl` plugin, you can get one [here](https://www.deepl.com/pro-api?cta=header-pro-api))                                                                       | -                                   |
+| `COINMARKETCAP_KEY`               | CoinMarketCap API key (required for the `coinmarketcap` plugin, you can get one [here](https://coinmarketcap.com/api/documentation/v1/))                                                        | -                                   |
 
 ### Installing
 Clone the repository and navigate to the project directory:

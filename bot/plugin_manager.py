@@ -7,6 +7,7 @@ from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
 from plugins.ddg_translate import DDGTranslatePlugin
 from plugins.spotify import SpotifyPlugin
+from plugins.coinmarketcap import CoinMarketCap
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
 from plugins.ddg_web_search import DDGWebSearchPlugin
@@ -29,6 +30,7 @@ class PluginManager:
             'wolfram': WolframAlphaPlugin,
             'weather': WeatherPlugin,
             'crypto': CryptoPlugin,
+            'coinmarketcap': CoinMarketCap,
             'ddg_web_search': DDGWebSearchPlugin,
             'ddg_translate': DDGTranslatePlugin,
             'ddg_image_search': DDGImageSearchPlugin,
