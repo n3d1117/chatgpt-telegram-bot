@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from plugin_manager import PluginManager
-from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
+from openai_helper import OpenAIHelper, default_max_tokens, default_temperature, default_penalty, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
 
 
@@ -29,8 +29,16 @@ def main():
     # Setup configurations
     model = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     functions_available = are_functions_available(model=model)
-    max_tokens_default = default_max_tokens(model=model)
+    generation_config = {
+        'model': model,
+        'max_tokens': int(os.environ.get('MAX_TOKENS', default_max_tokens(model=model))),
+        'n_choices': int(os.environ.get('N_CHOICES', 1)),
+        'temperature': os.environ.get('TEMPERATURE', default_temperature(model=model)),
+        'presence_penalty': os.environ.get('PRESENCE_PENALTY', default_penalty(model=model)),
+        'frequency_penalty': os.environ.get('FREQUENCY_PENALTY', default_penalty(model=model)),
+    }
     openai_config = {
+        **generation_config,
         'api_key': os.environ['OPENAI_API_KEY'],
         'show_usage': os.environ.get('SHOW_USAGE', 'false').lower() == 'true',
         'stream': os.environ.get('STREAM', 'true').lower() == 'true',
@@ -38,18 +46,12 @@ def main():
         'max_history_size': int(os.environ.get('MAX_HISTORY_SIZE', 15)),
         'max_conversation_age_minutes': int(os.environ.get('MAX_CONVERSATION_AGE_MINUTES', 180)),
         'assistant_prompt': os.environ.get('ASSISTANT_PROMPT', 'You are a helpful assistant.'),
-        'max_tokens': int(os.environ.get('MAX_TOKENS', max_tokens_default)),
-        'n_choices': int(os.environ.get('N_CHOICES', 1)),
-        'temperature': float(os.environ.get('TEMPERATURE', 1.0)),
         'image_model': os.environ.get('IMAGE_MODEL', 'dall-e-2'),
         'image_quality': os.environ.get('IMAGE_QUALITY', 'standard'),
         'image_style': os.environ.get('IMAGE_STYLE', 'vivid'),
         'image_size': os.environ.get('IMAGE_SIZE', '512x512'),
-        'model': model,
         'enable_functions': os.environ.get('ENABLE_FUNCTIONS', str(functions_available)).lower() == 'true',
         'functions_max_consecutive_calls': int(os.environ.get('FUNCTIONS_MAX_CONSECUTIVE_CALLS', 10)),
-        'presence_penalty': float(os.environ.get('PRESENCE_PENALTY', 0.0)),
-        'frequency_penalty': float(os.environ.get('FREQUENCY_PENALTY', 0.0)),
         'bot_language': os.environ.get('BOT_LANGUAGE', 'en'),
         'show_plugins_used': os.environ.get('SHOW_PLUGINS_USED', 'false').lower() == 'true',
         'whisper_prompt': os.environ.get('WHISPER_PROMPT', ''),
