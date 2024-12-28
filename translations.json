@@ -9,7 +9,7 @@
         "chat_description":"Chat with the bot!",
         "disallowed":"Sorry, you are not allowed to use this bot. You can check out the source code at @wolfsuitman",
         "budget_limit":"Sorry, you have reached your usage limit.",
-        "help_text":["I'm a Ronda, talk to me!", "Send me a voice message or file and I'll transcribe it for you", "Open source at @wolfsuitman"],
+        "help_text":["I'm a Ronda, talk to me!", "Ronda is first real dog on sui!", "Open source at @wolfsuitman"],
         "stats_conversation":["Current conversation", "chat messages in history", "chat tokens in history"],
         "usage_today":"Usage today",
         "usage_month":"Usage this month",
