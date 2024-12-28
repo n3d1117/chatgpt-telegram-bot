@@ -225,6 +225,12 @@ docker build -t chatgpt-telegram-bot .
 docker run -it --env-file .env chatgpt-telegram-bot
 ```
 
+#### Heroku
+Here is an example of `Procfile` for deploying using Heroku (thanks [err09r](https://github.com/err09r)!):
+```
+worker: python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python bot/main.py
+```
+
 ## Credits
 - [ChatGPT](https://chat.openai.com/chat) from [OpenAI](https://openai.com)
 - [python-telegram-bot](https://python-telegram-bot.org)
