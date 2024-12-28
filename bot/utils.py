@@ -385,6 +385,7 @@ def encode_image(fileobj):
     image = base64.b64encode(fileobj.getvalue()).decode('utf-8')
     return f'data:image/jpeg;base64,{image}'
 
+
 def decode_image(imgbase64):
     image = imgbase64[len('data:image/jpeg;base64,'):]
     return base64.b64decode(image)
