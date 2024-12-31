@@ -264,7 +264,7 @@ class ChatGPTTelegramBot:
             try:
                 #load .env for OPENAI_BASE_URL
                 load_dotenv()
-                if 'openai.com' not in os.getenv("OPENAI_BASE_URL"):
+                if os.getenv("FLUX_GEN",'false') == 'true':
                     # Use FLUX API
                     b64_json, image_size = await self.openai.generate_image_flux(prompt=image_query)
                     # Decode the base64 JSON to get the image data
