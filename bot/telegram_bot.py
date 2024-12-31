@@ -4,6 +4,10 @@ import asyncio
 import logging
 import os
 import io
+from io import BytesIO
+
+#for TogetherAI
+import base64
 
 from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
@@ -22,6 +26,10 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
     cleanup_intermediate_files
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
+
+#Load the .env file
+from dotenv import load_dotenv
+
 
 
 class ChatGPTTelegramBot:
@@ -235,10 +243,10 @@ class ChatGPTTelegramBot:
 
     async def image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        Generates an image for the given prompt using DALL·E APIs
+        Generates an image for the given prompt using either OpenAI or FLUX APIs based on the openai_api_url configuration
         """
         if not self.config['enable_image_generation'] \
-                or not await self.check_allowed_and_within_budget(update, context):
+        or not await self.check_allowed_and_within_budget(update, context):
             return
 
         image_query = message_text(update.message)
@@ -250,27 +258,53 @@ class ChatGPTTelegramBot:
             return
 
         logging.info(f'New image generation request received from user {update.message.from_user.name} '
-                     f'(id: {update.message.from_user.id})')
+                    f'(id: {update.message.from_user.id})')
 
         async def _generate():
             try:
-                image_url, image_size = await self.openai.generate_image(prompt=image_query)
-                if self.config['image_receive_mode'] == 'photo':
-                    await update.effective_message.reply_photo(
-                        reply_to_message_id=get_reply_to_message_id(self.config, update),
-                        photo=image_url
-                    )
-                elif self.config['image_receive_mode'] == 'document':
-                    await update.effective_message.reply_document(
-                        reply_to_message_id=get_reply_to_message_id(self.config, update),
-                        document=image_url
-                    )
+                #load .env for OPENAI_BASE_URL
+                load_dotenv()
+                if 'openai.com' not in os.getenv("OPENAI_BASE_URL"):
+                    # Use FLUX API
+                    b64_json, image_size = await self.openai.generate_image_flux(prompt=image_query)
+                    # Decode the base64 JSON to get the image data
+                    image_data = base64.b64decode(b64_json)
+                    image_bytes = BytesIO(image_data)
+                    image_bytes.name = 'generated_image.png'  # Set a name for the file
+
+                    if self.config['image_receive_mode'] == 'photo':
+                        await update.effective_message.reply_photo(
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            photo=image_bytes
+                        )
+                    elif self.config['image_receive_mode'] == 'document':
+                        await update.effective_message.reply_document(
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            document=image_bytes
+                        )
+                    else:
+                        raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
                 else:
-                    raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
-                # add image request to users usage tracker
+                    # Use OpenAI API
+                    image_url, image_size = await self.openai.generate_image(prompt=image_query)
+                    if self.config['image_receive_mode'] == 'photo':
+                        await update.effective_message.reply_photo(
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            photo=image_url
+                        )
+                    elif self.config['image_receive_mode'] == 'document':
+                        await update.effective_message.reply_document(
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            document=image_url
+                        )
+                    else:
+                        raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
+
+                # Add image request to users usage tracker
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
-                # add guest chat request to guest usage tracker
+
+                # Add guest chat request to guest usage tracker
                 if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
                     self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
 
