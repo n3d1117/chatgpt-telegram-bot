@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import base64
+import io
+from PIL import Image, ImageChops
 
 import telegram
 from telegram import Message, MessageEntity, Update, ChatMember, constants
@@ -389,3 +391,45 @@ def encode_image(fileobj):
 def decode_image(imgbase64):
     image = imgbase64[len('data:image/jpeg;base64,'):]
     return base64.b64decode(image)
+
+
+def compute_image_diff(im1, im2):
+
+    im1 = Image.open(im1)
+    im2 = Image.open(im2)
+
+    if im1.size != im2.size:
+        raise ValueError("The image and the mask must be of the same size.")
+    
+    pixels1 = im1.load()
+    pixels2 = im2.load()
+    
+    def pixel_difference(pixel1, pixel2):
+        channel_diff = sum(tuple(abs(c1 - c2) for c1, c2 in zip(pixel1, pixel2)))
+        return channel_diff
+    
+    transparent_box = im1.convert('RGBA')
+
+    xtop, xbottom = im1.size[0], 0
+    ytop, ybottom = im1.size[1], 0
+    threshold = 256
+    for y in range(im1.size[1]):
+
+        for x in range(im1.size[0]):
+            if pixel_difference(pixels1[x, y], pixels2[x, y]) > threshold:
+                xtop = min(xtop, x)
+                xbottom = max(xbottom, x)
+                ytop = min(ytop, y)
+                ybottom = max(ybottom, y)
+            
+    if xbottom >= xtop and ybottom >= ytop:
+        for x in range(xtop, xbottom + 1):
+            for y in range(ytop, ybottom + 1):
+                transparent_box.putpixel((x, y), (255, 255, 255, 0))
+    else:
+        raise('No difference detected in the images')
+
+    res = io.BytesIO()
+    transparent_box.save(res, format='PNG')
+    res.seek(0)
+    return res

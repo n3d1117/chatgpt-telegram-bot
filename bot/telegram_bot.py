@@ -9,11 +9,13 @@ from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InlineQueryResultArticle
 from telegram import InputTextMessageContent, BotCommand
+from telegram import PhotoSize, Document, InputMediaDocument
 from telegram.error import RetryAfter, TimedOut, BadRequest
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, \
     filters, InlineQueryHandler, CallbackQueryHandler, Application, ContextTypes, CallbackContext
 
 from pydub import AudioSegment
+from PIL import Image
 from PIL import Image
 
 from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicator, split_into_chunks, \
@@ -643,6 +645,183 @@ class ChatGPTTelegramBot:
 
         await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
+    async def edit_image(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Edit image using Dalle-3.
+        """
+        if not self.config['enable_image_editing'] or not await self.check_allowed_and_within_budget(update, context):
+            return
+
+        chat_id = update.effective_chat.id
+        
+        if is_group_chat(update):
+            if self.config['ignore_group_image_editing']:
+                logging.info(f'Image edit coming from group chat, ignoring...')
+                return
+            else:
+                trigger_keyword = self.config['group_trigger_keyword']
+                if (prompt is None and trigger_keyword != '') or \
+                   (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
+                    logging.info(f'Image edit coming from group chat with wrong keyword, ignoring...')
+                    return
+        
+        
+
+        
+
+        async def _execute():
+            bot_language = self.config['bot_language']
+            
+            
+
+            if update.message.reply_to_message:
+
+
+                
+
+                logging.info(f'New mask for image edit request received from user {update.message.from_user.name} '
+                                f'(id: {update.message.from_user.id})')
+
+                try:
+                    rmes = update.message.reply_to_message
+                    prompt = rmes.caption.split('\n')[0][len('prompt: '):]
+
+                    if isinstance(update.message.effective_attachment, tuple):
+                        image_file = await update.message.effective_attachment[-1].get_file()
+                    elif isinstance(update.message.effective_attachment, Document):
+                        image_file = await update.message.effective_attachment.get_file()
+                    else:
+                        await update.effective_message.reply_text(
+                            message_thread_id=get_thread_id(update),
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            text=localized_text('wrong_image_mask', bot_language)
+                        )
+                        return
+                    
+                    image = io.BytesIO(await image_file.download_as_bytearray())
+
+                    orig_image_file = await rmes.effective_attachment.get_file()
+                    orig_image = io.BytesIO(await orig_image_file.download_as_bytearray())
+
+                except Exception as e:
+                    logging.exception(e)
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=(
+                            f"{localized_text('media_download_fail', bot_language)[0]}: "
+                            f"{str(e)}. {localized_text('media_download_fail', bot_language)[1]}"
+                        )
+                    )
+                    return
+
+                user_id = update.message.from_user.id
+                if user_id not in self.usage:
+                    self.usage[user_id] = UsageTracker(user_id, update.message.from_user.name)
+
+                try:
+                    edited_image_urls, image_size = await self.openai.edit_image(chat_id, orig_image, image, prompt)
+                except Exception as e:
+                    logging.exception(e)
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=str(e)
+                    )
+
+                # add image request to users usage tracker
+                user_id = update.message.from_user.id
+                self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
+                # add guest chat request to guest usage tracker
+                if str(user_id) not in self.config['allowed_user_ids'].split(',') and 'guests' in self.usage:
+                    self.usage["guests"].add_image_request(image_size, self.config['image_prices'])
+
+                edited_images = [InputMediaDocument(media=url, filename=f'image{i+1}.png') for i, url in enumerate(edited_image_urls)]
+
+                await update.effective_message.reply_media_group(
+                    reply_to_message_id=get_reply_to_message_id(self.config, update),
+                    media=edited_images
+                )
+
+            else:
+                
+                try:
+                
+                    if isinstance(update.message.effective_attachment, tuple):
+                        image_file = await update.message.effective_attachment[-1].get_file()
+                    elif isinstance(update.message.effective_attachment, Document):
+                        image_file = await update.message.effective_attachment.get_file()
+                    else:
+                        await update.effective_message.reply_text(
+                            message_thread_id=get_thread_id(update),
+                            reply_to_message_id=get_reply_to_message_id(self.config, update),
+                            text=localized_text('missing_image', bot_language)
+                        )
+                        return
+                    
+                    logging.info(f'New image edit request received from user {update.message.from_user.name} '
+                                f'(id: {update.message.from_user.id})')
+
+                    image = io.BytesIO(await image_file.download_as_bytearray())
+
+                    
+                except Exception as e:
+                    logging.exception(e)
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=(
+                            f"{localized_text('media_download_fail', bot_language)[0]}: "
+                            f"{str(e)}. {localized_text('media_download_fail', bot_language)[1]}"
+                        )
+                    )
+                    return
+
+                # convert jpg from telegram to png as understood by openai
+
+                image_png = io.BytesIO()
+
+                try:
+                    original_image = Image.open(image)
+                    
+                    original_image.save(image_png, format='PNG')
+                    image_png.seek(0)
+
+                    
+
+                except Exception as e:
+                    logging.exception(e)
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=localized_text('media_type_fail', bot_language)
+                    )
+                
+                
+
+                
+
+                try:
+                    
+                    prompt = update.message.caption[len('/edit '):].replace('\n', ' ')
+                    caption = f'prompt: {prompt}\nReply to this message with the masked image'
+
+                    await update.effective_message.reply_document(
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        document=image_png, filename="image.png", caption=caption
+                    )
+                    
+                except Exception as e:
+                    logging.exception(e)
+                    await update.effective_message.reply_text(
+                        message_thread_id=get_thread_id(update),
+                        reply_to_message_id=get_reply_to_message_id(self.config, update),
+                        text=f"{localized_text('edit_image_fail', bot_language)}: {str(e)}",
+                        parse_mode=constants.ParseMode.MARKDOWN
+                    )
+
+        await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
+
     async def prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         React to incoming messages and respond accordingly.
@@ -1058,6 +1237,7 @@ class ChatGPTTelegramBot:
         application.add_handler(CommandHandler('reset', self.reset))
         application.add_handler(CommandHandler('help', self.help))
         application.add_handler(CommandHandler('image', self.image))
+        application.add_handler(MessageHandler(((filters.PHOTO|filters.Document.IMAGE)&filters.CaptionRegex('^/edit.*')), self.edit_image))
         application.add_handler(CommandHandler('tts', self.tts))
         application.add_handler(CommandHandler('start', self.help))
         application.add_handler(CommandHandler('stats', self.stats))
