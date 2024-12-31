@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import io
+import json
 
 from uuid import uuid4
 from telegram import BotCommandScopeAllGroupChats, Update, constants
@@ -23,6 +24,8 @@ from utils import is_group_chat, get_thread_id, message_text, wrap_with_indicato
 from openai_helper import OpenAIHelper, localized_text
 from usage_tracker import UsageTracker
 
+from local_helper import LocalModelHelper
+
 
 class ChatGPTTelegramBot:
     """
@@ -36,6 +39,9 @@ class ChatGPTTelegramBot:
         :param openai: OpenAIHelper object
         """
         self.config = config
+        self.use_local_model = config.get('USE_LOCAL_MODEL', True)
+        if self.use_local_model:
+            self.local_model_helper = LocalModelHelper(base_url="http://localhost:1234/v1")
         self.openai = openai
         bot_language = self.config['bot_language']
         self.commands = [
@@ -681,6 +687,55 @@ class ChatGPTTelegramBot:
         try:
             total_tokens = 0
 
+            # Add a branch for local model
+            if self.config.get('USE_LOCAL_MODEL', True):
+                logging.info("Using local model for this prompt...")
+                try:
+                    messages = [{"role": "user", "content": prompt}]
+                    buffer = ""  # Buffer to accumulate content
+                    sent_message = await update.message.reply_text("...")  # Initial message to edit
+
+                    async for chunk in self.local_model_helper.chat_completion_stream(
+                        model="llama-3.2-1b-instruct",
+                        messages=messages,
+                        temperature=1.0,
+                        max_tokens=512,
+                    ):
+                        chunk = chunk.strip()
+
+                        # Handle "[DONE]" marker
+                        if chunk == "data: [DONE]":
+                            break
+
+                        # Strip "data:" prefix
+                        if chunk.startswith("data:"):
+                            chunk = chunk[len("data:"):].strip()
+
+                        try:
+                            parsed_chunk = json.loads(chunk)
+                            delta = parsed_chunk.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                buffer += content  # Append content to buffer
+
+                                # Edit the existing message with the updated buffer
+                                await sent_message.edit_text(buffer.strip(), parse_mode=None)
+                        except json.JSONDecodeError as e:
+                            logging.warning(f"Skipping invalid chunk: {repr(chunk)}, Error: {e}")
+                            continue
+
+                    return
+
+                except Exception as e:
+                    logging.exception(f"Error using local model: {str(e)}")
+                    await update.message.reply_text(f"Error using local model: {str(e)}")
+                    return
+
+            else:
+                logging.info("Using OpenAI model for this prompt...")
+
+            
+            # Existing OpenAI logic (streamed response or normal)
             if self.config['stream']:
                 await update.effective_message.reply_chat_action(
                     action=constants.ChatAction.TYPING,
