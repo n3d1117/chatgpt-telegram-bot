@@ -39,9 +39,8 @@ class ChatGPTTelegramBot:
         :param openai: OpenAIHelper object
         """
         self.config = config
-        self.use_local_model = config.get('USE_LOCAL_MODEL', True)
-        if self.use_local_model:
-            self.local_model_helper = LocalModelHelper(base_url="http://localhost:1234/v1")
+        if config.get('USE_LOCAL_MODEL', True):
+            self.local_model_helper = LocalModelHelper(base_url=config.get('LOCAL_MODEL_URL'))
         self.openai = openai
         bot_language = self.config['bot_language']
         self.commands = [
@@ -692,39 +691,71 @@ class ChatGPTTelegramBot:
                 logging.info("Using local model for this prompt...")
                 try:
                     messages = [{"role": "user", "content": prompt}]
-                    buffer = ""  # Buffer to accumulate content
-                    sent_message = await update.message.reply_text("...")  # Initial message to edit
+                    
+                    if self.config['stream']:
+                        buffer = ""
+                        sent_message = await update.message.reply_text("...")
 
-                    async for chunk in self.local_model_helper.chat_completion_stream(
-                        model="llama-3.2-1b-instruct",
-                        messages=messages,
-                        temperature=1.0,
-                        max_tokens=512,
-                    ):
-                        chunk = chunk.strip()
+                        """
+                        Aquí se ha mejorado el manejo de los 'chunks' devueltos por el modelo local.
+                        Separamos cada chunk en líneas para asegurarnos de procesar adecuadamente
+                        posibles saltos de línea que lleguen en la misma respuesta. Luego, revisamos 
+                        cada línea para ver si marca el final de la transmisión y/o si contiene JSON válido.
+                        """
+                        async for chunk in self.local_model_helper.chat_completion_stream(
+                            model="llama-3.2-1b-instruct",
+                            messages=messages,
+                            temperature=1.0,
+                            max_tokens=512,
+                        ):
+                            done = False
+                            for line in chunk.splitlines():
+                                line = line.strip()
 
-                        # Handle "[DONE]" marker
-                        if chunk == "data: [DONE]":
-                            break
+                                # Handle empty or partial lines
+                                if not line:
+                                    continue
 
-                        # Strip "data:" prefix
-                        if chunk.startswith("data:"):
-                            chunk = chunk[len("data:"):].strip()
+                                # Handle "[DONE]" marker
+                                if line == "data: [DONE]":
+                                    done = True
+                                    break
 
-                        try:
-                            parsed_chunk = json.loads(chunk)
-                            delta = parsed_chunk.get("choices", [{}])[0].get("delta", {})
-                            content = delta.get("content", "")
-                            if content:
-                                buffer += content  # Append content to buffer
+                                # Strip "data:" prefix
+                                if line.startswith("data:"):
+                                    line = line[len("data:"):].strip()
+                                    if not line:
+                                        continue
 
-                                # Edit the existing message with the updated buffer
-                                await sent_message.edit_text(buffer.strip(), parse_mode=None)
-                        except json.JSONDecodeError as e:
-                            logging.warning(f"Skipping invalid chunk: {repr(chunk)}, Error: {e}")
-                            continue
+                                # Try to parse the chunk line as JSON
+                                try:
+                                    parsed_chunk = json.loads(line)
+                                    delta = parsed_chunk.get("choices", [{}])[0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    if content:
+                                        buffer += content
+                                        await sent_message.edit_text(buffer.strip(), parse_mode=None)
+                                except json.JSONDecodeError as e:
+                                    logging.warning(f"Skipping invalid chunk: {repr(line)}, Error: {e}")
+                                    continue
 
-                    return
+                            if done:
+                                break
+
+                        return
+                    
+                    
+                    else:
+                        response = await self.local_model_helper.chat_completion(
+                            model="llama-3.2-1b-instruct",  # Change to your local model name if different
+                            messages=messages,
+                            temperature=1.0,
+                            max_tokens=512
+                        )
+                        reply = response["choices"][0]["message"]["content"]
+                        await update.message.reply_text(reply)
+                        return  # Exit after responding with the local model
+                        
 
                 except Exception as e:
                     logging.exception(f"Error using local model: {str(e)}")
@@ -734,7 +765,6 @@ class ChatGPTTelegramBot:
             else:
                 logging.info("Using OpenAI model for this prompt...")
 
-            
             # Existing OpenAI logic (streamed response or normal)
             if self.config['stream']:
                 await update.effective_message.reply_chat_action(
@@ -763,7 +793,7 @@ class ChatGPTTelegramBot:
                             stream_chunk += 1
                             try:
                                 await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                              stream_chunks[-2])
+                                                            stream_chunks[-2])
                             except:
                                 pass
                             try:
@@ -782,7 +812,7 @@ class ChatGPTTelegramBot:
                         try:
                             if sent_message is not None:
                                 await context.bot.delete_message(chat_id=sent_message.chat_id,
-                                                                 message_id=sent_message.message_id)
+                                                                message_id=sent_message.message_id)
                             sent_message = await update.effective_message.reply_text(
                                 message_thread_id=get_thread_id(update),
                                 reply_to_message_id=get_reply_to_message_id(self.config, update),
@@ -797,18 +827,15 @@ class ChatGPTTelegramBot:
                         try:
                             use_markdown = tokens != 'not_finished'
                             await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                          text=content, markdown=use_markdown)
-
+                                                        text=content, markdown=use_markdown)
                         except RetryAfter as e:
                             backoff += 5
                             await asyncio.sleep(e.retry_after)
                             continue
-
                         except TimedOut:
                             backoff += 5
                             await asyncio.sleep(0.5)
                             continue
-
                         except Exception:
                             backoff += 5
                             continue
@@ -827,9 +854,7 @@ class ChatGPTTelegramBot:
                     if is_direct_result(response):
                         return await handle_direct_result(self.config, update, response)
 
-                    # Split into chunks of 4096 characters (Telegram's message limit)
                     chunks = split_into_chunks(response)
-
                     for index, chunk in enumerate(chunks):
                         try:
                             await update.effective_message.reply_text(
