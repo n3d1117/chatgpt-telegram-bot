@@ -17,9 +17,6 @@ from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_t
 from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
-#Import TogetherAI
-from together import Together
-
 #import requests for TogetherAI
 import requests
 
