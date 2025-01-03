@@ -17,6 +17,9 @@ from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_t
 from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
+#import requests for TogetherAI
+import requests
+
 # Models can be found here: https://platform.openai.com/docs/models/overview
 # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
@@ -27,7 +30,11 @@ GPT_4_VISION_MODELS = ("gpt-4o",)
 GPT_4_128K_MODELS = ("gpt-4-1106-preview", "gpt-4-0125-preview", "gpt-4-turbo-preview", "gpt-4-turbo", "gpt-4-turbo-2024-04-09")
 GPT_4O_MODELS = ("gpt-4o", "gpt-4o-mini", "chatgpt-4o-latest")
 O_MODELS = ("o1", "o1-mini", "o1-preview")
-GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS + O_MODELS
+
+#TogetherAI Models;Put your desired models from TogetherAI models here
+GPT_TOGETHERAI_MODELS = ("Qwen/Qwen2.5-Coder-32B-Instruct","meta-llama/Llama-3.3-70B-Instruct-Turbo")
+
+GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS + O_MODELS + GPT_TOGETHERAI_MODELS
 
 def default_max_tokens(model: str) -> int:
     """
@@ -350,6 +357,72 @@ class OpenAIHelper:
         except Exception as e:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
+    async def generate_image_flux(self, prompt: str) -> tuple[str, str]:
+        """
+        Generates an image from the given prompt using FLUX model.
+        :param prompt: The prompt to send to the model
+        :return: The image URL and the image size
+        """
+        bot_language = self.config['bot_language']
+        try:
+            # Parse the image_size string to extract width and height
+            image_size_parts = self.config['image_size'].split('x')
+            if len(image_size_parts) == 2:
+                image_width = int(image_size_parts[0])
+                image_height = int(image_size_parts[1])
+            else:
+                raise ValueError("Invalid image_size format. Expected format: 'widthxheight'.")
+
+            # Prepare the request payload
+            payload = {
+                "model": self.config['image_model'],
+                "prompt": prompt,
+                "width": image_width,
+                "height": image_height,
+                "steps": 20,
+                "n": 1,
+                "response_format": "b64_json"
+            }
+
+            # Set the headers
+            headers = {
+                "Authorization": f"Bearer {self.config['api_key']}",
+                "Content-Type": "application/json"
+            }
+
+            # Make the POST request
+            response = requests.post(
+                "https://api.together.xyz/v1/images/generations",
+                headers=headers,
+                data=json.dumps(payload)
+            )
+
+            # Check if the request was successful
+            if response.status_code != 200:
+                logging.error(f'Error from FLUX API: {response.status_code} - {response.text}')
+                raise Exception(
+                    f"⚠️ _{localized_text('error', bot_language)}._ "
+                    f"⚠️\n{localized_text('try_again', bot_language)}."
+                )
+
+            # Parse the response JSON
+            response_data = response.json()
+            if 'data' not in response_data or len(response_data['data']) == 0:
+                logging.error(f'No data in response from FLUX: {response_data}')
+                raise Exception(
+                    f"⚠️ _{localized_text('error', bot_language)}._ "
+                    f"⚠️\n{localized_text('try_again', bot_language)}."
+                )
+
+            # Extract the b64_json data from the response
+            b64_json = response_data['data'][0]['b64_json']
+
+            # Return the b64_json data and the image size
+            return b64_json, f"{image_width}x{image_height}"
+        except Exception as e:
+            raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
+
+
     async def generate_speech(self, text: str) -> tuple[any, int]:
         """
         Generates an audio from the given text using TTS model.
@@ -632,6 +705,9 @@ class OpenAIHelper:
             return base * 31
         if self.config['model'] in GPT_4O_MODELS:
             return base * 31
+        #set default max tokens from Together.AI to 64,000 tk;increase if you mind!
+        if self.config['model'] in GPT_TOGETHERAI_MODELS:
+            return base * 16
         elif self.config['model'] in O_MODELS:
             # https://platform.openai.com/docs/models#o1
             if self.config['model'] == "o1":
