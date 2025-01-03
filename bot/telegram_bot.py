@@ -659,7 +659,7 @@ class ChatGPTTelegramBot:
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
         self.last_message[chat_id] = prompt
-
+        answer = True
         if is_group_chat(update):
             trigger_keyword = self.config['group_trigger_keyword']
 
@@ -676,12 +676,16 @@ class ChatGPTTelegramBot:
                     logging.info('Message is a reply to the bot, allowing...')
                 else:
                     logging.warning('Message does not start with trigger keyword, ignoring...')
-                    return
+                    if not self.config['group_listen_conversation']:
+                        return
+                    else:
+                        answer = False
 
         try:
             total_tokens = 0
+            # logging.info(msg="#### before if stream")
 
-            if self.config['stream']:
+            if self.config['stream'] and answer:
                 await update.effective_message.reply_chat_action(
                     action=constants.ChatAction.TYPING,
                     message_thread_id=get_thread_id(update)
@@ -693,7 +697,6 @@ class ChatGPTTelegramBot:
                 sent_message = None
                 backoff = 0
                 stream_chunk = 0
-
                 async for content, tokens in stream_response:
                     if is_direct_result(content):
                         return await handle_direct_result(self.config, update, content)
@@ -708,7 +711,7 @@ class ChatGPTTelegramBot:
                             stream_chunk += 1
                             try:
                                 await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                              stream_chunks[-2])
+                                                            stream_chunks[-2])
                             except:
                                 pass
                             try:
@@ -727,7 +730,7 @@ class ChatGPTTelegramBot:
                         try:
                             if sent_message is not None:
                                 await context.bot.delete_message(chat_id=sent_message.chat_id,
-                                                                 message_id=sent_message.message_id)
+                                                                message_id=sent_message.message_id)
                             sent_message = await update.effective_message.reply_text(
                                 message_thread_id=get_thread_id(update),
                                 reply_to_message_id=get_reply_to_message_id(self.config, update),
@@ -742,7 +745,7 @@ class ChatGPTTelegramBot:
                         try:
                             use_markdown = tokens != 'not_finished'
                             await edit_message_with_retry(context, chat_id, str(sent_message.message_id),
-                                                          text=content, markdown=use_markdown)
+                                                        text=content, markdown=use_markdown)
 
                         except RetryAfter as e:
                             backoff += 5
@@ -765,38 +768,41 @@ class ChatGPTTelegramBot:
                         total_tokens = int(tokens)
 
             else:
+                # logging.info(msg="#### before reply")
                 async def _reply():
                     nonlocal total_tokens
                     response, total_tokens = await self.openai.get_chat_response(chat_id=chat_id, query=prompt)
+                    if answer:
+                        if is_direct_result(response):
+                            return await handle_direct_result(self.config, update, response)
 
-                    if is_direct_result(response):
-                        return await handle_direct_result(self.config, update, response)
+                        # Split into chunks of 4096 characters (Telegram's message limit)
+                        chunks = split_into_chunks(response)
 
-                    # Split into chunks of 4096 characters (Telegram's message limit)
-                    chunks = split_into_chunks(response)
-
-                    for index, chunk in enumerate(chunks):
-                        try:
-                            await update.effective_message.reply_text(
-                                message_thread_id=get_thread_id(update),
-                                reply_to_message_id=get_reply_to_message_id(self.config,
-                                                                            update) if index == 0 else None,
-                                text=chunk,
-                                parse_mode=constants.ParseMode.MARKDOWN
-                            )
-                        except Exception:
+                        for index, chunk in enumerate(chunks):
                             try:
                                 await update.effective_message.reply_text(
                                     message_thread_id=get_thread_id(update),
                                     reply_to_message_id=get_reply_to_message_id(self.config,
                                                                                 update) if index == 0 else None,
-                                    text=chunk
+                                    text=chunk,
+                                    parse_mode=constants.ParseMode.MARKDOWN
                                 )
-                            except Exception as exception:
-                                raise exception
+                            except Exception:
+                                try:
+                                    await update.effective_message.reply_text(
+                                        message_thread_id=get_thread_id(update),
+                                        reply_to_message_id=get_reply_to_message_id(self.config,
+                                                                                    update) if index == 0 else None,
+                                        text=chunk
+                                    )
+                                except Exception as exception:
+                                    raise exception
+                    else:
+                        logging.info(f"Response would have been {response}")
 
                 await wrap_with_indicator(update, context, _reply, constants.ChatAction.TYPING)
-
+            # logging.info(msg="#### before add_chat_request_to_usage_tracker")
             add_chat_request_to_usage_tracker(self.usage, self.config, user_id, total_tokens)
 
         except Exception as e:
@@ -972,10 +978,11 @@ class ChatGPTTelegramBot:
                         # Edit the original message with the generated content
                         await edit_message_with_retry(context, chat_id=None, message_id=inline_message_id,
                                                       text=text_content, is_inline=True)
-
+                    logging.debug("before sendind no stream answer")
                     await wrap_with_indicator(update, context, _send_inline_query_response,
                                               constants.ChatAction.TYPING, is_inline=True)
 
+                logging.debug("before add_chat_request_to_usage_tracker")
                 add_chat_request_to_usage_tracker(self.usage, self.config, user_id, total_tokens)
 
         except Exception as e:
