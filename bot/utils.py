@@ -7,11 +7,57 @@ import logging
 import os
 import base64
 
+import re
+
 import telegram
 from telegram import Message, MessageEntity, Update, ChatMember, constants
 from telegram.ext import CallbackContext, ContextTypes
 
 from usage_tracker import UsageTracker
+
+
+def convert_to_telegram_markdown(text: str) -> str:
+    """
+    Convert GPT's GitHub-Flavored Markdown to Telegram's legacy Markdown format.
+    
+    GPT uses **bold** and *italic*, but Telegram's MARKDOWN mode uses:
+    - *bold* for bold
+    - _italic_ for italic
+    
+    This function converts the format so messages display correctly in Telegram.
+    """
+    if not text:
+        return text
+    
+    # Step 1: Protect code blocks from being modified
+    # Store code blocks and replace with placeholders
+    code_blocks = []
+    
+    def save_code_block(match):
+        code_blocks.append(match.group(0))
+        return f"\x00CODE_BLOCK_{len(code_blocks) - 1}\x00"
+    
+    # Protect fenced code blocks (```...```)
+    text = re.sub(r'```[\s\S]*?```', save_code_block, text)
+    # Protect inline code (`...`)
+    text = re.sub(r'`[^`]+`', save_code_block, text)
+    
+    # Step 2: Convert **bold** to *bold* (GitHub to Telegram)
+    # Match **text** but not ***text*** (which would be bold+italic)
+    text = re.sub(r'\*\*([^*]+)\*\*', r'*\1*', text)
+    
+    # Step 3: Convert __text__ to _text_ (alternative bold syntax to italic in Telegram)
+    # In Telegram, _ is italic, so we keep it as is (already compatible)
+    
+    # Step 4: Handle ***bold italic*** -> *_text_* 
+    # This is tricky, for now we'll simplify to just bold
+    text = re.sub(r'\*\*\*([^*]+)\*\*\*', r'*\1*', text)
+    
+    # Step 5: Restore code blocks
+    for i, block in enumerate(code_blocks):
+        text = text.replace(f"\x00CODE_BLOCK_{i}\x00", block)
+    
+    return text
 
 
 def message_text(message: Message) -> str:
@@ -115,11 +161,13 @@ async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: i
     :return: None
     """
     try:
+        # Convert GPT's markdown to Telegram-compatible format
+        formatted_text = convert_to_telegram_markdown(text) if markdown else text
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=int(message_id) if not is_inline else None,
             inline_message_id=message_id if is_inline else None,
-            text=text,
+            text=formatted_text,
             parse_mode=constants.ParseMode.MARKDOWN if markdown else None,
         )
     except telegram.error.BadRequest as e:

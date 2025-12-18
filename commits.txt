@@ -1,0 +1,24 @@
+b6284c5 unneeeded removed
+6ca8589 qfx
+bdabb68 qfx
+d3ae3b0 qfx
+27475d6 qckfx
+99a9d9c qf
+0842212 qf
+a8c3fcf QUICKFIX #3
+2dd33d6 quickfix #2
+8cad620 quickfixes
+0bfe173 POLISH
+c1d66fe Merge branch 'main' into main
+eeed0b7 Final final polishing
+9f75ea0 Final polish
+60db970 Polish
+9bfd59d docs: Update CHANGELOG and README for v1.1.0
+df7ce8f feat: Add GPT-5.1 support and update models
+0ead995 feat: Implement configurable OpenAI tools, streaming fixes, and documentation updates
+60a1fb9 feat: Add GPT-5 support with true streaming and thinking status
+1c20e9e fix gpt-5 max_tokens parameter
+ff62303 add gpt-5 and gpt-5.1 support
+a641731 Update publish.yaml
+b171ea8 Update publish.yaml
+2c8d07d Update publish.yaml
