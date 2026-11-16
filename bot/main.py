@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from plugin_manager import PluginManager
 from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available
 from telegram_bot import ChatGPTTelegramBot
+from manager_dashboard import BotDashboard
 
 
 def main():
@@ -110,6 +111,20 @@ def main():
     plugin_manager = PluginManager(config=plugin_config)
     openai_helper = OpenAIHelper(config=openai_config, plugin_manager=plugin_manager)
     telegram_bot = ChatGPTTelegramBot(config=telegram_config, openai=openai_helper)
+
+    if os.environ.get('ENABLE_BOT_DASHBOARD', 'false').lower() == 'true':
+        try:
+            dashboard = BotDashboard(
+                password=os.environ.get('BOT_DASHBOARD_PASSWORD', ''),
+                host=os.environ.get('BOT_DASHBOARD_HOST', '127.0.0.1'),
+                port=os.environ.get('BOT_DASHBOARD_PORT', '8765'),
+            )
+            dashboard.start()
+            logging.info('Bot manager dashboard listening on %s:%s', dashboard.host, dashboard.port)
+        except (ValueError, OSError) as error:
+            logging.error('Unable to start the bot manager dashboard: %s', error)
+            exit(1)
+
     telegram_bot.run()
 
 

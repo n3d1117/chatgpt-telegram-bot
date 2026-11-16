@@ -198,6 +198,16 @@ pip install -r requirements.txt
 python bot/main.py
 ```
 
+### Optional Telegram bot manager dashboard
+
+The local dashboard can manage multiple bots that you own using Telegram's official Bot API. Set `ENABLE_BOT_DASHBOARD=true` and set `BOT_DASHBOARD_PASSWORD` to a unique password of at least 16 characters in your `.env`, then start the app as usual and open `http://127.0.0.1:8765`. The server binds to loopback by default. Keep it that way unless you have deliberately configured a trusted private network and appropriate access controls.
+
+Add a bot with its BotFather token, then enter a chat ID (or a public `@channel` username) to verify access or upload a file. Each chat must already exist and the selected bot must be an administrator with posting permission. Telegram does not provide a Bot API method to enumerate all chats, create channels/groups, or add members by phone number or username, so those actions must be completed manually in Telegram first. The dashboard does not log in to personal Telegram accounts or use user sessions. Bot tokens entered in the dashboard are held in memory only, are not written to disk, and are discarded when the process stops.
+
+For uploads, the optional content-protection checkbox requests Telegram's per-message `protect_content` behavior (restricting forwarding and saving where Telegram supports it). It is not a global download setting and cannot prevent screenshots, copying, or external capture. This dashboard does not hide the bot's identity or prevent Telegram from associating activity with the bot/account.
+
+When running in Docker, bind the dashboard to `0.0.0.0` inside the container and publish its port only on the host loopback interface (for example, `127.0.0.1:8765:8765`). Do not expose the dashboard directly to the public internet.
+
 #### Using Docker Compose
 
 Run the following command to build and run the Docker image:
